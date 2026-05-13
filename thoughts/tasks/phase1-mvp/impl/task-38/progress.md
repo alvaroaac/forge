@@ -55,7 +55,7 @@ Tech-debt logged:
 - None added.
 
 Spec fix commit:
-- `fix(renderer): skip empty markdown prefaces`
+- `3963aa3a7868bbd6916398dc8efdded95ef16717` — `fix(renderer): skip empty markdown prefaces`
 
 Concerns:
 - None.
