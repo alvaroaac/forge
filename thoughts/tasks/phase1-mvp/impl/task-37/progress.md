@@ -58,3 +58,18 @@ Commits:
   - `npm run format:check`
   - `npm run build`
 - Commit for this pass: `d75a6f4` — `fix(renderer): add RightPanel list semantics`.
+
+## QA Follow-up Fix (2026-05-13)
+
+- Fixed remaining Task 37 follow-on issues:
+  - Reset `<ul>` defaults on `.auth-list` to remove bullets/indentation while preserving `display: flex`, column layout, and gap:
+    - `list-style: none`
+    - `margin: 0`
+    - `padding: 0`
+  - Updated `AuthRow` and `ActivityRow` direct unit tests to render each `<li>` row inside a `<ul>` wrapper for valid HTML.
+- Validation run again after fixes:
+  - `npx vitest run tests/renderer/right-panel.test.tsx`
+  - `npm run typecheck`
+  - `npm run lint`
+  - `npm run format:check`
+  - `npm run build`

@@ -70,7 +70,11 @@ describe('RightPanel', () => {
 
 describe('AuthRow', () => {
   it('renders name, empty detail placeholder, and status state', () => {
-    render(<AuthRow name="Claude Code" state="connected" />);
+    render(
+      <ul>
+        <AuthRow name="Claude Code" state="connected" />
+      </ul>,
+    );
 
     const row = screen.getByRole('listitem');
     const detail = row.querySelector('.auth-detail');
@@ -85,7 +89,11 @@ describe('AuthRow', () => {
 
 describe('ActivityRow', () => {
   it('renders id, text, and timestamp in expected spots', () => {
-    render(<ActivityRow id="FUL-1" text="Generated spec" ts="2m ago" />);
+    render(
+      <ul>
+        <ActivityRow id="FUL-1" text="Generated spec" ts="2m ago" />
+      </ul>,
+    );
 
     const row = screen.getByRole('listitem');
 

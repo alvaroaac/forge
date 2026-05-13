@@ -381,7 +381,14 @@ button { font-family: inherit; }
   flex: none;
 }
 
-.auth-list { display: flex; flex-direction: column; gap: 4px; }
+.auth-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 .auth-row {
   display: grid;
   grid-template-columns: 8px 110px 1fr auto;
