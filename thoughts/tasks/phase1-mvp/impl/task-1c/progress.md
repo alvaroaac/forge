@@ -38,7 +38,8 @@ Tech-debt logged
 
 Commits made
 - `ee4acf2` — `ci: typecheck + lint + format + vitest on PR and main` (Task 1c base files)
-- Task 1c fix commit — `ci: allow no-test bootstrap runs`
+- `ddd708f` — `ci: allow no-test bootstrap runs`
+- `TODO` — `ci: align PR template test command with bootstrap CI parity`
 
 Concerns / external steps awaiting approval
 - **BLOCKED** Steps 3/4/5 from task dispatch remain blocked by user instruction (do not create/push GitHub repo, no remote verification, no push).

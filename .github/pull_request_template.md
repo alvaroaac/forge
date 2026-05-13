@@ -11,7 +11,7 @@
 
 - [ ] `npm run typecheck` passes
 - [ ] `npm run lint` passes
-- [ ] `npm run test` passes
+- [ ] `npm run test -- --passWithNoTests` passes
 - [ ] Manually verified the affected flow
 
 ## Notes
