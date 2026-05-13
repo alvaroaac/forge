@@ -18,17 +18,23 @@ async function readAgentsContext(repoPath: string): Promise<string> {
   return readIfExists(join(repoPath, 'CLAUDE.md'));
 }
 
+async function isMarkdownThoughtFile(thoughtsDir: string, name: string): Promise<boolean> {
+  if (!name.endsWith('.md')) return false;
+  const full = join(thoughtsDir, name);
+  const stats = await stat(full);
+  return stats.isFile();
+}
+
 async function listThoughtFiles(thoughtsDir: string): Promise<string[]> {
   if (!existsSync(thoughtsDir)) return [];
   const entries = await readdir(thoughtsDir);
-  const result: string[] = [];
-  for (const name of entries) {
-    if (!name.endsWith('.md')) continue;
-    const full = join(thoughtsDir, name);
-    const s = await stat(full);
-    if (s.isFile()) result.push(name);
-  }
-  return result;
+  const checks = await Promise.all(
+    entries.map(async (name) => ({
+      name,
+      include: await isMarkdownThoughtFile(thoughtsDir, name),
+    })),
+  );
+  return checks.filter((entry) => entry.include).map((entry) => entry.name);
 }
 
 export async function readRepoContext(repoPath: string): Promise<RepoContext> {
