@@ -6,4 +6,7 @@ coverage
 playwright-report
 test-results
 resources/design
+.agents
+thoughts
+scripts/orchestrator-core
 package-lock.json

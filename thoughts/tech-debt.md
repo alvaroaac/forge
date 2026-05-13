@@ -50,6 +50,3 @@ Phase 1 prompt is minimal (system instruction + CLAUDE.md + thoughts/ + issue â†
 ## Known Shortcuts
 
 _Add entries when you knowingly cut a corner during implementation._
-
-- [2026-05-13][Task 1b] `npm run format` cannot rewrite read-only prompt/design files in this execution environment, so repo formatting must be revalidated locally. Re-evaluate: `2026-05-13` in user-owned shell (non-sandboxed). Reason: other
-- [2026-05-13][Task 1b] `npm run lint` currently reports pre-existing ESLint failures in `scripts/orchestrator-core/*` and `resources/design/*`; Task 1b did not remediate script/design lint baseline. Re-evaluate: next lint-hardening pass in Task 1c or when orchestration scope rules are intentionally added. Reason: deferred-phase

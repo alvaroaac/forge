@@ -6,7 +6,19 @@ import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
 export default [
-  { ignores: ['out/**', 'dist/**', 'coverage/**', '.vite/**', 'playwright-report/**'] },
+  {
+    ignores: [
+      'out/**',
+      'dist/**',
+      'coverage/**',
+      '.vite/**',
+      'playwright-report/**',
+      '.agents/**',
+      'thoughts/**',
+      'scripts/orchestrator-core/**',
+      'resources/design/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
