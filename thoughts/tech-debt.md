@@ -54,4 +54,4 @@ _Add entries when you knowingly cut a corner during implementation._
 - [2026-05-13][Task 1c] Playwright + Electron e2e not in CI. Reason: needs xvfb/display in GH Actions. Re-evaluate: Phase 2 when agent-spawn flows make manual e2e tedious.
 - [2026-05-13][Task 1c] No Husky / pre-commit hooks. Reason: YAGNI for a single-developer Phase 1; CI gate is sufficient. Re-evaluate: Phase 5 packaging or when adding contributors.
 - [2026-05-13][Task 1c] No Dependabot / Renovate config. Reason: low churn during Phase 1. Re-evaluate: Phase 5 productization.
-- [2026-05-13][Task 26] Repeated IPC test helper scaffolding remains duplicated across IPC specs. Reason: deferred-phase. Re-evaluate: when the next IPC test suite is added or during Phase 1 cleanup.
+- [2026-05-13][Task 26] Repeated IPC test helper scaffolding remains duplicated across IPC specs. Reason: deferred-phase. Re-evaluate: during Phase 1 cleanup after IPC handler coverage is complete.
