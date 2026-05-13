@@ -18,7 +18,7 @@ Model: gpt-5.4-mini high
   - Passed.
 
 ## Commits
-- `feat(renderer): use-spec-stream hook`
+- `9aaa266` `feat(renderer): use-spec-stream hook`
 
 ## Self-review findings
 - The hook keeps the state contract intentionally small: `spec`, `streaming`, `isStreaming`, and `generate`.
