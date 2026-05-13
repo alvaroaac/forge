@@ -8,11 +8,17 @@ export function useConfig(): AppConfig | null {
   useEffect(() => {
     let cancelled = false;
 
-    void window.forge.config.get().then((nextConfig) => {
-      if (!cancelled) {
-        setConfig(nextConfig);
+    void (async () => {
+      try {
+        const nextConfig = await window.forge.config.get();
+
+        if (!cancelled) {
+          setConfig(nextConfig);
+        }
+      } catch {
+        // Keep the default null config when preload rejects.
       }
-    });
+    })();
 
     return () => {
       cancelled = true;

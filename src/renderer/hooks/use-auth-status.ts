@@ -14,11 +14,17 @@ export function useAuthStatus(): AuthStatus {
   useEffect(() => {
     let cancelled = false;
 
-    void window.forge.auth.check().then((status) => {
-      if (!cancelled) {
-        setAuthStatus(status);
+    void (async () => {
+      try {
+        const status = await window.forge.auth.check();
+
+        if (!cancelled) {
+          setAuthStatus(status);
+        }
+      } catch {
+        // Keep the default auth status when preload rejects.
       }
-    });
+    })();
 
     return () => {
       cancelled = true;
