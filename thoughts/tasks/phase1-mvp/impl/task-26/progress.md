@@ -38,7 +38,29 @@ Self-review findings:
 - Added focused typed IPC tests (no raw `any` or `Function`), including both positive and missing-file scenarios.
 
 Tech-debt logged:
-- None.
+- 2026-05-13: Repeated IPC test helper scaffolding remains duplicated across IPC specs (`tests/main/ipc-auth.test.ts`, `tests/main/ipc-config.test.ts`, `tests/main/ipc-linear.test.ts`, `tests/main/ipc-spec-get.test.ts`) and is intentionally not fixed here.
 
 Concerns:
 - None.
+
+## QA-fix (Task 26 path-traversal hardening)
+
+Status: DONE
+
+Files changed:
+- `src/main/ipc/spec.ts`
+- `tests/main/ipc-spec-get.test.ts`
+- `thoughts/tasks/phase1-mvp/impl/task-26/progress.md`
+
+Tests added:
+- Added invalid `issueId` coverage in `tests/main/ipc-spec-get.test.ts` for path-separator and absolute-path style IDs.
+- Added regression test ensuring traversal-like `issueId` fragments do not read files outside the repo-boundary.
+
+Tests run:
+- `npx vitest run tests/main/ipc-spec-get.test.ts`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run format:check`
+
+Commit command:
+- `git commit -m "fix(ipc): validate spec issue ids before reading files"`
