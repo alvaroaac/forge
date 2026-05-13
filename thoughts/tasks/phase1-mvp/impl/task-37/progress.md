@@ -73,3 +73,4 @@ Commits:
   - `npm run lint`
   - `npm run format:check`
   - `npm run build`
+- Commit for this pass: `be206e04333a60b6e8304e708a234c93f031bb60` — `fix(renderer): reset RightPanel list styling`.
