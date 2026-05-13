@@ -51,6 +51,8 @@ Files changed
 - `src/main/preload.ts`
 - `src/renderer/index.html`
 - `tests/bootstrap.test.ts`
+- `thoughts/tasks/phase1-mvp/impl/task-1/spec-review.md`
+- `thoughts/tasks/phase1-mvp/impl/task-1/qa-review.md`
 - `package-lock.json` (generated)
 - `thoughts/tasks/phase1-mvp/impl/task-1/progress.md`
 
@@ -66,6 +68,7 @@ Tech-debt logged
 Commits made
 - `8d08d67` — `chore: bootstrap Electron + Vite + TypeScript scaffold`
 - `3a96446` — `fix(task1): add bootstrap placeholders for build and test`
+- `b8d34ee` — `docs(task1): update progress report after QA fix`
 
 Concerns
 - Initial `npm install` attempt hit sandbox DNS restrictions (`ENOTFOUND`); installation was re-run with escalation.
