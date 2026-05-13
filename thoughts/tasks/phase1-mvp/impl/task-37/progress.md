@@ -57,4 +57,4 @@ Commits:
   - `npm run lint`
   - `npm run format:check`
   - `npm run build`
-- Commit for this pass: `43eea07`.
+- Commit for this pass: `d75a6f4` — `fix(renderer): add RightPanel list semantics`.
