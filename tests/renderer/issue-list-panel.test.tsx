@@ -175,6 +175,13 @@ describe('IssueListPanel', () => {
     expect(getTabCount(/^In Progress/i)).toBe(1);
     expect(getTabCount(/^In Review/i)).toBe(0);
     expect(getTabCount(/^Done/i)).toBe(1);
+
+    expect(screen.getByRole('button', { name: /^Todo/i }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(screen.getByRole('button', { name: /^In Progress/i }).getAttribute('aria-pressed')).toBe(
+      'false',
+    );
   });
 
   it('orders visible groups by GROUP_ORDER and derives groups via classifyGroup', () => {
@@ -289,6 +296,7 @@ describe('IssueListPanel', () => {
     expect(issueCards[1].getAttribute('data-has-spec')).toBe('false');
 
     fireEvent.click(within(issueCards[0]).getByText('open detail'));
+    expect(onOpen).toHaveBeenCalledTimes(1);
     expect(onOpen).toHaveBeenCalledWith(issues[0], 'detail');
   });
 
@@ -306,7 +314,7 @@ describe('IssueListPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTitle('Refresh'));
+    fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 

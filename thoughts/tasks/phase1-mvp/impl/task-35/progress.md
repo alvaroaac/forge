@@ -6,8 +6,16 @@ Model used: gpt-5.3-codex-spark
 
 Files changed:
 - src/renderer/components/issue-list-panel.tsx
+- src/renderer/components/pill-tab.tsx
 - tests/renderer/issue-list-panel.test.tsx
 - thoughts/tasks/phase1-mvp/impl/task-35/progress.md
+
+QA fix pass:
+- Added explicit `aria-label="Refresh"` on IssueListPanel refresh control.
+- Removed unnecessary exports from internal constants in `issue-list-panel.tsx` (`TABS`, `TAB_KEY`, `GROUP_ORDER`).
+- Added `aria-pressed={active}` to `PillTab`.
+- Updated IssueListPanel tests to query refresh button by role/name and assert `aria-pressed` on active/inactive tabs.
+- Added exact call-count assertion for `onOpen` forwarding.
 
 TDD evidence:
 - Added `tests/renderer/issue-list-panel.test.tsx` first.

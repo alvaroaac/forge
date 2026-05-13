@@ -7,16 +7,16 @@ import { PillTab } from './pill-tab';
 
 export type Tab = 'Todo' | 'In Progress' | 'In Review' | 'Done';
 
-export const TABS: Tab[] = ['Todo', 'In Progress', 'In Review', 'Done'];
+const TABS: Tab[] = ['Todo', 'In Progress', 'In Review', 'Done'];
 
-export const TAB_KEY: Record<Tab, IssueStatus> = {
+const TAB_KEY: Record<Tab, IssueStatus> = {
   Todo: 'todo',
   'In Progress': 'in_progress',
   'In Review': 'in_review',
   Done: 'done',
 };
 
-export const GROUP_ORDER: Group[] = ['Bugs', 'Urgent', 'Feature', 'Chore'];
+const GROUP_ORDER: Group[] = ['Bugs', 'Urgent', 'Feature', 'Chore'];
 
 type IssueListPanelProps = {
   issues: Issue[];
@@ -74,7 +74,13 @@ export function IssueListPanel({
           ))}
         </div>
         <div className="panel-left-tools">
-          <button className="icon-btn" type="button" title="Refresh" onClick={onRefresh}>
+          <button
+            className="icon-btn"
+            type="button"
+            aria-label="Refresh"
+            title="Refresh"
+            onClick={onRefresh}
+          >
             <IconRefresh size={12} />
           </button>
         </div>
