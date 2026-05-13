@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isBug, mapPriority } from '../../src/main/services/linear-mapping';
+import { isBug, mapPriority, mapStatus } from '../../src/main/services/linear-mapping';
 
 describe('mapPriority', () => {
   it('maps Linear numeric priorities', () => {
@@ -26,5 +26,20 @@ describe('isBug', () => {
   it('returns false otherwise', () => {
     expect(isBug({ labels: ['feature'], issueType: null })).toBe(false);
     expect(isBug({ labels: [], issueType: null })).toBe(false);
+  });
+});
+
+describe('mapStatus', () => {
+  it('maps Linear state.type to internal IssueStatus', () => {
+    expect(mapStatus({ name: 'Todo', type: 'unstarted' })).toBe('todo');
+    expect(mapStatus({ name: 'Backlog', type: 'backlog' })).toBe('todo');
+    expect(mapStatus({ name: 'Triage', type: 'triage' })).toBe('todo');
+    expect(mapStatus({ name: 'In Progress', type: 'started' })).toBe('in_progress');
+    expect(mapStatus({ name: 'In Review', type: 'review' })).toBe('in_review');
+    expect(mapStatus({ name: 'Done', type: 'completed' })).toBe('done');
+    expect(mapStatus({ name: 'Canceled', type: 'canceled' })).toBe('done');
+  });
+  it('falls back to todo for unknown type', () => {
+    expect(mapStatus({ name: 'Whatever', type: 'unknown' })).toBe('todo');
   });
 });
