@@ -15,7 +15,7 @@ Tests run + results
 - `npm run typecheck`: passed after removing the invalid `delete window.forge` cleanup from the test.
 
 Commits
-- Pending. Will commit only owned files with message `feat(renderer): use-config + use-auth-status hooks`.
+- `7a789f8` `feat(renderer): use-config + use-auth-status hooks`
 
 Self-review findings
 - Hooks stay mount-only, with no polling or error handling added.
