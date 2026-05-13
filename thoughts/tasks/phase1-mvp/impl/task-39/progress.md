@@ -38,7 +38,7 @@ Self-review:
 - Paragraph handling splits `issue.description` by blank lines and normalizes internal newlines to spaces, with empty-string filtering for clean output.
 
 Commits:
- - `feat(renderer): DetailTab with Linear description`
+ - `0dd6443a11327466bcf0a37d70f11f056181ea43` — `feat(renderer): DetailTab with Linear description`
 
 Concerns:
 - None.
