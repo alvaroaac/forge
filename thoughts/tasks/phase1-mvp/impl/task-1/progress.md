@@ -32,7 +32,7 @@ What you tested and test results
 - `npm run build` passed.
 - `npm test` passed.
 - Git identity check passed: `git config user.name` and `git config user.email` were both present.
-- `git status --short` showed only the Task 1 progress update until commit.
+- `git status --short` was clean after commit.
 
 Files changed
 - `.gitignore`
@@ -65,6 +65,7 @@ Tech-debt logged
 
 Commits made
 - `8d08d67` — `chore: bootstrap Electron + Vite + TypeScript scaffold`
+- `3a96446` — `fix(task1): add bootstrap placeholders for build and test`
 
 Concerns
 - Initial `npm install` attempt hit sandbox DNS restrictions (`ENOTFOUND`); installation was re-run with escalation.
