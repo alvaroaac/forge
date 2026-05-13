@@ -62,14 +62,14 @@ describe('IssueCard', () => {
     const { container } = render(
       <IssueCard issue={issueWithManyLabels} onOpen={onOpen} isActive={false} hasSpec />,
     );
-    const { queryByText } = within(container);
+    const { getByText, queryByText } = within(container);
 
-    expect(queryByText('web')).toBeDefined();
+    expect(getByText('web')).toBeTruthy();
     expect(queryByText('ui')).toBeNull();
     expect(queryByText('api')).toBeNull();
   });
 
-  it('calls onOpen(issue, "spec") once when Spec is clicked and does not trigger main card action', () => {
+  it('does not retrigger the main open action when sibling Spec/Detail actions fire', () => {
     const onOpen = vi.fn();
     const { container } = render(
       <IssueCard issue={issue} onOpen={onOpen} isActive={false} hasSpec={false} />,

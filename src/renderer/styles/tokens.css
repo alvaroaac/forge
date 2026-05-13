@@ -233,13 +233,19 @@ button { font-family: inherit; }
   border-radius: var(--radius);
   padding: 9px 10px 9px 10px;
   display: flex; flex-direction: column; gap: 6px;
-  cursor: pointer;
   scroll-snap-align: start;
   transition: background 120ms, border-color 120ms, transform 120ms;
   position: relative;
 }
-.issue-card:hover {
+.issue-card-main {
+  cursor: pointer;
+}
+.issue-card-main:hover,
+.issue-card-main:focus-visible {
   background: var(--surface-2);
+}
+.issue-card:has(.issue-card-main:hover),
+.issue-card:has(.issue-card-main:focus-visible) {
   border-color: var(--border-2);
 }
 .issue-card-active {

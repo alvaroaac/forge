@@ -107,3 +107,17 @@ Task 33 spec-review closure (label rendering + Spec action edge):
   - `npm run typecheck`
   - `npm run lint`
   - `npm run format:check`
+
+Task 33 QA fix pass (important items):
+
+- Scope: `tests/renderer/issue-card.test.tsx`, `src/renderer/styles/tokens.css`
+- Changes:
+  - Replaced the non-failing `queryByText('web')` assertion with a real presence assertion using `getByText`.
+  - Renamed sibling-action propagation test title to describe non-bubbling between sibling action buttons and the main card action.
+  - Moved IssueCard pointer affordance from `.issue-card` to `.issue-card-main`; added hover/focus styling for `.issue-card-main` and matching `.issue-card:has(...)` border-state to keep visual feedback aligned with interactive regions.
+- Validation:
+  - `npx vitest run tests/renderer/issue-card.test.tsx`
+  - `npm run typecheck`
+  - `npm run lint`
+  - `npm run format:check`
+- Commit: `fix(renderer): align IssueCard affordances`
