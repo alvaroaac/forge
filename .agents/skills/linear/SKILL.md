@@ -32,6 +32,8 @@ const linear = createLinearClient({ teamKey: 'CSI', titlePrefix: '' });
 - **`findLabel(name)`** → `{ id, name } | null` — team + workspace labels, nullable.
 - **`listTeamLabels()`** → `Array<{ id, name, color, description, isGroup, parent }>` — every label scoped to the bound team (paginated). Excludes workspace labels.
 - **`findIssues()`** → `Map<normalizedTitle, { id, identifier, url, title }>` — every issue in the team whose title contains `titlePrefix`.
+- **`getCurrentUser()`** → `{ id, name, email }` — the authenticated viewer (per the OAuth token).
+- **`fetchAssignedIssues(assigneeId)`** → `Array<{ id, identifier, title, description, state: { name, type }, priority, labels: { nodes: [{ name }] }, url, updatedAt }>` — open issues on the bound team assigned to `assigneeId`. Excludes `completed`/`canceled` states server-side.
 - **`getIssue(identifier)`** → `{ id, identifier, title, url } | null` — fetch by identifier like `CSI-11`.
 - **`getProjectAndMilestones(projectName)`** → `{ projectId, milestoneMap }` — project lookup plus milestone name-to-id map.
 
