@@ -1,8 +1,38 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render } from '@testing-library/react';
 
-import { IssueGroup } from '../../src/renderer/components/issue-group';
 import type { Issue } from '../../src/shared/types';
+
+import { IssueGroup } from '../../src/renderer/components/issue-group';
+
+vi.mock('../../src/renderer/components/issue-card', () => ({
+  IssueCard: ({
+    issue,
+    onOpen,
+    isActive,
+    hasSpec,
+  }: {
+    issue: Issue;
+    onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
+    isActive: boolean;
+    hasSpec: boolean;
+  }) => (
+    <div
+      data-testid="issue-card"
+      data-issue-id={issue.id}
+      data-is-active={String(isActive)}
+      data-has-spec={String(hasSpec)}
+    >
+      <span>{issue.id}</span>
+      <button type="button" data-testid="open-spec" onClick={() => onOpen(issue, 'spec')}>
+        open spec
+      </button>
+      <button type="button" data-testid="open-detail" onClick={() => onOpen(issue, 'detail')}>
+        open detail
+      </button>
+    </div>
+  ),
+}));
 
 const issues: Issue[] = [
   {
@@ -82,17 +112,19 @@ describe('IssueGroup', () => {
       />,
     );
 
-    const cards = container.querySelectorAll('.issue-card');
+    const cards = container.querySelectorAll(
+      '[data-testid="issue-card"]',
+    ) as NodeListOf<HTMLElement>;
     expect(cards).toHaveLength(issues.length);
-    issues.forEach((iss) => {
-      const cardSelectors = container.querySelectorAll(
-        `button[aria-label="Open ${iss.id} ${iss.title}"]`,
-      );
-      expect(cardSelectors).toHaveLength(1);
+    const issueIds = Array.from(cards).map((card) => card.getAttribute('data-issue-id'));
+    expect(issueIds).toEqual(['FUL-1', 'FUL-3', 'FUL-2', 'FUL-4']);
+    cards.forEach((card) => {
+      expect(card.querySelector('[data-testid="open-spec"]')).toBeTruthy();
+      expect(card.querySelector('[data-testid="open-detail"]')).toBeTruthy();
     });
   });
 
-  it('splits issues into two rows', () => {
+  it('splits even-length issues into two rows', () => {
     const hasSpecFor = vi.fn().mockReturnValue(false);
 
     const { container } = render(
@@ -108,16 +140,42 @@ describe('IssueGroup', () => {
     const rows = container.querySelectorAll('.group-row');
     expect(rows).toHaveLength(2);
 
-    const [firstRowCards, secondRowCards] = [rows[0], rows[1]].map((row) =>
-      Array.from(row.querySelectorAll('.issue-card')),
+    const firstRowIssueIds = Array.from(rows[0].querySelectorAll('[data-testid="issue-card"]')).map(
+      (card) => card.getAttribute('data-issue-id'),
+    );
+    const secondRowIssueIds = Array.from(
+      rows[1].querySelectorAll('[data-testid="issue-card"]'),
+    ).map((card) => card.getAttribute('data-issue-id'));
+
+    expect(firstRowIssueIds).toEqual(['FUL-1', 'FUL-3']);
+    expect(secondRowIssueIds).toEqual(['FUL-2', 'FUL-4']);
+  });
+
+  it('splits odd-length issues into two rows with first row receiving the extra item', () => {
+    const hasSpecFor = vi.fn().mockReturnValue(false);
+
+    const { container } = render(
+      <IssueGroup
+        name="Urgent"
+        items={issues.slice(0, 3)}
+        onOpen={vi.fn()}
+        activeId={null}
+        hasSpecFor={hasSpecFor}
+      />,
     );
 
-    expect(firstRowCards).toHaveLength(2);
-    expect(secondRowCards).toHaveLength(2);
-    expect(firstRowCards[0].textContent).toContain('FUL-1');
-    expect(firstRowCards[1].textContent).toContain('FUL-3');
-    expect(secondRowCards[0].textContent).toContain('FUL-2');
-    expect(secondRowCards[1].textContent).toContain('FUL-4');
+    const rows = container.querySelectorAll('.group-row');
+    expect(rows).toHaveLength(2);
+
+    const firstRowIssueIds = Array.from(rows[0].querySelectorAll('[data-testid="issue-card"]')).map(
+      (card) => card.getAttribute('data-issue-id'),
+    );
+    const secondRowIssueIds = Array.from(
+      rows[1].querySelectorAll('[data-testid="issue-card"]'),
+    ).map((card) => card.getAttribute('data-issue-id'));
+
+    expect(firstRowIssueIds).toEqual(['FUL-1', 'FUL-3']);
+    expect(secondRowIssueIds).toEqual(['FUL-2']);
   });
 
   it('marks active issue card with active class', () => {
@@ -133,10 +191,16 @@ describe('IssueGroup', () => {
       />,
     );
 
-    const activeCard = container.querySelector('.issue-card-active');
-    const activeButton = container.querySelector('button[aria-label="Open FUL-2 second issue"]');
+    const activeCard = container.querySelector('[data-issue-id="FUL-2"]') as HTMLElement | null;
+    const inactiveCards = container.querySelectorAll('[data-issue-id]') as NodeListOf<HTMLElement>;
 
-    expect(activeCard).toBe(activeButton?.closest('.issue-card'));
+    expect(activeCard).not.toBeNull();
+    expect(activeCard?.getAttribute('data-is-active')).toBe('true');
+    expect(
+      Array.from(inactiveCards)
+        .filter((card) => card.getAttribute('data-issue-id') !== 'FUL-2')
+        .every((card) => card.getAttribute('data-is-active') === 'false'),
+    ).toBe(true);
   });
 
   it('passes hasSpecFor through to IssueCard', () => {
@@ -152,30 +216,18 @@ describe('IssueGroup', () => {
       />,
     );
 
-    const actionButtons = Array.from(
-      container.querySelectorAll('.issue-card .issue-card-actions .btn-ghost'),
-    );
-    const plainSpecButtons = actionButtons.filter(
-      (button) => button.textContent?.trim() === 'Spec',
-    );
-    const viewSpecButton = actionButtons.find(
-      (button) => button.textContent?.trim() === 'View Spec',
-    );
+    const cards = Array.from(container.querySelectorAll('[data-testid="issue-card"]'));
+    const specCards = cards.map((card) => card.getAttribute('data-has-spec'));
 
-    expect(viewSpecButton).toBeTruthy();
-    expect(plainSpecButtons).toHaveLength(3);
-
-    if (viewSpecButton) {
-      fireEvent.click(viewSpecButton);
-    }
-
-    expect(hasSpecFor).toHaveBeenCalledWith('FUL-1');
-    expect(hasSpecFor).toHaveBeenCalledWith('FUL-2');
-    expect(hasSpecFor).toHaveBeenCalledWith('FUL-3');
-    expect(hasSpecFor).toHaveBeenCalledWith('FUL-4');
+    expect(specCards).toEqual(['false', 'true', 'false', 'false']);
+    expect(hasSpecFor).toHaveBeenCalledTimes(4);
+    expect(hasSpecFor).toHaveBeenNthCalledWith(1, 'FUL-1');
+    expect(hasSpecFor).toHaveBeenNthCalledWith(2, 'FUL-3');
+    expect(hasSpecFor).toHaveBeenNthCalledWith(3, 'FUL-2');
+    expect(hasSpecFor).toHaveBeenNthCalledWith(4, 'FUL-4');
   });
 
-  it('calls onOpen with issue and which for card and action clicks', () => {
+  it('calls onOpen with issue and which for mocked card buttons with exact counts', () => {
     const onOpen = vi.fn();
     const hasSpecFor = vi.fn().mockReturnValue(false);
 
@@ -189,14 +241,23 @@ describe('IssueGroup', () => {
       />,
     );
 
-    const issueButtons = container.querySelectorAll('button.issue-card-main');
-    const firstCard = container.querySelectorAll('.issue-card')[0];
-    const firstCardButtons = firstCard.querySelectorAll('.issue-card-actions button');
+    const cards = container.querySelectorAll('[data-testid="issue-card"]');
 
-    fireEvent.click(issueButtons[0]);
-    fireEvent.click(firstCardButtons[1]);
+    cards.forEach((card) => {
+      const specButton = card.querySelector('[data-testid="open-spec"]') as HTMLButtonElement;
+      const detailButton = card.querySelector('[data-testid="open-detail"]') as HTMLButtonElement;
+      fireEvent.click(specButton);
+      fireEvent.click(detailButton);
+    });
 
-    expect(onOpen).toHaveBeenCalledWith(issues[0], 'spec');
-    expect(onOpen).toHaveBeenCalledWith(issues[0], 'detail');
+    expect(onOpen).toHaveBeenCalledTimes(8);
+    expect(onOpen).toHaveBeenNthCalledWith(1, issues[0], 'spec');
+    expect(onOpen).toHaveBeenNthCalledWith(2, issues[0], 'detail');
+    expect(onOpen).toHaveBeenNthCalledWith(3, issues[2], 'spec');
+    expect(onOpen).toHaveBeenNthCalledWith(4, issues[2], 'detail');
+    expect(onOpen).toHaveBeenNthCalledWith(5, issues[1], 'spec');
+    expect(onOpen).toHaveBeenNthCalledWith(6, issues[1], 'detail');
+    expect(onOpen).toHaveBeenNthCalledWith(7, issues[3], 'spec');
+    expect(onOpen).toHaveBeenNthCalledWith(8, issues[3], 'detail');
   });
 });
