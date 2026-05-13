@@ -92,5 +92,17 @@ Task 33 QA cleanup (IssueCard main-control semantics):
     - passed
   - `npm run lint`
     - passed with pre-existing warning in `tests/main/paths.test.ts` (`@typescript-eslint/no-unused-vars` for `vi`)
+- `npm run format:check`
+  - passed
+
+Task 33 spec-review closure (label rendering + Spec action edge):
+
+- Scope: `tests/renderer/issue-card.test.tsx`, `thoughts/tasks/phase1-mvp/impl/task-33/progress.md`.
+- Changes:
+  - Added test asserting `IssueCard` renders only `issue.labels[0]` and does not render subsequent labels.
+  - Added test asserting `Spec` button (`hasSpec={false}`) calls `onOpen(issue, 'spec')` exactly once and does not double-trigger card-level open.
+- Validation:
+  - `npx vitest run tests/renderer/issue-card.test.tsx`
+  - `npm run typecheck`
+  - `npm run lint`
   - `npm run format:check`
-    - passed

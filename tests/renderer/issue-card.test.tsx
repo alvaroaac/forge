@@ -53,11 +53,41 @@ describe('IssueCard', () => {
     expect(onOpen).toHaveBeenCalledWith(issue, 'detail');
   });
 
+  it('renders only the first label from issue.labels', () => {
+    const issueWithManyLabels: Issue = {
+      ...issue,
+      labels: ['web', 'ui', 'api'],
+    };
+    const onOpen = vi.fn();
+    const { container } = render(
+      <IssueCard issue={issueWithManyLabels} onOpen={onOpen} isActive={false} hasSpec />,
+    );
+    const { queryByText } = within(container);
+
+    expect(queryByText('web')).toBeDefined();
+    expect(queryByText('ui')).toBeNull();
+    expect(queryByText('api')).toBeNull();
+  });
+
+  it('calls onOpen(issue, "spec") once when Spec is clicked and does not trigger main card action', () => {
+    const onOpen = vi.fn();
+    const { container } = render(
+      <IssueCard issue={issue} onOpen={onOpen} isActive={false} hasSpec={false} />,
+    );
+    const { getByRole } = within(container);
+
+    fireEvent.click(getByRole('button', { name: /^spec$/i }));
+
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith(issue, 'spec');
+  });
+
   it('shows "View Spec" when hasSpec', () => {
     const onOpen = vi.fn();
-    const { getByRole } = render(
+    const { container } = render(
       <IssueCard issue={issue} onOpen={onOpen} isActive={false} hasSpec />,
     );
+    const { getByRole } = within(container);
 
     fireEvent.click(getByRole('button', { name: /view spec/i }));
 
