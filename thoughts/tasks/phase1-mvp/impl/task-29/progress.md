@@ -7,25 +7,26 @@ Model used: gpt-5.3-codex-spark
 Files changed:
 - src/main/index.ts
 - src/main/ipc/register.ts
-- src/main/linear-client.d.ts (minimal declaration for `.mjs` import typing)
+- src/main/linear-client.d.ts (removed; replaced with local typed dynamic loader in `register.ts`)
 - thoughts/tasks/phase1-mvp/impl/task-29/progress.md
 
 Build/tests run + results:
-- npm run build: failed (renderer pipeline blocked: `Could not resolve entry module "src/renderer/index.html"`; main/preload bundles still compile).
+- npm run build: failed (renderer pipeline blocked: `Could not resolve entry module "src/renderer/index.html"`; main/preload bundles still compile). This remains a Task 30 plan-order dependency.
 - npm run typecheck: passed.
 - npm run lint: passed with one warning (`tests/main/paths.test.ts:1:32` `'vi'` unused).
-- npm run format:check: passed after formatting `src/main/linear-client.d.ts`.
+- npm run format:check: passed.
 
 Commits made:
-- 8e3636e
+- fc24901
+- Repair commit: this Task 29 repair commit
 
 Self-review findings:
 - `registerAll` wires config/auth/linear/spec handlers exactly as planned.
-- Added type compatibility shim for `registerLinearHandlers` call to satisfy existing `(client: unknown)` handler signature while preserving behavior.
-- Added a narrow ambient declaration for the `linear.mjs` import to make TypeScript aware of the untyped reference module without broad repo typing.
+- Replaced the ambient declaration with a local, app-root-relative dynamic loader for `linear.mjs` in `register.ts` and removed explicit module typing from global declarations.
+- Replaced the compatibility cast in `registerLinearHandlers` wiring with a narrow adapter closure around `fetchIssues`.
 
 Tech-debt logged:
-- None.
+- [2026-05-13][Task 29] Deferred full build verification (`npm run build`) to Task 30 renderer scaffold completion (`src/renderer/index.html` missing). Reason: deferred-phase. Re-evaluate: when Task 30 provides renderer entry.
 
 Concerns:
 - Build cannot be fully validated yet because Task 30/renderer scaffold is not present in the current workspace state.

@@ -55,3 +55,4 @@ _Add entries when you knowingly cut a corner during implementation._
 - [2026-05-13][Task 1c] No Husky / pre-commit hooks. Reason: YAGNI for a single-developer Phase 1; CI gate is sufficient. Re-evaluate: Phase 5 packaging or when adding contributors.
 - [2026-05-13][Task 1c] No Dependabot / Renovate config. Reason: low churn during Phase 1. Re-evaluate: Phase 5 productization.
 - [2026-05-13][Task 26] Repeated IPC test helper scaffolding remains duplicated across IPC specs. Reason: deferred-phase. Re-evaluate: during Phase 1 cleanup after IPC handler coverage is complete.
+- [2026-05-13][Task 29] Deferred full `npm run build` verification until Task 30 creates `src/renderer/index.html`. Reason: deferred-phase. Re-evaluate: once Task 30 renderer scaffold is present.
