@@ -1,39 +1,9 @@
 import type { Issue } from '../../shared/types';
-import { inlineParts } from '../lib/markdown';
+import { renderInlineMarkdown } from './markdown-inline';
 
 type DetailTabProps = {
   issue: Issue;
 };
-
-function renderInline(line: string, keyPrefix: string) {
-  return inlineParts(line).map((part, index) => {
-    if (part.type === 'code') {
-      return (
-        <code key={`${keyPrefix}-${index}`} className="md-code">
-          {part.text}
-        </code>
-      );
-    }
-
-    if (part.type === 'ref') {
-      return (
-        <span key={`${keyPrefix}-${index}`} className="md-ref">
-          {part.text}
-        </span>
-      );
-    }
-
-    if (part.type === 'mention') {
-      return (
-        <span key={`${keyPrefix}-${index}`} className="md-mention">
-          {part.text}
-        </span>
-      );
-    }
-
-    return part.text;
-  });
-}
 
 export function DetailTab({ issue }: DetailTabProps) {
   if (issue.description.trim() === '') {
@@ -44,8 +14,9 @@ export function DetailTab({ issue }: DetailTabProps) {
     );
   }
 
-  const paragraphs = issue.description
-    .split('\n\n')
+  const normalizedDescription = issue.description.replace(/\r\n?/g, '\n');
+  const paragraphs = normalizedDescription
+    .split(/\n\s*\n/)
     .map((line) => line.replace(/\n/g, ' ').trim())
     .filter(Boolean);
 
@@ -55,7 +26,7 @@ export function DetailTab({ issue }: DetailTabProps) {
         <h3 className="md-h">Description</h3>
         <div className="md-body">
           {paragraphs.map((paragraph, index) => (
-            <p key={`p-${index}`}>{renderInline(paragraph, `p-${index}`)}</p>
+            <p key={`p-${index}`}>{renderInlineMarkdown(paragraph, `p-${index}`)}</p>
           ))}
         </div>
       </section>

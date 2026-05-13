@@ -24,14 +24,46 @@ describe('DetailTab', () => {
   it('renders heading and paragraph split when description has blank lines', () => {
     const issue: Issue = {
       ...baseIssue,
-      description: 'First paragraph line one.\nFirst paragraph line two.\n\nSecond paragraph.',
+      description:
+        'First paragraph line one.\nFirst paragraph line two.\n\nSecond paragraph line one.\nSecond paragraph line two.',
     };
 
     const { container } = render(<DetailTab issue={issue} />);
 
     expect(container.querySelector('.detail-tab')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Description' })).toBeTruthy();
-    expect(container.querySelectorAll('.md-body > p')).toHaveLength(2);
+    const paragraphs = container.querySelectorAll('.md-body > p');
+    expect(paragraphs).toHaveLength(2);
+    expect(paragraphs[0].textContent).toBe('First paragraph line one. First paragraph line two.');
+    expect(paragraphs[1].textContent).toBe('Second paragraph line one. Second paragraph line two.');
+  });
+
+  it('splits paragraphs when CRLF blank lines are used', () => {
+    const issue: Issue = {
+      ...baseIssue,
+      description: 'P1\r\n\r\nP2',
+    };
+
+    const { container } = render(<DetailTab issue={issue} />);
+
+    const paragraphs = container.querySelectorAll('.md-body > p');
+    expect(paragraphs).toHaveLength(2);
+    expect(paragraphs[0].textContent).toBe('P1');
+    expect(paragraphs[1].textContent).toBe('P2');
+  });
+
+  it('splits paragraphs on whitespace-only blank lines', () => {
+    const issue: Issue = {
+      ...baseIssue,
+      description: 'P1\n \nP2',
+    };
+
+    const { container } = render(<DetailTab issue={issue} />);
+
+    const paragraphs = container.querySelectorAll('.md-body > p');
+    expect(paragraphs).toHaveLength(2);
+    expect(paragraphs[0].textContent).toBe('P1');
+    expect(paragraphs[1].textContent).toBe('P2');
   });
 
   it('renders fallback when description is empty', () => {
@@ -42,8 +74,9 @@ describe('DetailTab', () => {
 
     const { container } = render(<DetailTab issue={issue} />);
 
-    expect(container.querySelector('.drawer-empty')).toBeTruthy();
-    expect(screen.getByText('No description from Linear.')).toBeTruthy();
+    const fallback = container.querySelector('.drawer-empty .mono.dim');
+    expect(fallback).toBeTruthy();
+    expect(fallback?.textContent).toBe('No description from Linear.');
   });
 
   it('renders fallback when description is only whitespace', () => {
@@ -54,8 +87,9 @@ describe('DetailTab', () => {
 
     const { container } = render(<DetailTab issue={issue} />);
 
-    expect(container.querySelector('.drawer-empty')).toBeTruthy();
-    expect(screen.getByText('No description from Linear.')).toBeTruthy();
+    const fallback = container.querySelector('.drawer-empty .mono.dim');
+    expect(fallback).toBeTruthy();
+    expect(fallback?.textContent).toBe('No description from Linear.');
   });
 
   it('renders single newlines inside a paragraph as spaces', () => {

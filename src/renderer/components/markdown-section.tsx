@@ -1,4 +1,4 @@
-import { inlineParts } from '../lib/markdown';
+import { renderInlineMarkdown } from './markdown-inline';
 
 type MarkdownSectionProps = {
   h: string;
@@ -16,36 +16,6 @@ function getLineKind(line: string): LineKind {
   return 'paragraph';
 }
 
-function renderInline(line: string, keyPrefix: number) {
-  return inlineParts(line).map((part, index) => {
-    if (part.type === 'code') {
-      return (
-        <code key={`${keyPrefix}-${index}`} className="md-code">
-          {part.text}
-        </code>
-      );
-    }
-
-    if (part.type === 'ref') {
-      return (
-        <span key={`${keyPrefix}-${index}`} className="md-ref">
-          {part.text}
-        </span>
-      );
-    }
-
-    if (part.type === 'mention') {
-      return (
-        <span key={`${keyPrefix}-${index}`} className="md-mention">
-          {part.text}
-        </span>
-      );
-    }
-
-    return part.text;
-  });
-}
-
 function renderListItems(lines: string[], startIndex: number, kind: 'bullet' | 'numbered') {
   const items: JSX.Element[] = [];
   let index = startIndex;
@@ -61,7 +31,7 @@ function renderListItems(lines: string[], startIndex: number, kind: 'bullet' | '
       items.push(
         <li key={index} className="md-li">
           <span className="md-li-mark mono">•</span>
-          <span>{renderInline(text, index)}</span>
+          <span>{renderInlineMarkdown(text, index)}</span>
         </li>,
       );
     } else {
@@ -71,7 +41,7 @@ function renderListItems(lines: string[], startIndex: number, kind: 'bullet' | '
       items.push(
         <li key={index} className="md-li">
           <span className="md-li-mark mono">{mark}</span>
-          <span>{renderInline(text, index)}</span>
+          <span>{renderInlineMarkdown(text, index)}</span>
         </li>,
       );
     }
@@ -96,7 +66,7 @@ function renderBody(lines: string[]) {
 
     const kind = getLineKind(trimmed);
     if (kind === 'paragraph') {
-      output.push(<p key={`p-${blockKey++}`}>{renderInline(trimmed, blockKey)}</p>);
+      output.push(<p key={`p-${blockKey++}`}>{renderInlineMarkdown(trimmed, blockKey)}</p>);
       i += 1;
       continue;
     }
