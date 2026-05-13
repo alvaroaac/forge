@@ -462,6 +462,43 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     return data.viewer;
   }
 
+  /**
+   * All open issues assigned to assigneeId on the bound team.
+   *
+   * @param {string} assigneeId
+   * @returns {Promise<Array<{
+   *   id: string, identifier: string, title: string, description: string,
+   *   state: { name: string, type: string },
+   *   priority: number,
+   *   labels: { nodes: Array<{ name: string }> },
+   *   issueType: { name: string } | null,
+   *   url: string, updatedAt: string,
+   * }>>}
+   */
+  async function fetchAssignedIssues(assigneeId) {
+    const data = await linearRequest(`
+      query($assigneeId: ID!, $teamKey: String!) {
+        issues(
+          first: 250,
+          filter: {
+            assignee: { id: { eq: $assigneeId } }
+            team: { key: { eq: $teamKey } }
+            state: { type: { nin: ["completed", "canceled"] } }
+          }
+        ) {
+          nodes {
+            id identifier title description
+            state { name type }
+            priority
+            labels { nodes { name } }
+            url updatedAt
+          }
+        }
+      }
+    `, { assigneeId, teamKey });
+    return data.issues.nodes;
+  }
+
   return {
     getTeamId,
     getStateId,
@@ -479,5 +516,6 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     createRelation,
     createComment,
     getCurrentUser,
+    fetchAssignedIssues,
   };
 }
