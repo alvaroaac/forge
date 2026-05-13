@@ -42,6 +42,7 @@ Commits made
 - `0636cd4` — `ci: align PR test checklist with bootstrap parity`
 - `d37ee63` — `docs(task-1c): record PR checklist repair commit`
 - `911fc71` — `docs(task-1c): include repair commit hash`
+- `c28903d` — `docs(task-1c): include complete Task 1c commit trail`
 
 Concerns / external steps awaiting approval
 - **BLOCKED** Steps 3/4/5 from task dispatch remain blocked by user instruction (do not create/push GitHub repo, no remote verification, no push).
