@@ -7,6 +7,7 @@ import type {
   IssueStatus,
   Priority,
 } from '../../src/shared/types';
+import { ok, err, type Result } from '../../src/shared/result';
 
 describe('shared types', () => {
   it('Issue has required fields', () => {
@@ -28,5 +29,14 @@ describe('shared types', () => {
       claudeCode: boolean;
       codex: boolean;
     }>();
+  });
+
+  it('Spec has expected required fields', () => {
+    expectTypeOf<Spec>().toHaveProperty('issueId').toEqualTypeOf<string>();
+  });
+
+  it('Result helpers preserve custom error types', () => {
+    expectTypeOf(ok<string, 'not-found'>('value')).toEqualTypeOf<Result<string, 'not-found'>>();
+    expectTypeOf(err<number>(42)).toEqualTypeOf<Result<never, number>>();
   });
 });
