@@ -1,5 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+interface LinearSkillModule {
+  createLinearClient(opts: { teamKey: string; titlePrefix: string }): {
+    getCurrentUser: () => Promise<{ id: string; name: string; email: string }>;
+  };
+}
+
+async function getLinearSkillModule(): Promise<LinearSkillModule> {
+  const modulePath = '../../.agents/skills/linear/reference/linear.mjs';
+  const mod = await import(modulePath as string);
+  return mod as unknown as LinearSkillModule;
+}
+
 // Intercept fetch
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
@@ -14,8 +26,7 @@ describe('linear client — getCurrentUser', () => {
     fetchMock.mockResolvedValueOnce({
       json: async () => ({ data: { viewer: { id: 'u1', name: 'Al', email: 'a@b' } } }),
     });
-    // @ts-expect-error linear skill module is an mjs reference file without generated d.ts in tests
-    const { createLinearClient } = await import('../../.agents/skills/linear/reference/linear.mjs');
+    const { createLinearClient } = await getLinearSkillModule();
     const client = createLinearClient({ teamKey: 'FUL', titlePrefix: '' });
     const me = await client.getCurrentUser();
     expect(me).toEqual({ id: 'u1', name: 'Al', email: 'a@b' });
