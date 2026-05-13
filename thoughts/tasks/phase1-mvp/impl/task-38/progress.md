@@ -60,6 +60,27 @@ Spec fix commit:
 Concerns:
 - None.
 
+## QA Fix Pass (2026-05-13)
+
+- `src/renderer/lib/markdown.ts` — Added `inlineParts(s)` tokenization helper and kept `highlightInline` behavior unchanged for backwards compatibility.
+- `src/renderer/components/markdown-section.tsx` — Replaced all `dangerouslySetInnerHTML` usage with safe React node rendering from `inlineParts`, added explicit list-block rendering for contiguous bullet and numbered lines, and removed raw HTML injection.
+- `tests/renderer/markdown.test.tsx` — Added regression coverage for:
+  - CRLF-safe `splitSections` parsing.
+  - `<li>` parent validity and list/listitem role expectations.
+  - Malicious HTML-like inline text staying text-only in output (`<img ...>` is not rendered as a DOM `img` node).
+  - Existing inline token highlights continue to render as React nodes.
+
+Validation (QA-fix pass):
+- `npx vitest run tests/renderer/markdown.test.tsx` ✅
+- `npm run typecheck` ✅
+- `npm run lint` ✅ (existing warning remains in `tests/main/paths.test.ts`: `vi` is defined but never used)
+- `npm run format:check` ✅
+- `npm run build` ✅
+
+Commit:
+- `fix(renderer): render markdown inline tokens safely`
+
 Commits:
 - `2382fb8e1a182cda6fb4101af87700dd7bc21bfd` — `feat(renderer): markdown section + inline highlighter`
 - `367915ad1fbfcd12f659e1f768ac0991f0c966a3` — `fix(renderer): preserve markdown preface sections`
+- `fix(renderer): render markdown inline tokens safely`

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 
 import { MarkdownSection } from '../../src/renderer/components/markdown-section';
 import { highlightInline, splitSections, type Section } from '../../src/renderer/lib/markdown';
@@ -7,10 +7,6 @@ import { highlightInline, splitSections, type Section } from '../../src/renderer
 const sectionFixture = (h: string, body: string) => ({ h, body });
 
 describe('highlightInline', () => {
-  afterEach(() => {
-    cleanup();
-  });
-
   it('wraps code spans, section refs, and mentions', () => {
     const input = '`run()` is ready for §3.2 @alice';
     const output = highlightInline(input);
@@ -57,6 +53,18 @@ describe('splitSections', () => {
 
     expect(sections).toEqual<Section[]>([{ h: '', body: md }]);
   });
+
+  it('normalizes CRLF inputs before splitting', () => {
+    const md =
+      'Top note\r\n\r\n## Install\r\nRun setup first.\r\n- then verify\r\n## Verify\r\nRun tests and ship';
+    const sections = splitSections(md);
+
+    expect(sections).toEqual<Section[]>([
+      { h: '', body: 'Top note' },
+      { h: 'Install', body: 'Run setup first.\n- then verify' },
+      { h: 'Verify', body: 'Run tests and ship' },
+    ]);
+  });
 });
 
 describe('MarkdownSection', () => {
@@ -73,15 +81,25 @@ describe('MarkdownSection', () => {
 
     expect(container.querySelector('.md-section')).toBeTruthy();
     expect(container.querySelector('.md-h')?.textContent).toBe('Scope');
-    expect(container.querySelectorAll('p')).toHaveLength(1);
+    expect(container.querySelectorAll('.md-body > p')).toHaveLength(1);
+    expect(container.querySelectorAll('ul.md-list')).toHaveLength(1);
+    expect(container.querySelectorAll('ol.md-list')).toHaveLength(1);
     expect(container.querySelectorAll('li.md-li')).toHaveLength(5);
+
     expect(container.querySelectorAll('li.md-li .md-li-mark')[0].textContent).toBe('•');
     expect(container.querySelectorAll('li.md-li .md-li-mark')[3].textContent).toBe('1.');
     expect(container.querySelectorAll('li.md-li .md-li-mark')[4].textContent).toBe('2.');
-    expect(container.textContent).not.toContain('\n\n');
+
+    expect(screen.getAllByRole('list')).toHaveLength(2);
+    expect(screen.getAllByRole('listitem')).toHaveLength(5);
+
+    for (const item of container.querySelectorAll('li.md-li')) {
+      expect(item.parentElement?.tagName.toLowerCase()).toMatch(/^(ul|ol)$/);
+      expect(item.parentElement?.getAttribute('role')).toBeNull();
+    }
   });
 
-  it('highlights inline tokens inside rendered lines', () => {
+  it('highlights inline tokens as React nodes', () => {
     const section: Section = sectionFixture(
       '',
       '`boot` before @ops in §9.1\n1. Use `cargo` and mention @alice',
@@ -95,5 +113,13 @@ describe('MarkdownSection', () => {
     expect(codeSpans[1].textContent).toBe('cargo');
     expect(container.querySelectorAll('.md-ref')).toHaveLength(1);
     expect(container.querySelectorAll('.md-mention')).toHaveLength(2);
+  });
+
+  it('renders malicious HTML-like content as literal text', () => {
+    const section: Section = sectionFixture('', '<img src=x onerror=alert(1)>');
+    const { container } = render(<MarkdownSection h={section.h} body={section.body} />);
+
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('.md-body')?.textContent).toBe('<img src=x onerror=alert(1)>');
   });
 });

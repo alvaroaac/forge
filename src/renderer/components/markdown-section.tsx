@@ -1,4 +1,4 @@
-import { highlightInline } from '../lib/markdown';
+import { inlineParts } from '../lib/markdown';
 
 type MarkdownSectionProps = {
   h: string;
@@ -8,25 +8,114 @@ type MarkdownSectionProps = {
 const BULLET_RE = /^[•\-*]\s+/;
 const NUMBERED_RE = /^(\d+)\.\s+/;
 
-function renderLine(line: string, key: number) {
-  const trimmed = line.trim();
-  if (!trimmed) return null;
+type LineKind = 'paragraph' | 'bullet' | 'numbered';
 
-  const isBullet = BULLET_RE.test(trimmed);
-  const isNum = NUMBERED_RE.test(trimmed);
-  if (!isBullet && !isNum) {
-    return <p key={key} dangerouslySetInnerHTML={{ __html: highlightInline(trimmed) }} />;
+function getLineKind(line: string): LineKind {
+  if (BULLET_RE.test(line)) return 'bullet';
+  if (NUMBERED_RE.test(line)) return 'numbered';
+  return 'paragraph';
+}
+
+function renderInline(line: string, keyPrefix: number) {
+  return inlineParts(line).map((part, index) => {
+    if (part.type === 'code') {
+      return (
+        <code key={`${keyPrefix}-${index}`} className="md-code">
+          {part.text}
+        </code>
+      );
+    }
+
+    if (part.type === 'ref') {
+      return (
+        <span key={`${keyPrefix}-${index}`} className="md-ref">
+          {part.text}
+        </span>
+      );
+    }
+
+    if (part.type === 'mention') {
+      return (
+        <span key={`${keyPrefix}-${index}`} className="md-mention">
+          {part.text}
+        </span>
+      );
+    }
+
+    return part.text;
+  });
+}
+
+function renderListItems(lines: string[], startIndex: number, kind: 'bullet' | 'numbered') {
+  const items: JSX.Element[] = [];
+  let index = startIndex;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    const trimmed = line.trim();
+    const nextKind = getLineKind(trimmed);
+    if (!trimmed || nextKind !== kind) break;
+
+    if (kind === 'bullet') {
+      const text = trimmed.replace(BULLET_RE, '');
+      items.push(
+        <li key={index} className="md-li">
+          <span className="md-li-mark mono">•</span>
+          <span>{renderInline(text, index)}</span>
+        </li>,
+      );
+    } else {
+      const match = trimmed.match(NUMBERED_RE);
+      const mark = `${match?.[1]}.`;
+      const text = trimmed.replace(NUMBERED_RE, '');
+      items.push(
+        <li key={index} className="md-li">
+          <span className="md-li-mark mono">{mark}</span>
+          <span>{renderInline(text, index)}</span>
+        </li>,
+      );
+    }
+
+    index += 1;
   }
 
-  const mark = isNum ? `${trimmed.match(NUMBERED_RE)?.[1]}.` : '•';
-  const text = trimmed.replace(BULLET_RE, '').replace(NUMBERED_RE, '');
+  return { items, nextIndex: index };
+}
 
-  return (
-    <li key={key} className="md-li">
-      <span className="md-li-mark mono">{mark}</span>
-      <span dangerouslySetInnerHTML={{ __html: highlightInline(text) }} />
-    </li>
-  );
+function renderBody(lines: string[]) {
+  const output: JSX.Element[] = [];
+  let i = 0;
+  let blockKey = 0;
+
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) {
+      i += 1;
+      continue;
+    }
+
+    const kind = getLineKind(trimmed);
+    if (kind === 'paragraph') {
+      output.push(<p key={`p-${blockKey++}`}>{renderInline(trimmed, blockKey)}</p>);
+      i += 1;
+      continue;
+    }
+
+    const ListTag = kind === 'bullet' ? 'ul' : 'ol';
+    const { items, nextIndex } = renderListItems(lines, i, kind);
+    output.push(
+      <ListTag
+        key={`list-${blockKey++}`}
+        className="md-list"
+        style={{ margin: 0, padding: 0, listStyle: 'none' }}
+      >
+        {items}
+      </ListTag>,
+    );
+    i = nextIndex;
+  }
+
+  return output;
 }
 
 export function MarkdownSection({ h, body }: MarkdownSectionProps) {
@@ -35,7 +124,7 @@ export function MarkdownSection({ h, body }: MarkdownSectionProps) {
   return (
     <section className="md-section">
       {h ? <h3 className="md-h">{h}</h3> : null}
-      <div className="md-body">{lines.map(renderLine)}</div>
+      <div className="md-body">{renderBody(lines)}</div>
     </section>
   );
 }
