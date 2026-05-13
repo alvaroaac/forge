@@ -7,8 +7,8 @@ import { StatusDot } from '../../src/renderer/components/status-dot';
 
 describe('atoms', () => {
   it('StatusDot renders aria-label of state', () => {
-    const { getByLabelText } = render(<StatusDot state="connected" />);
-    expect(getByLabelText('connected')).toBeTruthy();
+    const { getByRole } = render(<StatusDot state="connected" />);
+    expect(getByRole('img', { name: 'connected' })).toBeTruthy();
   });
 
   it('PriorityChip renders label for priority', () => {
@@ -27,14 +27,16 @@ describe('atoms', () => {
   });
 
   it('PillTab toggles active class and shows count', () => {
-    const { getByText, container } = render(
+    const { getByText, getByRole, container } = render(
       <PillTab active count={3} onClick={() => {}}>
         Todo
       </PillTab>,
     );
+    const button = getByRole('button', { name: 'Todo3' });
 
     expect(getByText('Todo')).toBeTruthy();
     expect(getByText('3')).toBeTruthy();
     expect(container.querySelector('.tab-active')).toBeTruthy();
+    expect(button.getAttribute('type')).toBe('button');
   });
 });

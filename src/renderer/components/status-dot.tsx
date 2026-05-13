@@ -20,6 +20,7 @@ export function StatusDot({ state, size = 6 }: StatusDotProps) {
   return (
     <span
       aria-label={state}
+      role="img"
       style={{
         display: 'inline-block',
         width: size,
