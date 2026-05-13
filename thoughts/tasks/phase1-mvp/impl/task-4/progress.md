@@ -42,6 +42,7 @@ Tech-debt logged
 Commits made
 
 - `cdf8ae8` — `feat(linear): add getCurrentUser() to client`
+- `40d1d5b` — `fix(test): type linear dynamic import in getCurrentUser spec`
 
 Concerns
 
