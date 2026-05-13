@@ -29,4 +29,5 @@ jobs:
         run: npm run typecheck
 
       - name: Unit tests
-        run: npm run test
+        # Keep bootstrap green until real tests are introduced in Task 2+.
+        run: npm run test -- --passWithNoTests
