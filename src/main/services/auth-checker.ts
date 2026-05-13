@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tryExec } from '../lib/exec';
+import type { AuthStatus } from '../../shared/types';
 
 export async function checkCli(command: string): Promise<boolean> {
   const r = await tryExec(command);
@@ -16,4 +17,13 @@ export async function checkLinearToken(path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function checkAll(opts: { linearTokenPath: string }): Promise<AuthStatus> {
+  const [linear, claudeCode, codex] = await Promise.all([
+    checkLinearToken(opts.linearTokenPath),
+    checkCli('claude --version'),
+    checkCli('codex --version'),
+  ]);
+  return { linear, claudeCode, codex };
 }

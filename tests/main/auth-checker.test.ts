@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { checkCli, checkLinearToken } from '../../src/main/services/auth-checker';
+import { checkAll, checkCli, checkLinearToken } from '../../src/main/services/auth-checker';
 import { tryExec } from '../../src/main/lib/exec';
 
 vi.mock('../../src/main/lib/exec', () => ({
@@ -45,5 +45,17 @@ describe('checkLinearToken', () => {
     const p = join(dir, 'linear.json');
     writeFileSync(p, JSON.stringify({ access_token: 'abc' }), 'utf-8');
     expect(await checkLinearToken(p)).toBe(true);
+  });
+});
+
+describe('checkAll', () => {
+  it('composes Linear + claude + codex into AuthStatus', async () => {
+    tryExecMock
+      .mockResolvedValueOnce({ ok: true, value: { stdout: 'v', stderr: '' } })
+      .mockResolvedValueOnce({ ok: false, error: new Error('') });
+    const p = join(dir, 'linear.json');
+    writeFileSync(p, JSON.stringify({ access_token: 'abc' }), 'utf-8');
+    const status = await checkAll({ linearTokenPath: p });
+    expect(status).toEqual({ linear: true, claudeCode: true, codex: false });
   });
 });
