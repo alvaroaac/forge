@@ -49,4 +49,4 @@ Concerns:
 
 Commits:
 - `2382fb8e1a182cda6fb4101af87700dd7bc21bfd` — `feat(renderer): markdown section + inline highlighter`
-- `b0f5fd6cf7a6a45ce5f5f4ed4f7a4f9b4a6c5a0` — `fix(renderer): preserve markdown preface sections`
+- `367915ad1fbfcd12f659e1f768ac0991f0c966a3` — `fix(renderer): preserve markdown preface sections`
