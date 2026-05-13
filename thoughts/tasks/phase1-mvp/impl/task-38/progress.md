@@ -10,6 +10,16 @@ Files changed:
 - tests/renderer/markdown.test.tsx
 - thoughts/tasks/phase1-mvp/impl/task-38/progress.md
 
+Additional fix pass:
+- src/renderer/lib/markdown.ts — changed heading preface push guard in `splitSections` to require non-empty text after `trim()` when no heading is set.
+- tests/renderer/markdown.test.tsx — added regression test for whitespace-only markdown before first heading.
+
+Validation (spec-fix pass):
+- `npx vitest run tests/renderer/markdown.test.tsx`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run format:check`
+
 TDD evidence:
 - Added `tests/renderer/markdown.test.tsx` first with coverage for:
   - `highlightInline` transforming backtick code, `§` refs, and `@` mentions
@@ -43,6 +53,9 @@ Self-review:
 
 Tech-debt logged:
 - None added.
+
+Spec fix commit:
+- `fix(renderer): skip empty markdown prefaces`
 
 Concerns:
 - None.

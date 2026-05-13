@@ -44,6 +44,13 @@ describe('splitSections', () => {
     ]);
   });
 
+  it('does not preserve whitespace-only content before first heading', () => {
+    const md = '\n\n## A\nbody';
+    const sections = splitSections(md);
+
+    expect(sections).toEqual<Section[]>([{ h: 'A', body: 'body' }]);
+  });
+
   it('returns one section when no heading is present', () => {
     const md = 'A plain paragraph with no heading';
     const sections = splitSections(md);

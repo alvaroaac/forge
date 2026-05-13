@@ -22,7 +22,7 @@ export function splitSections(md: string): Section[] {
   for (const line of lines) {
     const m = /^##\s+(.*)$/.exec(line);
     if (m) {
-      if (current.h || current.body) sections.push(current);
+      if (current.h || current.body.trim()) sections.push(current);
       current = { h: m[1] ?? '', body: '' };
       continue;
     }
