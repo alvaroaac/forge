@@ -16,7 +16,7 @@ Manual smoke status
 
 Commits
 - `504549e6f098ffc62fe9e735390537dd492d0667` `feat(renderer): App composition wiring all hooks`
-- Pending docs-only follow-up for this updated manual smoke evidence.
+- `64da0ee` `docs(tasks): record Task 45 smoke result`
 
 Self-review findings
 - `hasSpecFor(id)` now keeps the cosmetic spec badge approximate by tracking loaded specs in a renderer-side `Set` and checking the in-flight drawer spec, matching the task guidance.
