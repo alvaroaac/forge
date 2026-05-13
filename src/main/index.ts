@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'node:path';
 import { registerAll } from './ipc/register';
+import { resolveAppRoot } from './lib/app-root';
 
 async function createWindow(): Promise<void> {
   const win = new BrowserWindow({
@@ -24,14 +25,19 @@ async function createWindow(): Promise<void> {
   }
 }
 
-app.whenReady().then(async () => {
-  await registerAll(ipcMain, app.getAppPath());
+async function start(): Promise<void> {
+  await registerAll(ipcMain, resolveAppRoot(app.getAppPath()));
   await createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       void createWindow();
     }
   });
+}
+
+app.whenReady().then(start).catch((error: unknown) => {
+  console.error('Forge startup failed:', error);
+  app.exit(1);
 });
 
 app.on('window-all-closed', () => {
