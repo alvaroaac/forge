@@ -36,6 +36,7 @@ Tech-debt logged
 
 Commits made
 - `14b1ecd` — `feat(main): map raw Linear → internal Issue`
+- `5918fb8` — `docs(task-18): record red-step evidence`
 
 Concerns
 - Warning in existing lint output is unrelated to this task and pre-existing.
