@@ -38,6 +38,26 @@ Tech-debt logged:
 Commits made:
 - `feat(main): stream spec markdown from Claude API`
 
+QA fix updates:
+- `src/main/services/spec-generator.ts`:
+  - Replaced `AsyncIterable<unknown>` and loose event casting with SDK `MessageStreamEvent` typing.
+  - Kept `extractDelta` typed against the stream event union and narrowed text deltas safely.
+- `tests/main/spec-generator.test.ts`:
+  - Added assertions for `messages.stream` call args (`model`, `max_tokens: 2048`, `system`, and single user message with input content).
+  - Added a test proving non-text/irrelevant events do not emit chunks or alter final output.
+- `thoughts/tasks/phase1-mvp/impl/task-21/progress.md`:
+  - Added this QA-fix section with evidence and test artifacts.
+
+QA fix checks:
+- `npx vitest run tests/main/spec-generator.test.ts` ✅ (2 tests passing)
+- `npm run lint` ⚠️ (pre-existing warning in `tests/main/paths.test.ts`)
+- `npm run typecheck` ✅
+- `npm run format:check` ✅
+
+Commits made:
+- `feat(main): stream spec markdown from Claude API` (initial task implementation)
+- `fix(main): tighten spec stream typing and coverage` (`25dd15d`)
+
 Concerns:
 - None for functional scope.
 - Lint has a pre-existing `@typescript-eslint/no-unused-vars` warning unrelated to this task in `tests/main/paths.test.ts`.
