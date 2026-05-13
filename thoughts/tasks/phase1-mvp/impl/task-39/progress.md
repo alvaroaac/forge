@@ -45,7 +45,7 @@ Self-review:
 
 Commits:
 - `0dd6443a11327466bcf0a37d70f11f056181ea43` — `feat(renderer): DetailTab with Linear description`
-- `caf3e9d` — `fix(renderer): share safe markdown inline rendering`
+- `ad2a87b71c4524f77fbfb2fc654ef0ca7c221fba` — `fix(renderer): share safe markdown inline rendering`
 
 Concerns:
 - None.
