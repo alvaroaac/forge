@@ -8,12 +8,16 @@ export function useIssues() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [lastSync, setLastSync] = useState<number>(0);
   const isActiveRef = useRef(true);
+  const refreshIdRef = useRef(0);
 
   const refresh = useCallback(async (): Promise<void> => {
+    const refreshId = refreshIdRef.current + 1;
+    refreshIdRef.current = refreshId;
+
     try {
       const nextIssues = await window.forge.linear.refresh();
 
-      if (!isActiveRef.current) {
+      if (!isActiveRef.current || refreshId !== refreshIdRef.current) {
         return;
       }
 
@@ -25,11 +29,15 @@ export function useIssues() {
   }, []);
 
   useEffect(() => {
+    isActiveRef.current = true;
+
+    let cancelled = false;
+
     const syncOnMount = async () => {
       try {
         const cachedIssues = await window.forge.linear.fetch();
 
-        if (!isActiveRef.current) {
+        if (cancelled || !isActiveRef.current) {
           return;
         }
 
@@ -47,6 +55,7 @@ export function useIssues() {
     }, POLL_MS);
 
     return () => {
+      cancelled = true;
       isActiveRef.current = false;
       window.clearInterval(intervalId);
     };

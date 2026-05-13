@@ -1,4 +1,5 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useIssues } from '../../src/renderer/hooks/use-issues';
@@ -87,6 +88,32 @@ describe('useIssues', () => {
     });
 
     expect(result.current.issues[0]?.id).toBe('FRESH');
+
+    await act(async () => {
+      mountRefresh.resolve([createIssue('STALE')]);
+      await mountRefresh.promise;
+    });
+
+    expect(result.current.issues[0]?.id).toBe('FRESH');
+  });
+
+  it('survives the StrictMode setup-cleanup-setup cycle and still seeds then refreshes', async () => {
+    const fetch = vi.fn().mockResolvedValue([createIssue('CACHE')]);
+    const refresh = vi.fn().mockResolvedValue([createIssue('FRESH')]);
+    setForge(fetch, refresh);
+
+    const { result } = renderHook(() => useIssues(), {
+      wrapper: StrictMode,
+    });
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    await waitFor(() => {
+      expect(refresh).toHaveBeenCalledTimes(1);
+      expect(result.current.issues[0]?.id).toBe('FRESH');
+    });
   });
 
   it('updates lastSync when refresh succeeds', async () => {

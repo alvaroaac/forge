@@ -1,6 +1,7 @@
 # Task 43 Progress
 Status: DONE
 Model: gpt-5.4-mini high
+
 Files changed
 - `src/renderer/hooks/use-issues.ts`
 - `tests/renderer/use-issues.test.ts`
@@ -8,19 +9,19 @@ Files changed
 
 Tests run + results
 - `npx vitest run tests/renderer/use-issues.test.ts`
-  - Initial run: failed as expected because `src/renderer/hooks/use-issues.ts` did not exist yet.
-  - Final run: passed, 6 tests passed.
+  - Passed, 7 tests passed.
 - `npx eslint src/renderer/hooks/use-issues.ts tests/renderer/use-issues.test.ts`
   - Passed.
 - `npm run typecheck`
   - Passed.
 
 Commits
-- `df17de3` `feat(renderer): use-issues seed-then-refresh + polling`
+- `fix(renderer): make useIssues StrictMode-safe`
 
 Self-review findings
-- Hook uses a mount guard plus swallowed preload rejections to avoid post-unmount updates and unhandled promise rejections.
-- Polling is started on mount and cleared on cleanup, with no extra error state or retry surface.
+- Hook resets its mounted guard on every effect setup, so the StrictMode setup-cleanup-setup cycle no longer leaves the hook inert.
+- Refreshes are ordered by request id, which keeps stale overlapping results from clobbering newer data.
+- Polling is still started on mount and cleared on cleanup, with no extra error state or retry surface.
 
 Tech-debt logged
 - None.
