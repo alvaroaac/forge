@@ -2,6 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { Spec, SpecStreamChunk } from '../../shared/types';
 
+function toGeneratedSpec(issueId: string, content: string): Spec {
+  return {
+    issueId,
+    content,
+    generatedAt: new Date().toISOString(),
+    approved: false,
+  };
+}
+
 export function useSpecStream(issueId: string | null) {
   const [spec, setSpec] = useState<Spec | null>(null);
   const [streaming, setStreaming] = useState('');
@@ -9,55 +18,63 @@ export function useSpecStream(issueId: string | null) {
   const currentIssueIdRef = useRef<string | null>(null);
   const setupVersionRef = useRef(0);
 
-  useEffect(() => {
-    setupVersionRef.current += 1;
-    const setupVersion = setupVersionRef.current;
-    currentIssueIdRef.current = issueId;
+  const isCurrentIssue = useCallback((targetIssueId: string): boolean => {
+    return currentIssueIdRef.current === targetIssueId;
+  }, []);
 
-    if (!issueId) {
-      setSpec(null);
-      setStreaming('');
-      setIsStreaming(false);
-      return;
-    }
+  const isCurrentRun = useCallback(
+    (targetIssueId: string, setupVersion: number): boolean => {
+      return isCurrentIssue(targetIssueId) && setupVersionRef.current === setupVersion;
+    },
+    [isCurrentIssue],
+  );
 
-    let cancelled = false;
-
+  const resetStreamState = useCallback((): void => {
     setSpec(null);
     setStreaming('');
     setIsStreaming(false);
+  }, []);
 
-    void window.forge.spec
-      .get(issueId)
-      .then((nextSpec) => {
-        if (cancelled) {
-          return;
-        }
-
-        if (setupVersionRef.current !== setupVersion) {
-          return;
-        }
-
-        if (currentIssueIdRef.current !== issueId) {
-          return;
-        }
-
-        setSpec(nextSpec);
-      })
-      .catch(() => {
-        // Keep the default null spec when preload rejects.
-      });
-
-    const unsubscribe = window.forge.spec.onChunk((chunk: SpecStreamChunk) => {
-      if (chunk.issueId !== issueId) {
+  const commitPersistedSpec = useCallback(
+    (targetIssueId: string, setupVersion: number, nextSpec: Spec | null): void => {
+      if (!isCurrentRun(targetIssueId, setupVersion)) {
         return;
       }
 
-      if (setupVersionRef.current !== setupVersion) {
+      setSpec(nextSpec);
+    },
+    [isCurrentRun],
+  );
+
+  const commitGeneratedSpec = useCallback(
+    (targetIssueId: string, setupVersion: number, content: string): void => {
+      if (!isCurrentRun(targetIssueId, setupVersion)) {
         return;
       }
 
-      if (currentIssueIdRef.current !== issueId) {
+      setSpec(toGeneratedSpec(targetIssueId, content));
+    },
+    [isCurrentRun],
+  );
+
+  const finishStreaming = useCallback(
+    (targetIssueId: string, setupVersion: number): void => {
+      if (!isCurrentRun(targetIssueId, setupVersion)) {
+        return;
+      }
+
+      setIsStreaming(false);
+    },
+    [isCurrentRun],
+  );
+
+  const handleChunk = useCallback(
+    (targetIssueId: string, setupVersion: number, chunk: SpecStreamChunk): void => {
+      if (chunk.issueId !== targetIssueId) {
+        return;
+      }
+
+      if (!isCurrentRun(targetIssueId, setupVersion)) {
         return;
       }
 
@@ -67,6 +84,39 @@ export function useSpecStream(issueId: string | null) {
       }
 
       setStreaming((current) => current + chunk.delta);
+    },
+    [isCurrentRun],
+  );
+
+  useEffect(() => {
+    setupVersionRef.current += 1;
+    const setupVersion = setupVersionRef.current;
+    currentIssueIdRef.current = issueId;
+
+    if (!issueId) {
+      resetStreamState();
+      return;
+    }
+
+    let cancelled = false;
+
+    resetStreamState();
+
+    void window.forge.spec
+      .get(issueId)
+      .then((nextSpec) => {
+        if (cancelled) {
+          return;
+        }
+
+        commitPersistedSpec(issueId, setupVersion, nextSpec);
+      })
+      .catch(() => {
+        // Keep the default null spec when preload rejects.
+      });
+
+    const unsubscribe = window.forge.spec.onChunk((chunk: SpecStreamChunk) => {
+      handleChunk(issueId, setupVersion, chunk);
     });
 
     return () => {
@@ -77,14 +127,14 @@ export function useSpecStream(issueId: string | null) {
         currentIssueIdRef.current = null;
       }
     };
-  }, [issueId]);
+  }, [issueId, commitPersistedSpec, handleChunk, resetStreamState]);
 
   const generate = useCallback(async (): Promise<void> => {
     if (!issueId) {
       return;
     }
 
-    if (currentIssueIdRef.current !== issueId) {
+    if (!isCurrentIssue(issueId)) {
       return;
     }
 
@@ -95,29 +145,13 @@ export function useSpecStream(issueId: string | null) {
 
     try {
       const result = await window.forge.spec.generate(issueId);
-
-      if (setupVersionRef.current !== setupVersion) {
-        return;
-      }
-
-      if (currentIssueIdRef.current !== issueId) {
-        return;
-      }
-
-      setSpec({
-        issueId,
-        content: result.content,
-        generatedAt: new Date().toISOString(),
-        approved: false,
-      });
+      commitGeneratedSpec(issueId, setupVersion, result.content);
     } catch {
       // Keep the default spec state when preload rejects.
     } finally {
-      if (setupVersionRef.current === setupVersion && currentIssueIdRef.current === issueId) {
-        setIsStreaming(false);
-      }
+      finishStreaming(issueId, setupVersion);
     }
-  }, [issueId]);
+  }, [issueId, commitGeneratedSpec, finishStreaming, isCurrentIssue]);
 
   return { spec, streaming, isStreaming, generate };
 }
