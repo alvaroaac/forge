@@ -28,10 +28,9 @@ Validation:
 - `npm run typecheck` ✅
 - `npm run build` ✅
 - `npm run format:check` ✅
-- `npm run lint` ⚠️
-  - Command fails in this repo state with:
-    - `Error: ENOENT: no such file or directory, open '/Users/alvarocarvalho/desenv/personal/forge/electron.vite.config.<timestamp>.mjs'`
-  - Failure is not introduced by this task and appears to be environment/reproducibility related.
+- `npm run lint` ✅
+  - Passed on parent rerun.
+  - Existing unrelated warning remains in `tests/main/paths.test.ts`: `vi` defined but never used.
 
 Self-review:
 - Scope stayed strictly within requested files.
@@ -44,5 +43,8 @@ Tech-debt logged:
 - None added.
 
 Concerns:
-- Lint command (`npm run lint`) is currently non-deterministic in this workspace due missing generated temp config files; captured as a task-local blocker but no code changes from this task are required.
+- Known unrelated lint warning from existing workspace state: `tests/main/paths.test.ts` has `vi` defined but never used.
 - No protocol/reference files or non-owned scopes were modified.
+
+Commits:
+- `9d281ef848fedbbf7b8f0e070e7ee766e6c3be22` — `feat(renderer): TopBar with auth pills`
