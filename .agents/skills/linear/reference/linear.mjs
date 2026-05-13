@@ -449,6 +449,19 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     return data.commentCreate.comment;
   }
 
+  /**
+   * Returns the authenticated user's id, name, email.
+   * @returns {Promise<{ id: string, name: string, email: string }>}
+   */
+  async function getCurrentUser() {
+    const data = await linearRequest(`
+      query {
+        viewer { id name email }
+      }
+    `);
+    return data.viewer;
+  }
+
   return {
     getTeamId,
     getStateId,
@@ -465,5 +478,6 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     updateIssue,
     createRelation,
     createComment,
+    getCurrentUser,
   };
 }
