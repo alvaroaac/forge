@@ -9,14 +9,18 @@ Files changed
 
 Tests run + results
 - `npx vitest run tests/renderer/use-issues.test.ts`
-  - Passed, 7 tests passed.
+  - Initial run: failed as expected because `src/renderer/hooks/use-issues.ts` did not exist yet.
+  - Pre-fix final run: passed, 6 tests passed.
+  - Post-fix run: passed, 7 tests passed.
 - `npx eslint src/renderer/hooks/use-issues.ts tests/renderer/use-issues.test.ts`
   - Passed.
 - `npm run typecheck`
   - Passed.
 
 Commits
-- `fix(renderer): make useIssues StrictMode-safe`
+- `df17de3` `feat(renderer): use-issues seed-then-refresh + polling`
+- `79aa092` `docs(tasks): record Task 43 commit hash`
+- `d0f09e6` `fix(renderer): make useIssues StrictMode-safe`
 
 Self-review findings
 - Hook resets its mounted guard on every effect setup, so the StrictMode setup-cleanup-setup cycle no longer leaves the hook inert.
