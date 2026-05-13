@@ -45,7 +45,6 @@ Files changed
 - `/eslint.config.js` (eslint ignores same directories)
 - `/thoughts/tech-debt.md` (removed stale Task 1b debt items)
 - `/thoughts/tasks/phase1-mvp/impl/task-1b/progress.md` (repair status and verification report updated)
-- `/.prettierignore` (narrowly excludes protocol/spec docs from format checks)
 
 Self-review findings
 - Lint and format are now scoped so they no longer process `.agents/`, `thoughts/`, `scripts/orchestrator-core/`, and `resources/design/`.
@@ -56,7 +55,7 @@ Tech-debt logged
 - Cleaned stale Task 1b debt entries that were invalid after scoping changes.
 
 Commits made
-- `739a7ed` — `fix(task-1b): scope prettier checks for protocol docs`
+- `36162eb` — `fix(task-1b): scope prettier checks for protocol docs`
 
 Concerns
 - No unresolved functional concerns in scope.
