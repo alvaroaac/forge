@@ -1,5 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { tryExec } from '../lib/exec';
+
+export async function checkCli(command: string): Promise<boolean> {
+  const r = await tryExec(command);
+  return r.ok;
+}
 
 export async function checkLinearToken(path: string): Promise<boolean> {
   if (!existsSync(path)) return false;
