@@ -21,6 +21,11 @@ What you implemented
   - `thoughts/`
   - `scripts/orchestrator-core/`
   - `resources/design/`
+- Extended `.prettierignore` for source-of-truth protocol/spec docs to keep format/lint checks green in CI:
+  - `AGENTS.md`
+  - `docs/superpowers/specs/2026-05-12-dashboard-design.md`
+  - `docs/superpowers/specs/2026-05-12-phase1-tech-spec.md`
+  - `docs/templates/spec-template.md`
 - Updated `eslint.config.js` to ignore the same reference/protocol paths in eslint scope:
   - `.agents/**`
   - `thoughts/**`
@@ -31,6 +36,7 @@ What you implemented
 
 What you tested and test results
 - `npm run format` (passes)
+- `npm run format:check` (passes)
 - `npm run lint` (passes)
 - `npm run typecheck` (passes)
 
@@ -39,6 +45,7 @@ Files changed
 - `/eslint.config.js` (eslint ignores same directories)
 - `/thoughts/tech-debt.md` (removed stale Task 1b debt items)
 - `/thoughts/tasks/phase1-mvp/impl/task-1b/progress.md` (repair status and verification report updated)
+- `/.prettierignore` (narrowly excludes protocol/spec docs from format checks)
 
 Self-review findings
 - Lint and format are now scoped so they no longer process `.agents/`, `thoughts/`, `scripts/orchestrator-core/`, and `resources/design/`.
@@ -49,7 +56,7 @@ Tech-debt logged
 - Cleaned stale Task 1b debt entries that were invalid after scoping changes.
 
 Commits made
-- `This commit` — `fix: constrain Task 1b tooling scope`
+- `739a7ed` — `fix(task-1b): scope prettier checks for protocol docs`
 
 Concerns
 - No unresolved functional concerns in scope.

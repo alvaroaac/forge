@@ -5,6 +5,10 @@ dist
 coverage
 playwright-report
 test-results
+AGENTS.md
+docs/superpowers/specs/2026-05-12-dashboard-design.md
+docs/superpowers/specs/2026-05-12-phase1-tech-spec.md
+docs/templates/spec-template.md
 resources/design
 .agents
 thoughts
