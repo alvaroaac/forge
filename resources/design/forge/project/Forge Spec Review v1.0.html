@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Forge — Spec Review</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="forge_v1/styles.css?v=3" />
+  <link rel="stylesheet" href="forge_v1_review/spec-review.css?v=1" />
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root" data-screen-label="Forge — Spec Review"></div>
+
+  <!-- Data + JSX modules -->
+  <script src="forge_v1_review/review-data.js"></script>
+  <script type="text/babel" src="forge_v1/icons.jsx"></script>
+  <script type="text/babel" src="forge_v1_review/spec-review.jsx"></script>
+  <script type="text/babel" src="forge_v1/tweaks-panel.jsx"></script>
+
+  <script type="text/babel">
+    const { useEffect } = React;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "accent": "#7180F5",
+      "view": "read",
+      "expandAll": true,
+      "showRail": true,
+      "showLineNumbers": true,
+      "activeSection": "suggested-approach"
+    }/*EDITMODE-END*/;
+
+    const ACCENTS = {
+      "#7180F5": { base: "#7180F5", dim: "#4756B8", soft: "rgba(113,128,245,0.12)", edge: "rgba(113,128,245,0.35)" },
+      "#3D9EFF": { base: "#3D9EFF", dim: "#1F62C2", soft: "rgba(61,158,255,0.12)",  edge: "rgba(61,158,255,0.36)" },
+      "#3CD7C4": { base: "#3CD7C4", dim: "#1E8E83", soft: "rgba(60,215,196,0.12)",  edge: "rgba(60,215,196,0.36)" },
+      "#F5B86B": { base: "#F5B86B", dim: "#9C6A2A", soft: "rgba(245,184,107,0.12)", edge: "rgba(245,184,107,0.36)" },
+    };
+
+    function applyAccent(hex) {
+      const a = ACCENTS[hex] || ACCENTS["#7180F5"];
+      const r = document.documentElement.style;
+      r.setProperty("--accent",       a.base);
+      r.setProperty("--accent-dim",   a.dim);
+      r.setProperty("--accent-soft",  a.soft);
+      r.setProperty("--accent-edge",  a.edge);
+    }
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      useEffect(() => applyAccent(t.accent), [t.accent]);
+
+      return (
+        <>
+          <SpecReviewApp
+            initialView={t.view}
+            initialExpandAll={t.expandAll}
+            initialShowRail={t.showRail}
+            initialShowLineNumbers={t.showLineNumbers}
+            initialActiveSection={t.activeSection}
+          />
+          <TweaksPanel title="Tweaks">
+            <TweakSection label="View">
+              <TweakRadio
+                label="Mode"
+                value={t.view}
+                onChange={(v) => setTweak("view", v)}
+                options={["read", "split", "edit"]}
+              />
+              <TweakToggle
+                label="Outline rail"
+                value={t.showRail}
+                onChange={(v) => setTweak("showRail", v)}
+              />
+              <TweakToggle
+                label="Line numbers"
+                value={t.showLineNumbers}
+                onChange={(v) => setTweak("showLineNumbers", v)}
+              />
+              <TweakToggle
+                label="Expand threads"
+                value={t.expandAll}
+                onChange={(v) => setTweak("expandAll", v)}
+              />
+            </TweakSection>
+
+            <TweakSection label="Focus">
+              <TweakSelect
+                label="Active section"
+                value={t.activeSection}
+                onChange={(v) => setTweak("activeSection", v)}
+                options={[
+                  { value: "task-summary",      label: "§1 Task Summary" },
+                  { value: "context",           label: "§2 Context" },
+                  { value: "suggested-approach",label: "§3 Suggested Approach" },
+                  { value: "open-questions",    label: "§4 Open Questions" },
+                ]}
+              />
+            </TweakSection>
+
+            <TweakSection label="Theme">
+              <TweakColor
+                label="Accent"
+                value={t.accent}
+                onChange={(v) => setTweak("accent", v)}
+                options={["#7180F5", "#3D9EFF", "#3CD7C4", "#F5B86B"]}
+              />
+            </TweakSection>
+          </TweaksPanel>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
