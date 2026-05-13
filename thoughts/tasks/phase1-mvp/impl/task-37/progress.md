@@ -45,3 +45,16 @@ Concerns:
 
 Commits:
 - `59961c70fbc5f57cf1cf876734f766c7618af095` — `feat(renderer): RightPanel + AuthRow + ActivityRow`
+
+## QA Improvement (2026-05-13)
+
+- `RightPanel` now renders `Connections` as a semantic list (`<ul className="auth-list">`) and `AuthRow` as list items (`<li className="auth-row">`), matching the requested accessibility semantics.
+- `ActivityRow` now renders as a list item (`<li className="activity-row">`) for Phase 3 activity feed readiness without altering Phase 1 behavior.
+- `tests/renderer/right-panel.test.tsx` moved connection assertions to role-based queries (`list`/`listitem`) and reduced class/style coupling, keeping only a small `auth-detail` placeholder class check where layout-preserving markup is intentionally verified.
+- Validation command set run for this QA pass:
+  - `npx vitest run tests/renderer/right-panel.test.tsx`
+  - `npm run typecheck`
+  - `npm run lint`
+  - `npm run format:check`
+  - `npm run build`
+- Commit for this pass: `43eea07`.

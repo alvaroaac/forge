@@ -7,7 +7,7 @@ type AuthRowProps = {
 
 export function AuthRow({ name, state }: AuthRowProps) {
   return (
-    <div className="auth-row">
+    <li className="auth-row">
       <StatusDot state={state} />
       <span className="auth-name">{name}</span>
       <span className="auth-detail mono" />
@@ -17,6 +17,6 @@ export function AuthRow({ name, state }: AuthRowProps) {
       >
         {state}
       </span>
-    </div>
+    </li>
   );
 }

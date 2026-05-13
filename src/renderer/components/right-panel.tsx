@@ -16,7 +16,7 @@ export function RightPanel({ auth }: RightPanelProps) {
     <div className="panel-right">
       <section className="rp-section">
         <h3 className="rp-h">Connections</h3>
-        <div className="auth-list">
+        <ul className="auth-list">
           {AUTH_ROWS.map((row) => (
             <AuthRow
               key={row.key}
@@ -24,7 +24,7 @@ export function RightPanel({ auth }: RightPanelProps) {
               state={auth[row.key] ? 'connected' : 'disconnected'}
             />
           ))}
-        </div>
+        </ul>
       </section>
 
       <section className="rp-section">

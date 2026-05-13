@@ -6,10 +6,10 @@ type ActivityRowProps = {
 
 export function ActivityRow({ id, text, ts }: ActivityRowProps) {
   return (
-    <div className="activity-row">
+    <li className="activity-row">
       <span className="mono activity-id">{id}</span>
       <span className="activity-text">{text}</span>
       <span className="mono dim activity-ts">{ts}</span>
-    </div>
+    </li>
   );
 }
