@@ -32,7 +32,7 @@ Model: gpt-5.4-mini high
 - None.
 
 ## Fix follow-up
-- Commit: `fix(renderer): simplify useSpecStream control flow`
+- Commit: `8fd4ca1` `fix(renderer): simplify useSpecStream control flow`
 
 ## Fix verification
 - `npx vitest run tests/renderer/use-spec-stream.test.ts`
