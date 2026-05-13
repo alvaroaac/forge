@@ -24,7 +24,7 @@ TDD evidence:
 - Re-ran focused tests: `npx vitest run tests/renderer/issue-list-panel.test.tsx` ✅ (7 passed)
 
 Implementation notes:
-- Added `Tab` union type and exported constants:
+- Added `Tab` union type as an exported symbol; `TABS`, `TAB_KEY`, and `GROUP_ORDER` are now module-local constants:
   - `TABS: ['Todo', 'In Progress', 'In Review', 'Done']`
   - `TAB_KEY: Record<Tab, IssueStatus>` with underscores mapping (`todo`, `in_progress`, `in_review`, `done`).
   - `GROUP_ORDER: ['Bugs', 'Urgent', 'Feature', 'Chore']`.
@@ -52,6 +52,10 @@ Self-review:
 
 Tech-debt logged:
 - None added.
+
+Commits:
+- `2cd34134d4625a7e84fa74abf1585733cbba3851` — `feat(renderer): IssueListPanel tabs and groups`
+- `738bbb9fc379defa1cade25fc572bd53f731e61c` — `fix(renderer): improve IssueListPanel a11y semantics`
 
 Concerns:
 - One-time `npm run lint` failure was seen earlier with a local ESLint temp-file ENOENT error before rerunning; final run succeeds with the pre-existing warning in `tests/main/paths.test.ts`.
