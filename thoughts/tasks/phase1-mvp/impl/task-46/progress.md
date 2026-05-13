@@ -24,7 +24,7 @@ Tests/checks run + results
 
 Commits (include hash)
 - `7eedd0f` — `test(e2e): Electron smoke — top bar + panels visible`
-- Pending — `fix(main): resolve repo root for built Electron launch`
+- `1d0faee` — `fix(main): resolve repo root for built Electron launch`
 
 Self-review findings
 - Smoke test closes the Electron app in a `finally` block so failures do not leak the process.
