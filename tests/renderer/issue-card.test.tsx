@@ -23,23 +23,9 @@ describe('IssueCard', () => {
       <IssueCard issue={issue} onOpen={onOpen} isActive={false} hasSpec={false} />,
     );
 
-    fireEvent.click(getByRole('button', { name: /open ful-7 issue/i }));
+    fireEvent.click(getByRole('button', { name: /open ful-7 do a thing/i }));
 
     expect(onOpen).toHaveBeenCalledWith(issue, 'spec');
-  });
-
-  it('calls onOpen(issue, "spec") when the main card control is keyboard-activated', () => {
-    const onOpen = vi.fn();
-    const { container } = render(
-      <IssueCard issue={issue} onOpen={onOpen} isActive={false} hasSpec={false} />,
-    );
-    const openButton = within(container).getByRole('button', { name: /open ful-7 issue/i });
-
-    openButton.focus();
-    fireEvent.keyDown(openButton, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-    expect(onOpen).toHaveBeenCalledTimes(1);
-    expect(onOpen).toHaveBeenLastCalledWith(issue, 'spec');
   });
 
   it('calls onOpen(issue, "detail") when Detail is clicked', () => {

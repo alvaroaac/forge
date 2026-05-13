@@ -74,3 +74,22 @@ Tech-debt:
 
 Concerns:
 - Validation remains mildly noisy due the unrelated existing lint warning in `tests/main/paths.test.ts`.
+
+---
+
+Task 33 QA cleanup (IssueCard main-control semantics):
+
+- Scope: `src/renderer/components/issue-card.tsx`, `tests/renderer/issue-card.test.tsx`, `thoughts/tasks/phase1-mvp/impl/task-33/progress.md`.
+- Changes:
+  - Updated main card button accessible name to include issue identifier and title: `Open ${issue.id} ${issue.title}`.
+  - Removed redundant custom `onKeyDown` handler from native main button and rely on native `<button>` keyboard behavior.
+  - Removed keydown-based test and updated role/name query to match the new accessible name in click test.
+- Validation:
+  - `npx vitest run tests/renderer/issue-card.test.tsx`
+    - passed (`4 tests`)
+  - `npm run typecheck`
+    - passed
+  - `npm run lint`
+    - passed with pre-existing warning in `tests/main/paths.test.ts` (`@typescript-eslint/no-unused-vars` for `vi`)
+  - `npm run format:check`
+    - passed

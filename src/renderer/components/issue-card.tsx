@@ -1,5 +1,4 @@
 import type { Issue } from '../../shared/types';
-import type { KeyboardEvent } from 'react';
 import { LabelBadge } from './label-badge';
 import { PriorityChip } from './priority-chip';
 import { IconChevronRight } from './icons';
@@ -22,15 +21,8 @@ type IssueCardProps = {
 export function IssueCard({ issue, onOpen, isActive, hasSpec }: IssueCardProps) {
   const group = classifyGroup(issue);
   const firstLabel = issue.labels[0] ?? '';
-  const openSpecLabel = `Open ${issue.id} issue`;
+  const openSpecLabel = `Open ${issue.id} ${issue.title}`;
   const openSpec = () => onOpen(issue, 'spec');
-
-  const onMainKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      openSpec();
-    }
-  };
 
   return (
     <div
@@ -41,7 +33,6 @@ export function IssueCard({ issue, onOpen, isActive, hasSpec }: IssueCardProps) 
         type="button"
         className="issue-card-main"
         aria-label={openSpecLabel}
-        onKeyDown={onMainKeyDown}
         style={{
           display: 'flex',
           flexDirection: 'column',
