@@ -10,6 +10,8 @@ docs/superpowers/specs/2026-05-12-dashboard-design.md
 docs/superpowers/specs/2026-05-12-phase1-tech-spec.md
 docs/templates/spec-template.md
 resources/design
+# preserve raw design tokens copied verbatim for renderer bootstrap
+src/renderer/styles/tokens.css
 .agents
 thoughts
 scripts/orchestrator-core
