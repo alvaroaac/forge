@@ -1,7 +1,31 @@
+# Node / build
 node_modules
 out
 dist
 .vite
-*.log
+*.tsbuildinfo
+coverage
+
+# Test artifacts
+playwright-report
+test-results
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Editor / OS
 .DS_Store
+Thumbs.db
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# Forge runtime (lives outside repo, but belt-and-braces)
 ~/.forge

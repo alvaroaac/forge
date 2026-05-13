@@ -1,0 +1,9 @@
+node_modules
+out
+dist
+.vite
+coverage
+playwright-report
+test-results
+resources/design
+package-lock.json
