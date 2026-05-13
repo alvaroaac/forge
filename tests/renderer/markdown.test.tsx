@@ -27,7 +27,19 @@ describe('splitSections', () => {
     const sections = splitSections(md);
 
     expect(sections).toEqual<Section[]>([
-      { h: 'Install', body: 'Run setup first.\n' },
+      { h: 'Install', body: 'Run setup first.' },
+      { h: 'Verify', body: 'Run tests and ship' },
+    ]);
+  });
+
+  it('preserves content before first heading as a preface section', () => {
+    const md =
+      'Top note\n\nbefore headings.\n## Install\nRun setup first.\n## Verify\nRun tests and ship';
+    const sections = splitSections(md);
+
+    expect(sections).toEqual<Section[]>([
+      { h: '', body: 'Top note\n\nbefore headings.' },
+      { h: 'Install', body: 'Run setup first.' },
       { h: 'Verify', body: 'Run tests and ship' },
     ]);
   });

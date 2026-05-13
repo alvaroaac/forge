@@ -15,21 +15,25 @@ export function highlightInline(s: string): string {
 }
 
 export function splitSections(md: string): Section[] {
-  const headings = Array.from(md.matchAll(/^##\s+(.*)$/gm));
+  const lines = md.split('\n');
+  const sections: Section[] = [];
+  let current: Section = { h: '', body: '' };
 
-  if (headings.length === 0) {
-    return [{ h: '', body: md }];
+  for (const line of lines) {
+    const m = /^##\s+(.*)$/.exec(line);
+    if (m) {
+      if (current.h || current.body) sections.push(current);
+      current = { h: m[1] ?? '', body: '' };
+      continue;
+    }
+    current.body += (current.body ? '\n' : '') + line;
   }
 
-  return headings.map((match, idx) => {
-    const thisMatchIndex = match.index ?? 0;
-    const thisMatchText = match[0];
-    const nextMatchIndex = headings[idx + 1]?.index ?? md.length;
-    const body = md.slice(thisMatchIndex + thisMatchText.length, nextMatchIndex).replace(/^\n/, '');
+  if (current.h || current.body.trim()) sections.push(current);
 
-    return {
-      h: match[1]?.trim() ?? '',
-      body,
-    };
-  });
+  return sections.length ? sections.map(trimBody) : [{ h: '', body: md }];
+}
+
+function trimBody(s: Section): Section {
+  return { h: s.h, body: s.body.trim() };
 }

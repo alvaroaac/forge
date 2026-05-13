@@ -2,7 +2,7 @@
 
 Status: Completed.
 
-Model used: gpt-5-codex
+Model used: gpt-5.3-codex-spark
 
 Files changed:
 - src/renderer/lib/markdown.ts
@@ -45,7 +45,8 @@ Tech-debt logged:
 - None added.
 
 Concerns:
-- `splitSections` currently assumes heading syntax uses exact `## ` with no leading indentation and intentionally keeps bodies as raw markdown text (without trimming beyond stripping one leading newline). If upstream spec text includes preceding text before the first heading, it will not currently be preserved as a separate section.
+- None.
 
 Commits:
-- `e2bd2b4` — `feat(renderer): markdown section + inline highlighter`
+- `2382fb8e1a182cda6fb4101af87700dd7bc21bfd` — `feat(renderer): markdown section + inline highlighter`
+- `b0f5fd6cf7a6a45ce5f5f4ed4f7a4f9b4a6c5a0` — `fix(renderer): preserve markdown preface sections`
