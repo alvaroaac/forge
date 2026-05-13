@@ -39,7 +39,7 @@ QA-fix follow-up:
 - Validations re-run:
   - `npx vitest run tests/renderer/atoms.test.tsx` ✅
   - `npm run typecheck` ✅
-  - `npm run lint` ❌ (pre-existing environment issue: missing generated file `electron.vite.config.<timestamp>.mjs`)
+  - `npm run lint` ✅ on parent re-run; only the pre-existing `tests/main/paths.test.ts` unused `vi` warning remains.
   - `npm run format:check` ✅
   - `npm run build` ✅
 
