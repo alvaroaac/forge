@@ -58,3 +58,7 @@ _Add entries when you knowingly cut a corner during implementation._
 - [2026-05-13][Task 29] Deferred full `npm run build` verification until Task 30 creates `src/renderer/index.html`. Reason: deferred-phase. Re-evaluate: once Task 30 renderer scaffold is present.
 - [2026-05-13][Task 30] Electron dev-window verification could not run in this environment because Vite/Electron dev server cannot bind ::1:5173. Reason: other. Re-evaluate: on a local desktop shell with GUI/socket permissions.
 - [2026-05-13][Task 39] Detail tab comments section removed in Phase 1; comments rendering and anchoring remain unimplemented. Reason: deferred-phase. Re-evaluate: Phase 2 when comments thread state and rendering are wired from spec pipeline.
+- [2026-05-13][Phase 1 exit] IssueGroup overflow scroll indicator remains unimplemented. Reason: deferred-phase. Re-evaluate: Phase 1.5 polish when real-world overflow appears.
+- [2026-05-13][Phase 1 exit] RightPanel activity feed and running agent list are placeholders. Reason: deferred-phase. Re-evaluate: Phase 2/3 when agent spawning and progress data are wired.
+- [2026-05-13][Phase 1 exit] Spec approval gate UI and approved-state persistence are not implemented. Reason: deferred-phase. Re-evaluate: Phase 2 when agent spawn is gated behind approval.
+- [2026-05-13][Phase 1 exit] Config UI is not implemented; repoPath must be set manually in ~/.forge/config.json. Reason: deferred-phase. Re-evaluate: Phase 5 onboarding/configuration work.
