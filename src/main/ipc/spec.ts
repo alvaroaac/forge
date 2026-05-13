@@ -1,9 +1,13 @@
 import type { IpcMain } from 'electron';
+import Anthropic from '@anthropic-ai/sdk';
 import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { IpcChannel } from '../../shared/ipc-channels';
 import type { ConfigStore } from '../services/config-store';
-import type { Spec } from '../../shared/types';
+import type { IssuesCache } from '../services/issues-cache';
+import type { RepoContext } from '../services/repo-reader';
+import { buildSpecPrompt } from '../services/spec-prompt';
+import type { Issue, Spec, SpecStreamChunk } from '../../shared/types';
 
 const SAFE_ISSUE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 
@@ -11,11 +15,57 @@ function isSafeIssueId(issueId: string): boolean {
   return SAFE_ISSUE_ID.test(issueId);
 }
 
+type SpecGenerateEventSender = {
+  send: (channel: string, payload: SpecStreamChunk) => void;
+};
+
+type SpecGenerateEvent = {
+  sender: SpecGenerateEventSender;
+};
+
+type StreamSpecFn = (input: {
+  client: Anthropic;
+  model: string;
+  system: string;
+  user: string;
+  onChunk: (delta: string) => void;
+}) => Promise<string>;
+
+export interface SpecGenerateDeps {
+  store: ConfigStore;
+  cache: IssuesCache;
+  readRepoContext: (repoPath: string) => Promise<RepoContext>;
+  streamSpec: StreamSpecFn;
+  writeSpec: (opts: { repoPath: string; issueId: string; content: string }) => Promise<string>;
+  anthropic: Anthropic;
+  templateMd: string;
+}
+
 function specPath(repoPath: string, issueId: string): string | null {
   if (!isSafeIssueId(issueId)) {
     return null;
   }
   return join(repoPath, 'thoughts', 'tasks', issueId, 'initial-spec.md');
+}
+
+function findIssue(issues: Issue[], issueId: string): Issue {
+  if (!isSafeIssueId(issueId)) {
+    throw new Error(`Issue not found in cache: ${issueId}`);
+  }
+  const found = issues.find((issue) => issue.id === issueId);
+  if (!found) {
+    throw new Error(`Issue not found in cache: ${issueId}`);
+  }
+  return found;
+}
+
+function sendSpecChunk(
+  sender: SpecGenerateEventSender,
+  issueId: string,
+  delta: string,
+  done: boolean,
+): void {
+  sender.send(IpcChannel.SpecStreamChunk, { issueId, delta, done });
 }
 
 export function registerSpecGetHandler(ipc: IpcMain, store: ConfigStore): void {
@@ -40,4 +90,27 @@ export function registerSpecGetHandler(ipc: IpcMain, store: ConfigStore): void {
       throw error;
     }
   });
+}
+
+export function registerSpecGenerateHandler(ipc: IpcMain, deps: SpecGenerateDeps): void {
+  ipc.handle(
+    IpcChannel.SpecGenerate,
+    async (event: SpecGenerateEvent, payload: { issueId: string }) => {
+      const cfg = await deps.store.get();
+      const issues = await deps.cache.read();
+      const issue = findIssue(issues, payload.issueId);
+      const context = await deps.readRepoContext(cfg.repoPath);
+      const prompt = buildSpecPrompt({ issue, context, templateMd: deps.templateMd });
+      const content = await deps.streamSpec({
+        client: deps.anthropic,
+        model: cfg.claudeModel,
+        system: prompt.system,
+        user: prompt.user,
+        onChunk: (delta) => sendSpecChunk(event.sender, payload.issueId, delta, false),
+      });
+      sendSpecChunk(event.sender, payload.issueId, '', true);
+      await deps.writeSpec({ repoPath: cfg.repoPath, issueId: payload.issueId, content });
+      return { content, issueId: payload.issueId };
+    },
+  );
 }
