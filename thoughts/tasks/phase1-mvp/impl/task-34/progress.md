@@ -87,4 +87,4 @@ Validation:
 - `npm run format:check` ✅
 
 Commits:
-- `test(renderer): decouple IssueGroup tests from IssueCard` (pending after final run)
+- `fb5abfe` — `test(renderer): decouple IssueGroup tests from IssueCard`
