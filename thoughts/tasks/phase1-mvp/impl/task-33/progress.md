@@ -60,11 +60,13 @@ Validation:
 Commits:
 - `ab7fe88570ff43d32d96e5263f764b1e9ccc0030` — `feat(renderer): classifyGroup + IssueCard`
 - `fe7899230faff6264646747d9ec93e4c10249d98` — `test(renderer): cover IssueCard detail action`
+- `de1afce95422dfefb5f98616c16a21a595b42755` — `docs(task33): sync repair commit metadata`
 - `94d2afa` — `fix(renderer): make IssueCard main action accessible`
+- `c6539586d9d4939a97fa96706e97a3a40f94bfd7` — `docs(task33): update progress with QA fix commit`
 
 Self-review:
 - `classifyGroup` follows the real `Issue` shape and resolves group by `isBug`, then urgent priority, then chore label, defaulting to feature.
-- `IssueCard` now derives group via `classifyGroup`, uses `issue.labels[0]`, accepts `hasSpec` prop, drops prototype-only approval badge, and wires action buttons with `type="button"` plus click propagation guard on action container.
+- `IssueCard` now derives group via `classifyGroup`, uses `issue.labels[0]`, accepts `hasSpec` prop, drops prototype-only approval badge, and wires action buttons as sibling controls with `type="button"` (no propagation guard is needed).
 
 Tech-debt:
 - None logged.
