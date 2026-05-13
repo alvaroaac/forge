@@ -17,15 +17,29 @@ const issue: Issue = {
 };
 
 describe('IssueCard', () => {
-  it('calls onOpen(issue, "spec") on card click', () => {
+  it('calls onOpen(issue, "spec") when the main card control is clicked', () => {
     const onOpen = vi.fn();
-    const { getByText } = render(
+    const { getByRole } = render(
       <IssueCard issue={issue} onOpen={onOpen} isActive={false} hasSpec={false} />,
     );
 
-    fireEvent.click(getByText('do a thing'));
+    fireEvent.click(getByRole('button', { name: /open ful-7 issue/i }));
 
     expect(onOpen).toHaveBeenCalledWith(issue, 'spec');
+  });
+
+  it('calls onOpen(issue, "spec") when the main card control is keyboard-activated', () => {
+    const onOpen = vi.fn();
+    const { container } = render(
+      <IssueCard issue={issue} onOpen={onOpen} isActive={false} hasSpec={false} />,
+    );
+    const openButton = within(container).getByRole('button', { name: /open ful-7 issue/i });
+
+    openButton.focus();
+    fireEvent.keyDown(openButton, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenLastCalledWith(issue, 'spec');
   });
 
   it('calls onOpen(issue, "detail") when Detail is clicked', () => {
@@ -35,7 +49,7 @@ describe('IssueCard', () => {
     );
     const { getByRole } = within(container);
 
-    fireEvent.click(getByRole('button', { name: 'Detail' }));
+    fireEvent.click(getByRole('button', { name: /^detail$/i }));
 
     expect(onOpen).toHaveBeenCalledWith(issue, 'detail');
   });
@@ -47,7 +61,7 @@ describe('IssueCard', () => {
     );
     const { getByRole } = within(container);
 
-    fireEvent.click(getByRole('button', { name: 'Detail' }));
+    fireEvent.click(getByRole('button', { name: /^detail$/i }));
 
     expect(onOpen).toHaveBeenCalledTimes(1);
     expect(onOpen).toHaveBeenCalledWith(issue, 'detail');
@@ -55,13 +69,13 @@ describe('IssueCard', () => {
 
   it('shows "View Spec" when hasSpec', () => {
     const onOpen = vi.fn();
-    const { getByText } = render(
+    const { getByRole } = render(
       <IssueCard issue={issue} onOpen={onOpen} isActive={false} hasSpec />,
     );
 
-    fireEvent.click(getByText('View Spec'));
+    fireEvent.click(getByRole('button', { name: /view spec/i }));
 
-    expect(onOpen).toHaveBeenCalledWith(issue, 'spec');
     expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith(issue, 'spec');
   });
 });

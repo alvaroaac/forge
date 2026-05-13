@@ -24,8 +24,18 @@ describe('classifyGroup', () => {
     expect(classifyGroup({ ...base, priority: 'urgent' })).toBe('Urgent');
   });
 
+  it('Prioritizes Bugs over urgent when both are true', () => {
+    expect(classifyGroup({ ...base, isBug: true, priority: 'urgent', labels: ['chore'] })).toBe(
+      'Bugs',
+    );
+  });
+
   it('Chore when label "chore"', () => {
     expect(classifyGroup({ ...base, labels: ['chore'] })).toBe('Chore');
+  });
+
+  it('Chore when label is mixed-case', () => {
+    expect(classifyGroup({ ...base, labels: ['ChOrE'] })).toBe('Chore');
   });
 
   it('Feature otherwise', () => {

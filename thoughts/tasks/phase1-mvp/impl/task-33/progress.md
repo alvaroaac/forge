@@ -37,9 +37,30 @@ Validation:
 - `npm run build`:
   - passed (renderer/main/preload bundles produced successfully)
 
+QA fix pass (Task 33 keyboard accessibility + mixed-case/preference coverage):
+- Refactored `IssueCard` so `.issue-card` is non-interactive and card-level open is a dedicated focusable `<button type="button">` (`aria-label="Open {issue.id} issue"`).
+- Removed nested interactive behavior and kept Spec/View Spec + Detail as sibling action buttons.
+- Added missing `classifyGroup` cases for mixed-case `"ChOrE"` labels and `isBug` + urgent precedence.
+- Updated `IssueCard` tests to query controls by role/name, including keyboard-activation of the main control.
+
+Validation:
+- `npx vitest run tests/renderer/classify.test.ts tests/renderer/issue-card.test.tsx`:
+  - `✓ tests/renderer/classify.test.ts (6 tests) ...`
+  - `✓ tests/renderer/issue-card.test.tsx (5 tests) ...`
+- `npm run typecheck`:
+  - passed
+- `npm run lint`:
+  - passed with existing pre-existing warning in `tests/main/paths.test.ts`:
+    `1 warning: @typescript-eslint/no-unused-vars ('vi' is defined but never used)`
+- `npm run format:check`:
+  - passed after formatting `tests/renderer/classify.test.ts`
+- `npm run build`:
+  - passed (renderer/main/preload bundles produced successfully)
+
 Commits:
 - `ab7fe88570ff43d32d96e5263f764b1e9ccc0030` — `feat(renderer): classifyGroup + IssueCard`
 - `fe7899230faff6264646747d9ec93e4c10249d98` — `test(renderer): cover IssueCard detail action`
+- `68b0b8e` — `fix(renderer): make IssueCard main action accessible`
 
 Self-review:
 - `classifyGroup` follows the real `Issue` shape and resolves group by `isBug`, then urgent priority, then chore label, defaulting to feature.
