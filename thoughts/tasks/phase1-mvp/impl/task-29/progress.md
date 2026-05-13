@@ -25,6 +25,11 @@ Self-review findings:
 - Replaced the ambient declaration with a local, app-root-relative dynamic loader for `linear.mjs` in `register.ts` and removed explicit module typing from global declarations.
 - Replaced the compatibility cast in `registerLinearHandlers` wiring with a narrow adapter closure around `fetchIssues`.
 
+QA-fix:
+- Switched `BrowserWindow` preload path from `../preload/preload.js` to `../preload/preload.mjs` to match electron-vite's emitted file.
+- Disabled `sandbox` (`sandbox: false`) because Electron does not allow ESM preload scripts in sandboxed preload mode; this ensures `preload.mjs` executes.
+- Preserved renderer security controls by keeping `contextIsolation: true`, `nodeIntegration: false`, and limiting exposure through the existing `contextBridge` API in `src/main/preload.ts`.
+
 Tech-debt logged:
 - [2026-05-13][Task 29] Deferred full build verification (`npm run build`) to Task 30 renderer scaffold completion (`src/renderer/index.html` missing). Reason: deferred-phase. Re-evaluate: when Task 30 provides renderer entry.
 
