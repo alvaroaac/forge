@@ -45,6 +45,7 @@ Tech-debt logged
 Commits made
 
 - `eb4239edeea67202c8ff5a9b2f2372159c63b738` — `feat(linear): add fetchAssignedIssues() to client`
+- `ad42bba966a4928f979318281ccf5bc630ac5e29` — `docs(task5): record pre-change fetchAssignedIssues failure evidence`
 
 Concerns
 
