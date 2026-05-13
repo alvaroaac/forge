@@ -10,12 +10,13 @@ Files changed:
 - `thoughts/tasks/phase1-mvp/impl/task-27/progress.md`
 
 Tests run + results, including red and green evidence:
-- `mv tests/main/ipc-spec-generate.test.ts /tmp/ipc-spec-generate.test.ts.bak && npx vitest run tests/main/ipc-spec-generate.test.ts; mv /tmp/ipc-spec-generate.test.ts.bak tests/main/ipc-spec-generate.test.ts`
-  - FAIL (expected for red step): `No test files found, exiting with code 1`
+- `git checkout ff1714e -- src/main/ipc/spec.ts && npx vitest run tests/main/ipc-spec-generate.test.ts`
+  - FAIL (expected for red step in parent implementation): `registerSpecGenerateHandler is not a function` (3 tests in `tests/main/ipc-spec-generate.test.ts` failed).
+  - Key output excerpt: `TypeError: registerSpecGenerateHandler is not a function`
+- `git checkout 63a3633 -- src/main/ipc/spec.ts`
+  - Restored Task 27 source under test (no source changes kept).
 - `npx vitest run tests/main/ipc-spec-generate.test.ts`
   - PASS: 1 file, 3 tests passed.
-- `npx vitest run tests/main/ipc-spec-generate.test.ts`
-  - PASS: 1 file, 3 tests passed. (post-format/type-fix rerun)
 - `npx vitest run tests/main/ipc-spec-get.test.ts`
   - PASS: 1 file, 9 tests passed. (Task 26 regression)
 - `npm run lint`
@@ -26,7 +27,7 @@ Tests run + results, including red and green evidence:
   - PASS
 
 Commits made:
-- `feat(ipc): spec:generate streams + writes spec file` (`634002f`)
+- `feat(ipc): spec:generate streams + writes spec file` (`63a3633`)
 
 Self-review findings:
 - Added `SpecGenerateDeps`, `registerSpecGenerateHandler`, `findIssue`, and streaming helpers in `src/main/ipc/spec.ts`.
