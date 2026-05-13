@@ -2,7 +2,7 @@
 
 Status: Completed.
 
-Model used: gpt-5-codex
+Model used: gpt-5.3-codex-spark
 
 Files changed:
 - src/renderer/components/auth-row.tsx
@@ -44,4 +44,4 @@ Concerns:
 - None new.
 
 Commits:
-- `feat(renderer): RightPanel + AuthRow + ActivityRow`
+- `59961c70fbc5f57cf1cf876734f766c7618af095` — `feat(renderer): RightPanel + AuthRow + ActivityRow`
