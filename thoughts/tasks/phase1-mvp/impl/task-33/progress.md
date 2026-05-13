@@ -65,6 +65,7 @@ Commits:
 - `c6539586d9d4939a97fa96706e97a3a40f94bfd7` — `docs(task33): update progress with QA fix commit`
 - `137d78ba7d40056daadb3480d8d5e5b0a8bced89` — `docs(task33): align progress with repair history`
 - `b5c54dfcd8dd15b62546b67e78c1fde7723bf031` — `fix(renderer): simplify IssueCard main action semantics`
+- `201be2334ff3cfd9f0af6f6889d7b94fd4e1d05b` — `test(renderer): cover IssueCard spec and label edges`
 
 Self-review:
 - `classifyGroup` follows the real `Issue` shape and resolves group by `isBug`, then urgent priority, then chore label, defaulting to feature.
