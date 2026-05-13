@@ -19,6 +19,7 @@ Tests/checks run + results
 - `npx vitest run tests/main/app-root.test.ts` ✅ after bootstrap fix
 - `npx eslint src/main/index.ts src/main/lib/app-root.ts tests/main/app-root.test.ts playwright.config.ts tests/e2e/smoke.spec.ts` ✅
 - `npm run typecheck` ✅ after bootstrap fix
+- `npm test` ✅ after bootstrap fix, 37 test files passed / 156 tests passed
 - `npm run build` ✅ after bootstrap fix
 - `npm run e2e` ✅ after bootstrap fix, 1 passed
 
