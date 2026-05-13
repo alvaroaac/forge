@@ -38,7 +38,7 @@ Self-review findings:
 - Added focused typed IPC tests (no raw `any` or `Function`), including both positive and missing-file scenarios.
 
 Tech-debt logged:
-- 2026-05-13: Repeated IPC test helper scaffolding remains duplicated across IPC specs (`tests/main/ipc-auth.test.ts`, `tests/main/ipc-config.test.ts`, `tests/main/ipc-linear.test.ts`, `tests/main/ipc-spec-get.test.ts`) and is intentionally not fixed here.
+- [2026-05-13][Task 26] Repeated IPC test helper scaffolding remains duplicated across IPC specs. Reason: deferred-phase. Re-evaluate: when the next IPC test suite is added or during Phase 1 cleanup.
 
 Concerns:
 - None.
