@@ -26,7 +26,7 @@ Validation run + results:
 - `npm run build`: passed.
 
 Commit:
-- SHA: 22d5309
+- `7fc29782c30574dcf4fe5290bf7a3db99f10796d` — `feat(renderer): StatusDot/PriorityChip/LabelBadge/PillTab`
 
 Self-review:
 - `StatusDot` maps recognized states to colors using a local `COLOR` map, falls back to `var(--text-3)`, and exposes the state through `aria-label` while preserving inline style intent from the design.
