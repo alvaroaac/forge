@@ -19,12 +19,14 @@ TDD evidence:
 - Implemented `src/renderer/lib/classify.ts` and re-ran `npx vitest run tests/renderer/classify.test.ts`:
   - `✓ tests/renderer/classify.test.ts (4 tests) 1ms`
 - Implemented `src/renderer/components/issue-card.tsx` and re-ran `npx vitest run tests/renderer/issue-card.test.tsx`:
-  - `✓ tests/renderer/issue-card.test.tsx (2 tests) 21ms`
+  - `✓ tests/renderer/issue-card.test.tsx (4 tests) 21ms`
+- Added spec-review fixes in `tests/renderer/issue-card.test.tsx` and re-ran focused tests:
+  - `✓ tests/renderer/issue-card.test.tsx (4 tests) 82ms`
 
 Validation:
 - `npx vitest run tests/renderer/classify.test.ts tests/renderer/issue-card.test.tsx`:
   - `✓ tests/renderer/classify.test.ts (4 tests) ...`
-  - `✓ tests/renderer/issue-card.test.tsx (2 tests) ...`
+  - `✓ tests/renderer/issue-card.test.tsx (4 tests) ...`
 - `npm run typecheck`:
   - passed
 - `npm run lint`:
@@ -35,8 +37,9 @@ Validation:
 - `npm run build`:
   - passed (renderer/main/preload bundles produced successfully)
 
-Commit:
-- `ce267fc973600ec069940d22cddebf3d4a0f217b` — `feat(renderer): classifyGroup + IssueCard`
+Commits:
+- `ab7fe88570ff43d32d96e5263f764b1e9ccc0030` — `feat(renderer): classifyGroup + IssueCard`
+- `428a30c41b0975c9fb7cfca1be03eb9bdb0265f3` — `test(renderer): cover IssueCard detail action`
 
 Self-review:
 - `classifyGroup` follows the real `Issue` shape and resolves group by `isBug`, then urgent priority, then chore label, defaulting to feature.
