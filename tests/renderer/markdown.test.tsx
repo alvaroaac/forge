@@ -111,8 +111,12 @@ describe('MarkdownSection', () => {
     const codeSpans = container.querySelectorAll('.md-code');
     expect(codeSpans[0].textContent).toBe('boot');
     expect(codeSpans[1].textContent).toBe('cargo');
-    expect(container.querySelectorAll('.md-ref')).toHaveLength(1);
-    expect(container.querySelectorAll('.md-mention')).toHaveLength(2);
+    expect(container.querySelectorAll('.md-ref')[0].textContent).toBe('§9.1');
+
+    const mentions = container.querySelectorAll('.md-mention');
+    expect(mentions).toHaveLength(2);
+    expect(mentions[0].textContent).toBe('@ops');
+    expect(mentions[1].textContent).toBe('@alice');
   });
 
   it('renders malicious HTML-like content as literal text', () => {

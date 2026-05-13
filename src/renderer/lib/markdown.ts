@@ -13,7 +13,7 @@ export type InlineToken = {
 const BACKTICK_RE = /`([^`]+)`/g;
 const REF_RE = /(§\d+(?:\.\d+)?)/g;
 const MENTION_RE = /@(\w+)/g;
-const INLINE_TOKEN_RE = /`([^`]+)`|(§\d+(?:\.\d+)?)|(@\w+)/g;
+const INLINE_TOKEN_RE = /`([^`]+)`|(§\d+(?:\.\d+)?)|@(\w+)/g;
 
 export function highlightInline(s: string): string {
   return s

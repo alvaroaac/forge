@@ -78,9 +78,10 @@ Validation (QA-fix pass):
 - `npm run build` ✅
 
 Commit:
-- `fix(renderer): render markdown inline tokens safely`
+- `19399e45c0eea1c74f5bc09eb8dd59b7c2e3a980` — `fix(renderer): render markdown inline tokens safely`
 
 Commits:
 - `2382fb8e1a182cda6fb4101af87700dd7bc21bfd` — `feat(renderer): markdown section + inline highlighter`
 - `367915ad1fbfcd12f659e1f768ac0991f0c966a3` — `fix(renderer): preserve markdown preface sections`
-- `fix(renderer): render markdown inline tokens safely`
+- `19399e45c0eea1c74f5bc09eb8dd59b7c2e3a980` — `fix(renderer): render markdown inline tokens safely`
+- `142d7801e5e33b81197bab4f7290dc4c8745f242` — `fix(renderer): preserve markdown mention text`
