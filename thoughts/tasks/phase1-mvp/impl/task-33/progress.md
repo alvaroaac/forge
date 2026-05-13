@@ -39,7 +39,7 @@ Validation:
 
 Commits:
 - `ab7fe88570ff43d32d96e5263f764b1e9ccc0030` — `feat(renderer): classifyGroup + IssueCard`
-- `428a30c41b0975c9fb7cfca1be03eb9bdb0265f3` — `test(renderer): cover IssueCard detail action`
+- `fe7899230faff6264646747d9ec93e4c10249d98` — `test(renderer): cover IssueCard detail action`
 
 Self-review:
 - `classifyGroup` follows the real `Issue` shape and resolves group by `isBug`, then urgent priority, then chore label, defaulting to feature.
