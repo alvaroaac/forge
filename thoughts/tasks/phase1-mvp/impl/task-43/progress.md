@@ -16,7 +16,7 @@ Tests run + results
   - Passed.
 
 Commits
-- `feat(renderer): use-issues seed-then-refresh + polling`
+- `df17de3` `feat(renderer): use-issues seed-then-refresh + polling`
 
 Self-review findings
 - Hook uses a mount guard plus swallowed preload rejections to avoid post-unmount updates and unhandled promise rejections.
