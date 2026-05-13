@@ -88,3 +88,4 @@ Validation:
 
 Commits:
 - `fb5abfe` — `test(renderer): decouple IssueGroup tests from IssueCard`
+- `666da5b` — `test(renderer): decouple IssueGroup tests from IssueCard` (progress-file follow-up)
