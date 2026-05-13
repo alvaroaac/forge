@@ -45,10 +45,11 @@ Self-review:
 - Implemented `MarkdownSection` with:
   - `.md-section` wrapper
   - optional `<h3 className="md-h">`
-  - `.md-body` with `lines.map(renderLine)`
-  - list detection for `•`, `-`, `*`, and numbered items, rendering `<li className="md-li">`
+  - `.md-body` with safe React node rendering via `inlineParts`
+  - list detection for `•`, `-`, `*`, and numbered items
+  - explicit `<ul className="md-list">` / `<ol className="md-list">` blocks with `<li className="md-li">` items
   - paragraph fallback for non-list lines
-  - `dangerouslySetInnerHTML` in both list and paragraph branches
+  - no raw HTML injection
 - Kept the feature scoped to task-38-owned paths only.
 
 Tech-debt logged:
@@ -84,4 +85,4 @@ Commits:
 - `2382fb8e1a182cda6fb4101af87700dd7bc21bfd` — `feat(renderer): markdown section + inline highlighter`
 - `367915ad1fbfcd12f659e1f768ac0991f0c966a3` — `fix(renderer): preserve markdown preface sections`
 - `19399e45c0eea1c74f5bc09eb8dd59b7c2e3a980` — `fix(renderer): render markdown inline tokens safely`
-- `142d7801e5e33b81197bab4f7290dc4c8745f242` — `fix(renderer): preserve markdown mention text`
+- `39f117c51e264061383a5d8675c8214f58c93409` — `fix(renderer): preserve markdown mention text`
