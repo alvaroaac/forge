@@ -277,10 +277,16 @@ Persisted body`);
     );
 
     expect(screen.getByRole('button', { name: /Review changes/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded')).toBe(
+      'false',
+    );
     expect(screen.queryByText(reviewSummary.reviewerSummary)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Review changes/i }));
 
+    expect(screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded')).toBe(
+      'true',
+    );
     expect(screen.getByText(reviewSummary.reviewerSummary)).toBeTruthy();
   });
 

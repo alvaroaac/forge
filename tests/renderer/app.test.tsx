@@ -360,6 +360,74 @@ describe('App detail drawer refresh', () => {
     });
   });
 
+  it('does not apply an older review result after the drawer switches issues', async () => {
+    const firstReview = createDeferred<{
+      content: string;
+      summary: SpecReviewSummary;
+    }>();
+    const launchReview = vi.fn().mockImplementationOnce(() => firstReview.promise);
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview,
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+    };
+    renderState.streamSpec = {
+      issueId: 'FUL-1',
+      content: '# Original spec',
+      generatedAt: '2026-05-14T12:00:00.000Z',
+      approved: false,
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[0], 'spec');
+    });
+
+    await act(async () => {
+      renderState.specDrawerProps?.onLaunchReview('# Original spec');
+    });
+
+    await waitFor(() => {
+      expect(launchReview).toHaveBeenCalledWith('FUL-1', '# Original spec', 'sonnet');
+    });
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[1], 'spec');
+    });
+
+    await act(async () => {
+      firstReview.resolve({
+        content: '# Revised for first issue',
+        summary: {
+          verdict: 'approved',
+          reviewerSummary: 'First issue review',
+          commentCount: 1,
+          appliedChanges: ['Changed first issue'],
+          unresolvedComments: [],
+        },
+      });
+      await firstReview.promise;
+    });
+
+    expect(renderState.specDrawerIssue?.id).toBe('FUL-2');
+    expect(renderState.specDrawerProps?.reviewedContent).toBeNull();
+    expect(renderState.specDrawerProps?.reviewSummary).toBeNull();
+  });
+
   it('keeps previous displayed content when review fails', async () => {
     const launchReview = vi.fn().mockRejectedValue(new Error('Review bridge failed'));
     window.forge = {

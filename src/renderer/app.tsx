@@ -40,6 +40,12 @@ export function App() {
   const drawerIssueId = drawer?.issue.id ?? null;
   const { spec, streaming, isStreaming, errorMessage, generate } = useSpecStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
+  const currentDrawerIssueId = useRef<string | null>(null);
+  const activeReviewIssueId = useRef<string | null>(null);
+
+  useEffect(() => {
+    currentDrawerIssueId.current = drawerIssueId;
+  }, [drawerIssueId]);
 
   useEffect(() => {
     if (config?.claudeModel) {
@@ -89,6 +95,7 @@ export function App() {
   }, [drawerIssueId]);
 
   useEffect(() => {
+    activeReviewIssueId.current = null;
     setReviewedContent(null);
     setReviewSummary(null);
     setIsReviewPending(false);
@@ -125,18 +132,38 @@ export function App() {
       return;
     }
 
+    const requestedIssueId = drawerIssueId;
+    activeReviewIssueId.current = requestedIssueId;
     setIsReviewPending(true);
     setReviewErrorMessage(null);
 
     try {
-      const result = await window.forge.spec.launchReview(drawerIssueId, content, claudeModel);
+      const result = await window.forge.spec.launchReview(requestedIssueId, content, claudeModel);
+      if (
+        activeReviewIssueId.current !== requestedIssueId ||
+        currentDrawerIssueId.current !== requestedIssueId
+      ) {
+        return;
+      }
       setReviewedContent(result.content);
       setReviewSummary(result.summary);
     } catch (error) {
+      if (
+        activeReviewIssueId.current !== requestedIssueId ||
+        currentDrawerIssueId.current !== requestedIssueId
+      ) {
+        return;
+      }
       const message = error instanceof Error ? error.message : 'Review launch failed';
       setReviewErrorMessage(message);
     } finally {
-      setIsReviewPending(false);
+      if (
+        activeReviewIssueId.current === requestedIssueId &&
+        currentDrawerIssueId.current === requestedIssueId
+      ) {
+        activeReviewIssueId.current = null;
+        setIsReviewPending(false);
+      }
     }
   };
 

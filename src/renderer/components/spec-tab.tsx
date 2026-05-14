@@ -61,6 +61,7 @@ export function SpecTab({
   const content = cleanSpecMarkdown(pickDisplayedContent(spec, streaming, reviewedContent));
   const combinedErrorMessage = reviewErrorMessage ?? errorMessage;
   const effectiveReviewStatus = isReviewPending ? 'Review in progress...' : reviewStatusMessage;
+  const reviewChangesId = `review-changes-${issue.id}`;
   const modelOptions = CLAUDE_MODEL_OPTIONS.includes(claudeModel)
     ? CLAUDE_MODEL_OPTIONS
     : [claudeModel, ...CLAUDE_MODEL_OPTIONS];
@@ -161,11 +162,17 @@ export function SpecTab({
       </div>
       {reviewSummary ? (
         <div style={{ marginTop: 12 }}>
-          <button className="btn-ghost" type="button" onClick={() => setShowReviewChanges((current) => !current)}>
+          <button
+            aria-controls={reviewChangesId}
+            aria-expanded={showReviewChanges}
+            className="btn-ghost"
+            type="button"
+            onClick={() => setShowReviewChanges((current) => !current)}
+          >
             Review changes
           </button>
           {showReviewChanges ? (
-            <div style={{ marginTop: 10, fontSize: 12 }}>
+            <div id={reviewChangesId} style={{ marginTop: 10, fontSize: 12 }}>
               <div>
                 <strong>Verdict:</strong> {reviewSummary.verdict}
               </div>
