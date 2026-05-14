@@ -1,14 +1,14 @@
-# Task 2 QA Review
+# Task 2 QA Re-Review
 
 ## Strengths
 
-- The external bridge stays thin and disposable. `launchSpecReview` validates the issue id before side effects, creates one OS temp directory, writes `review-input.md`, runs one `plan-review` process, reads `plan-review-output.md`, calls the Forge-owned revision path, and performs best-effort cleanup in `finally`.
-- The `plan-review` command construction matches the plan exactly: `plan-review <input> --fresh --split-by heading -o file --output-file <output>`, with `shell: false` and no `-o claude` path.
-- Cleanup behavior is covered for success, nonzero CLI exit, missing output, and cleanup failure. The implementation does not add a rich lifecycle/status framework.
-- The renderer/main boundary remains intact. Renderer-facing code only adds the typed preload/API invoke surface, while Node APIs stay in the main process.
-- The launch review IPC path returns the revised spec as a draft result and does not call spec persistence. The IPC test explicitly guards the failure path from invoking `writeSpec`.
-- Task 2 tests are focused on the behavior that matters for the demo bridge: exact args, unsafe issue-id early rejection, cleanup attempts, IPC pass-through, and API shape.
-- No unreasoned `any` was introduced in the reviewed Task 2 code.
+- The previous lint-blocking issue is fixed. [src/main/ipc/spec.ts](/Users/alvarocarvalho/desenv/personal/forge/src/main/ipc/spec.ts:11) no longer imports `SpecStreamChunk`; the import list is limited to the types actually used by the Task 2 IPC handler and existing spec handlers.
+- The external `plan-review` bridge remains intentionally thin. `launchSpecReview` validates the issue id before side effects, creates one OS temp directory, writes `review-input.md`, runs one `plan-review` process, reads `plan-review-output.md`, calls the Forge-owned revision path, and best-effort deletes the temp directory in `finally`.
+- The command shape still matches the demo contract exactly: `plan-review <input> --fresh --split-by heading -o file --output-file <output>`, using `shell: false` and no `-o claude` path.
+- The renderer/main boundary remains intact. The renderer-facing surface is typed through preload/shared API, while temp files, spawning, and filesystem access stay in the main process.
+- The launch review path returns a draft `SpecReviewResult` and does not persist the revised spec. The IPC coverage still guards that failed review launch does not call spec persistence.
+- Focused tests continue to cover the important bridge behavior: cleaned temp input, exact args, unsafe issue-id early rejection, cleanup on failure, missing-output handling, IPC pass-through, and API shape.
+- No unreasoned `any` or new complexity concern was found in the reviewed Task 2 code.
 
 ## Issues
 
@@ -18,7 +18,7 @@
 
 ### Important
 
-- [src/main/ipc/spec.ts](/Users/alvarocarvalho/desenv/personal/forge/src/main/ipc/spec.ts:11): `SpecStreamChunk` is imported but unused, so `npm run lint` exits with an error. This unused import existed at the base SHA, but Task 2 rewrote this import line while adding `SpecReviewResult`, leaving current HEAD in a lint-failing state. Remove `SpecStreamChunk` from the import.
+- None.
 
 ### Minor
 
@@ -26,14 +26,15 @@
 
 ## Drift detected
 
-- None. Task 1's repeated issue classes were an invalid prompt contract and parser complexity. Task 2 does not repeat those patterns: it delegates parsing to the Task 1 parser, keeps the new revision orchestration small, and the bridge is intentionally simple.
+- None. Task 1's prior issue classes were an invalid prompt contract and parser complexity; Task 2 does not repeat them. It delegates parsing to the Task 1 parser, keeps revision orchestration small, and preserves the disposable bridge boundary requested by the plan.
 
 ## Assessment
 
-- Result: changes requested.
-- Reason: implementation behavior and tests are otherwise solid, but current HEAD should not leave a lint error in a touched source file.
+- Result: approved.
+- Re-verified prior finding:
+  - Unused `SpecStreamChunk` import in [src/main/ipc/spec.ts](/Users/alvarocarvalho/desenv/personal/forge/src/main/ipc/spec.ts:11): fixed.
 - Verification run:
   - `npm test -- tests/shared/ipc-channels.test.ts tests/main/preload.test.ts tests/main/spec-review-bridge.test.ts tests/main/ipc-spec-review.test.ts` passed: 4 files / 9 tests.
   - `npm run typecheck` passed.
   - `npm test` passed: 44 files / 200 tests.
-  - `npm run lint` failed with the unused `SpecStreamChunk` import above, plus two warnings that appear outside the Task 2 implementation surface.
+  - `npm run lint` passed with 0 errors. It reported two warnings outside the Task 2 implementation surface: `src/renderer/hooks/use-spec-stream.ts` has an unnecessary hook dependency warning, and `tests/main/paths.test.ts` has an unused `vi` import warning.
