@@ -76,7 +76,7 @@ describe('DetailTab', () => {
 
     const fallback = container.querySelector('.drawer-empty .mono.dim');
     expect(fallback).toBeTruthy();
-    expect(fallback?.textContent).toBe('No description from Linear.');
+    expect(fallback?.textContent).toBe('No Linear issue description returned.');
   });
 
   it('renders fallback when description is only whitespace', () => {
@@ -89,7 +89,7 @@ describe('DetailTab', () => {
 
     const fallback = container.querySelector('.drawer-empty .mono.dim');
     expect(fallback).toBeTruthy();
-    expect(fallback?.textContent).toBe('No description from Linear.');
+    expect(fallback?.textContent).toBe('No Linear issue description returned.');
   });
 
   it('renders single newlines inside a paragraph as spaces', () => {

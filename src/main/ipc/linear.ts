@@ -6,11 +6,15 @@ import type { Issue } from '../../shared/types';
 export interface LinearDeps {
   cache: IssuesCache;
   fetchIssues: (client: unknown) => Promise<Issue[]>;
+  fetchIssueDetail: (client: unknown, issueId: string) => Promise<Issue | null>;
   client: unknown;
 }
 
 export function registerLinearHandlers(ipc: IpcMain, deps: LinearDeps): void {
   ipc.handle(IpcChannel.LinearFetchIssues, async () => deps.cache.read());
+  ipc.handle(IpcChannel.LinearFetchIssueDetail, async (_event, payload: { issueId: string }) =>
+    deps.fetchIssueDetail(deps.client, payload.issueId),
+  );
   ipc.handle(IpcChannel.LinearRefresh, async () => {
     const issues = await deps.fetchIssues(deps.client);
     await deps.cache.write(issues);

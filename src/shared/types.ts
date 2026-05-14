@@ -44,3 +44,12 @@ export interface SpecStreamChunk {
   delta: string;
   done: boolean;
 }
+
+export interface SpecGenerateDone {
+  issueId: string;
+}
+
+export interface SpecGenerateError {
+  issueId: string;
+  message: string;
+}

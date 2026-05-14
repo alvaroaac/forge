@@ -17,7 +17,12 @@ type SpecDrawerProps = {
   spec: Spec | null;
   streaming: string;
   isStreaming: boolean;
+  errorMessage: string | null;
+  claudeModel: string;
+  onClaudeModelChange: (model: string) => void;
   onGenerate: () => void;
+  onLaunchReview?: (content: string) => void;
+  onWrite?: (content: string) => void;
   onCopy: (content: string) => void;
 };
 
@@ -45,7 +50,12 @@ export function SpecDrawer({
   spec,
   streaming,
   isStreaming,
+  errorMessage,
+  claudeModel,
+  onClaudeModelChange,
   onGenerate,
+  onLaunchReview,
+  onWrite,
   onCopy,
 }: SpecDrawerProps) {
   useEscClose(onClose);
@@ -103,7 +113,12 @@ export function SpecDrawer({
                   spec={spec}
                   streaming={streaming}
                   isStreaming={isStreaming}
+                  errorMessage={errorMessage}
+                  claudeModel={claudeModel}
+                  onClaudeModelChange={onClaudeModelChange}
                   onGenerate={onGenerate}
+                  onLaunchReview={onLaunchReview}
+                  onWrite={onWrite}
                   onCopy={onCopy}
                 />
               )}

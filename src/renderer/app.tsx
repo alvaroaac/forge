@@ -10,6 +10,8 @@ import { useConfig } from './hooks/use-config';
 import { useIssues } from './hooks/use-issues';
 import { useSpecStream } from './hooks/use-spec-stream';
 
+const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-4-6';
+
 function formatSync(ts: number): string {
   if (!ts) {
     return '—';
@@ -30,9 +32,16 @@ export function App() {
   const { issues, lastSync, refresh } = useIssues();
   const [tab, setTab] = useState<Tab>('Todo');
   const [drawer, setDrawer] = useState<{ issue: Issue; tab: DrawerTab } | null>(null);
+  const [claudeModel, setClaudeModel] = useState(DEFAULT_CLAUDE_MODEL);
   const drawerIssueId = drawer?.issue.id ?? null;
-  const { spec, streaming, isStreaming, generate } = useSpecStream(drawerIssueId);
+  const { spec, streaming, isStreaming, errorMessage, generate } = useSpecStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (config?.claudeModel) {
+      setClaudeModel(config.claudeModel);
+    }
+  }, [config?.claudeModel]);
 
   useEffect(() => {
     if (!drawerIssueId || !spec) {
@@ -41,6 +50,39 @@ export function App() {
 
     specIds.current.add(drawerIssueId);
   }, [drawerIssueId, spec]);
+
+  useEffect(() => {
+    if (!drawerIssueId) {
+      return;
+    }
+
+    let cancelled = false;
+    const requestedIssueId = drawerIssueId;
+
+    const hydrateDrawerIssue = async () => {
+      try {
+        const freshIssue = await window.forge.linear.fetchIssueDetail(requestedIssueId);
+        if (cancelled || !freshIssue) {
+          return;
+        }
+
+        setDrawer((current) => {
+          if (!current || current.issue.id !== requestedIssueId) {
+            return current;
+          }
+          return { ...current, issue: freshIssue };
+        });
+      } catch {
+        // Keep cached issue fields when detail fetch fails.
+      }
+    };
+
+    void hydrateDrawerIssue();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [drawerIssueId]);
 
   const hasSpecFor = (id: string) => {
     return specIds.current.has(id) || (drawerIssueId === id && !!spec);
@@ -52,6 +94,29 @@ export function App() {
 
   const onCopy = (content: string) => {
     void navigator.clipboard.writeText(content);
+  };
+
+  const onClaudeModelChange = (nextModel: string) => {
+    setClaudeModel(nextModel);
+    void window.forge.config.set({ claudeModel: nextModel });
+  };
+
+  const onGenerateSpec = () => {
+    void window.forge.config.set({ claudeModel });
+    void generate(claudeModel);
+  };
+
+  const onLaunchReviewSpec = (content: string) => {
+    void navigator.clipboard.writeText(content);
+  };
+
+  const onWriteSpec = (content: string) => {
+    if (!drawerIssueId) {
+      return;
+    }
+
+    specIds.current.add(drawerIssueId);
+    void window.forge.spec.write(drawerIssueId, content);
   };
 
   const setDrawerTab = (nextTab: DrawerTab) => {
@@ -87,7 +152,12 @@ export function App() {
         spec={spec}
         streaming={streaming}
         isStreaming={isStreaming}
-        onGenerate={generate}
+        errorMessage={errorMessage}
+        claudeModel={claudeModel}
+        onClaudeModelChange={onClaudeModelChange}
+        onGenerate={onGenerateSpec}
+        onLaunchReview={onLaunchReviewSpec}
+        onWrite={onWriteSpec}
         onCopy={onCopy}
       />
     </div>

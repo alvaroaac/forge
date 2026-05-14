@@ -40,8 +40,15 @@ function setForge(fetch: () => Promise<Issue[]>, refresh: () => Promise<Issue[]>
   window.forge = {
     auth: { check: vi.fn() },
     config: { get: vi.fn(), set: vi.fn() },
-    linear: { fetch, refresh },
-    spec: { get: vi.fn(), generate: vi.fn(), onChunk: vi.fn() },
+    linear: { fetch, refresh, fetchIssueDetail: vi.fn() },
+    spec: {
+      get: vi.fn(),
+      generate: vi.fn(),
+      write: vi.fn(),
+      onChunk: vi.fn(),
+      onDone: vi.fn(),
+      onError: vi.fn(),
+    },
   };
 }
 

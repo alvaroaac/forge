@@ -10,7 +10,7 @@ Reusable Linear API client for agent-driven CRUD on issues, labels, states, rela
 
 ## Auth
 
-Reads an OAuth access token from `~/.humanlayer/riptide/linear.json` (shape: `{ access_token, ... }`), or falls back to the `LINEAR_API_KEY` env var. If neither is present, the client exits with an error message telling the user to run `linear login` or set the env var. If a call returns `AUTHENTICATION_ERROR`, the token has expired — ask the user to re-run `linear login`.
+Reads an OAuth access token from `~/.humanlayer/riptide/linear.json` (shape: `{ access_token, ... }`), or falls back to the `LINEAR_API_KEY` env var. If neither is present, normal data operations exit with an error message telling the user to run `linear login` or set the env var. Health-check operations return `false` instead of exiting. If a call returns `AUTHENTICATION_ERROR`, the token has expired — ask the user to re-run `linear login`.
 
 ## Import
 
@@ -34,8 +34,10 @@ const linear = createLinearClient({ teamKey: 'CSI', titlePrefix: '' });
 - **`findIssues()`** → `Map<normalizedTitle, { id, identifier, url, title }>` — every issue in the team whose title contains `titlePrefix`.
 - **`getCurrentUser()`** → `{ id, name, email }` — the authenticated viewer (per the OAuth token).
 - **`fetchAssignedIssues(assigneeId)`** → `Array<{ id, identifier, title, description, state: { name, type }, priority, labels: { nodes: [{ name }] }, url, updatedAt }>` — open issues on the bound team assigned to `assigneeId`. Excludes `completed`/`canceled` states server-side.
+- **`fetchIssueDetail(identifier)`** → `{ id, identifier, title, description, state: { name, type }, priority, labels: { nodes: [{ name }] }, url, updatedAt } | null` — single-issue detail read by identifier like `FUL-42`.
 - **`getIssue(identifier)`** → `{ id, identifier, title, url } | null` — fetch by identifier like `CSI-11`.
 - **`getProjectAndMilestones(projectName)`** → `{ projectId, milestoneMap }` — project lookup plus milestone name-to-id map.
+- **`checkAuth(tokenPath?)`** → `boolean` — non-fatal viewer health check for UI status surfaces. Uses `LINEAR_API_KEY` first, then the provided OAuth token path, and returns `false` for missing/invalid auth or request failures.
 
 ### Writes
 

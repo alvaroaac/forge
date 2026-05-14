@@ -14,6 +14,7 @@ type IpcMainLike = {
 
 type IssuesCacheDouble = Pick<IssuesCache, 'read' | 'write'>;
 type FetchIssues = (client: unknown) => Promise<Issue[]>;
+type FetchIssueDetail = (client: unknown, issueId: string) => Promise<Issue | null>;
 
 describe('registerLinearHandlers', () => {
   it('registers linear handlers on ipcMain', () => {
@@ -28,13 +29,17 @@ describe('registerLinearHandlers', () => {
       write: vi.fn(),
     };
     const fetchIssues: FetchIssues = vi.fn();
+    const fetchIssueDetail: FetchIssueDetail = vi.fn();
 
-    registerLinearHandlers(ipc as IpcMain, { cache, fetchIssues, client: {} });
+    registerLinearHandlers(ipc as IpcMain, { cache, fetchIssues, fetchIssueDetail, client: {} });
 
-    expect(registrations).toHaveLength(2);
+    expect(registrations).toHaveLength(3);
     expect(registrations.some((entry) => entry.channel === IpcChannel.LinearFetchIssues)).toBe(
       true,
     );
+    expect(
+      registrations.some((entry) => entry.channel === IpcChannel.LinearFetchIssueDetail),
+    ).toBe(true);
     expect(registrations.some((entry) => entry.channel === IpcChannel.LinearRefresh)).toBe(true);
     registrations.forEach((entry) => {
       expect(typeof entry.handler).toBe('function');
@@ -78,8 +83,9 @@ describe('registerLinearHandlers', () => {
         isBug: true,
       },
     ]);
+    const fetchIssueDetail: FetchIssueDetail = vi.fn();
 
-    registerLinearHandlers(ipc as IpcMain, { cache, fetchIssues, client: {} });
+    registerLinearHandlers(ipc as IpcMain, { cache, fetchIssues, fetchIssueDetail, client: {} });
     const handler = calls.get(IpcChannel.LinearFetchIssues);
     expect(handler).toBeDefined();
 
@@ -117,8 +123,9 @@ describe('registerLinearHandlers', () => {
       write: vi.fn(),
     };
     const fetchIssues: FetchIssues = vi.fn().mockResolvedValue(refreshed);
+    const fetchIssueDetail: FetchIssueDetail = vi.fn();
 
-    registerLinearHandlers(ipc as IpcMain, { cache, fetchIssues, client });
+    registerLinearHandlers(ipc as IpcMain, { cache, fetchIssues, fetchIssueDetail, client });
     const handler = calls.get(IpcChannel.LinearRefresh);
     expect(handler).toBeDefined();
 
@@ -129,5 +136,42 @@ describe('registerLinearHandlers', () => {
     expect(cache.write).toHaveBeenCalledTimes(1);
     expect(cache.write).toHaveBeenCalledWith(refreshed);
     expect(result).toEqual(refreshed);
+  });
+
+  it('linear:fetch-issue-detail calls fetchIssueDetail(client, issueId)', async () => {
+    const calls = new Map<IpcChannelName, IpcMainHandler>();
+    const client = {};
+    const issue = {
+      id: 'FUL-3',
+      title: 'Three',
+      description: 'fresh',
+      status: 'in_review',
+      priority: 'low',
+      labels: ['frontend'],
+      url: 'https://example.com/ful-3',
+      updatedAt: '2026-01-03T00:00:00Z',
+      isBug: false,
+    } satisfies Issue;
+    const ipc: IpcMainLike = {
+      handle(channel, listener) {
+        calls.set(channel, listener);
+      },
+    };
+    const cache: IssuesCacheDouble = {
+      read: vi.fn(),
+      write: vi.fn(),
+    };
+    const fetchIssues: FetchIssues = vi.fn();
+    const fetchIssueDetail: FetchIssueDetail = vi.fn().mockResolvedValue(issue);
+
+    registerLinearHandlers(ipc as IpcMain, { cache, fetchIssues, fetchIssueDetail, client });
+    const handler = calls.get(IpcChannel.LinearFetchIssueDetail);
+    expect(handler).toBeDefined();
+
+    const result = await handler!({}, { issueId: 'FUL-3' });
+
+    expect(fetchIssueDetail).toHaveBeenCalledTimes(1);
+    expect(fetchIssueDetail).toHaveBeenCalledWith(client, 'FUL-3');
+    expect(result).toEqual(issue);
   });
 });

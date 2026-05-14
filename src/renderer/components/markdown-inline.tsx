@@ -30,6 +30,22 @@ export function renderInlineMarkdown(line: string, keyPrefix: string | number): 
       );
     }
 
+    if (part.type === 'strong') {
+      return (
+        <strong key={key} className="md-strong">
+          {part.text}
+        </strong>
+      );
+    }
+
+    if (part.type === 'link') {
+      return (
+        <a key={key} className="md-link" href={part.href} target="_blank" rel="noreferrer">
+          {part.text}
+        </a>
+      );
+    }
+
     return part.text;
   });
 }

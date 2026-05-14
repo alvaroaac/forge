@@ -3,6 +3,7 @@
 Status: DONE
 
 What you implemented
+
 - Created repo bootstrap scaffold files:
   - `package.json`
   - `tsconfig.json`
@@ -23,6 +24,7 @@ What you implemented
 - Recorded implementation model: `gpt-5.3-codex-spark`.
 
 What you tested and test results
+
 - `npm install` completed with success after sandbox escalation.
 - `npm run typecheck` passed (both main and renderer TS configs).
 - Git identity check passed: `git config user.name` and `git config user.email` were both present.
@@ -31,6 +33,7 @@ What you tested and test results
 - `git status --short` was clean after the correction commit.
 
 Files changed
+
 - `.gitignore`
 - `package.json`
 - `tsconfig.json`
@@ -48,21 +51,25 @@ Files changed
 - `thoughts/tasks/phase1-mvp/impl/task-1/progress.md`
 
 Self-review findings
+
 - The requested bootstrap files were created with the exact content from the task.
 - `tsc` input checks pass with the placeholder files.
 - The temporary files introduced during the QA follow-up (`src/main/preload.ts`, `src/renderer/index.html`, `tests/bootstrap.test.ts`) were removed to restore strict Task 1 scope.
 
 Tech-debt logged
+
 - No intentional technical debt was introduced beyond existing project context.
 - Task 1 now remains intentionally minimal and aligned with the approved scaffold-only mandate.
 
 Commits made
+
 - `8d08d67` — `chore: bootstrap Electron + Vite + TypeScript scaffold`
 - `3a96446` — `fix(task1): add bootstrap placeholders for build and test`
 - `b8d34ee` — `docs(task1): update progress report after QA fix`
 - `fcad44b` — `docs(task1): align progress report with additional tracked artifacts`
- - This commit — scope correction removing out-of-spec files and restoring Task 1 file surface
+- This commit — scope correction removing out-of-spec files and restoring Task 1 file surface
 
 Concerns
+
 - Initial `npm install` attempt hit sandbox DNS restrictions (`ENOTFOUND`); installation was re-run with escalation.
 - `npm install` reported vulnerabilities in dependency graph (7 total; 1 high, 6 moderate) and was not resolved in this task.

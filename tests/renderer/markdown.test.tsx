@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 
 import { MarkdownSection } from '../../src/renderer/components/markdown-section';
 import { highlightInline, splitSections, type Section } from '../../src/renderer/lib/markdown';
+import { cleanSpecMarkdown } from '../../src/shared/spec-markdown';
 
 const sectionFixture = (h: string, body: string) => ({ h, body });
 
@@ -67,6 +68,16 @@ describe('splitSections', () => {
   });
 });
 
+describe('cleanSpecMarkdown', () => {
+  it('removes Claude wrapper text and markdown fences from generated specs', () => {
+    const output = cleanSpecMarkdown(
+      'Permission needed to write the file.\n\n```markdown\n# Spec: FUL-44\n\n## Task Summary\nBody\n```',
+    );
+
+    expect(output).toBe('# Spec: FUL-44\n\n## Task Summary\nBody');
+  });
+});
+
 describe('MarkdownSection', () => {
   afterEach(() => {
     cleanup();
@@ -117,6 +128,22 @@ describe('MarkdownSection', () => {
     expect(mentions).toHaveLength(2);
     expect(mentions[0].textContent).toBe('@ops');
     expect(mentions[1].textContent).toBe('@alice');
+  });
+
+  it('renders headings, rules, blockquotes, bold text, and links', () => {
+    const section: Section = sectionFixture(
+      '',
+      '# Spec: FUL-44\n---\n> **Status:** Draft\nSee [Linear](https://linear.app/fulcrum) and **ship it**.',
+    );
+    const { container } = render(<MarkdownSection h={section.h} body={section.body} />);
+
+    expect(container.querySelector('.md-title')?.textContent).toBe('Spec: FUL-44');
+    expect(container.querySelector('.md-rule')).toBeTruthy();
+    expect(container.querySelector('.md-quote')?.textContent).toBe('Status: Draft');
+    expect(container.querySelectorAll('.md-strong')).toHaveLength(2);
+    expect(container.querySelector('.md-link')?.getAttribute('href')).toBe(
+      'https://linear.app/fulcrum',
+    );
   });
 
   it('renders malicious HTML-like content as literal text', () => {

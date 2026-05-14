@@ -9,7 +9,7 @@ export function DetailTab({ issue }: DetailTabProps) {
   if (issue.description.trim() === '') {
     return (
       <div className="drawer-empty">
-        <div className="mono dim">No description from Linear.</div>
+        <div className="mono dim">No Linear issue description returned.</div>
       </div>
     );
   }

@@ -1,91 +1,95 @@
-import { describe, expect, it, vi } from 'vitest';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
+import { describe, expect, it } from 'vitest';
 import { streamSpec } from '../../src/main/services/spec-generator';
-import type { MessageStreamEvent, MessageStreamParams } from '@anthropic-ai/sdk/resources/messages';
 
-interface FakeAnthropic {
-  messages: {
-    stream: (params: MessageStreamParams) => AsyncIterable<MessageStreamEvent>;
-  };
-  streamCalls: MessageStreamParams[];
+type SpawnProcess = NonNullable<Parameters<typeof streamSpec>[0]['spawnProcess']>;
+
+type SpawnCall = {
+  command: string;
+  args: readonly string[];
+  options: Parameters<SpawnProcess>[2];
+};
+
+type FakeChild = EventEmitter & {
+  stdin: PassThrough;
+  stdout: PassThrough;
+  stderr: PassThrough;
+  kill: () => void;
+};
+
+function createFakeChild(): FakeChild {
+  const child = new EventEmitter() as FakeChild;
+  child.stdin = new PassThrough();
+  child.stdout = new PassThrough();
+  child.stderr = new PassThrough();
+  child.kill = () => undefined;
+  return child;
 }
 
-function makeStream(events: MessageStreamEvent[]): AsyncIterable<MessageStreamEvent> {
-  async function* gen() {
-    for (const event of events) {
-      yield event;
-    }
-  }
-  return {
-    [Symbol.asyncIterator]: () => gen(),
+function createFakeSpawn(script: (child: FakeChild) => void): { calls: SpawnCall[]; spawnProcess: SpawnProcess } {
+  const calls: SpawnCall[] = [];
+  const spawnProcess: SpawnProcess = (command, args, options) => {
+    const child = createFakeChild();
+    calls.push({ command, args, options });
+    queueMicrotask(() => script(child));
+    return child as unknown as ReturnType<SpawnProcess>;
   };
-}
-
-function makeFakeAnthropic(events: MessageStreamEvent[]): FakeAnthropic {
-  const streamCalls: MessageStreamParams[] = [];
-  const stream = vi.fn((_params: MessageStreamParams) => {
-    streamCalls.push(_params);
-    return makeStream(events);
-  });
-  return { messages: { stream }, streamCalls };
+  return { calls, spawnProcess };
 }
 
 describe('streamSpec', () => {
-  it('emits each text delta to onChunk then resolves with full text', async () => {
-    const events: MessageStreamEvent[] = [
-      { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '# Spec\n' } },
-      { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: 'body' } },
-    ];
-    const anthropic = makeFakeAnthropic(events);
+  it('invokes claude with argument arrays, writes prompt to stdin, forwards stdout chunks, and returns full text', async () => {
+    let stdinText = '';
+    const { calls, spawnProcess } = createFakeSpawn((child) => {
+      stdinText = child.stdin.read()?.toString() ?? '';
+      child.stdout.write('# Spec\n');
+      child.stdout.write('Body');
+      child.emit('close', 0);
+    });
     const chunks: string[] = [];
     const full = await streamSpec({
-      client: anthropic,
       model: 'claude-sonnet-4-6',
       system: 'sys',
       user: 'user',
       onChunk: (c) => chunks.push(c),
+      spawnProcess,
     });
-    expect(chunks).toEqual(['# Spec\n', 'body']);
-    expect(full).toBe('# Spec\nbody');
-    expect(anthropic.messages.stream).toHaveBeenCalledWith({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
-      system: 'sys',
-      messages: [{ role: 'user', content: 'user' }],
-    });
-    expect(anthropic.messages.stream).toHaveBeenCalledTimes(1);
-    expect(anthropic.streamCalls).toHaveLength(1);
-    expect(anthropic.streamCalls[0].messages).toHaveLength(1);
+
+    expect(calls).toEqual([
+      {
+        command: 'claude',
+        args: [
+          '-p',
+          '--model',
+          'claude-sonnet-4-6',
+          '--append-system-prompt',
+          'sys',
+          '--output-format',
+          'text',
+        ],
+        options: { shell: false, stdio: ['pipe', 'pipe', 'pipe'] },
+      },
+    ]);
+    expect(stdinText).toBe('user');
+    expect(chunks).toEqual(['# Spec\n', 'Body']);
+    expect(full).toBe('# Spec\nBody');
   });
 
-  it('ignores non-text stream events and keeps streaming output unchanged', async () => {
-    const events: MessageStreamEvent[] = [
-      {
-        type: 'message_delta',
-        delta: { stop_reason: null, stop_sequence: null },
-        usage: { output_tokens: 0 },
-      },
-      {
-        type: 'content_block_delta',
-        index: 0,
-        delta: { type: 'input_json_delta', partial_json: '{"x":' },
-      },
-      { type: 'content_block_delta', index: 1, delta: { type: 'text_delta', text: 'keep' } },
-      {
-        type: 'content_block_delta',
-        index: 0,
-        delta: { type: 'input_json_delta', partial_json: '1' },
-      },
-    ];
-    const anthropic = makeFakeAnthropic(events);
-    const chunks: string[] = [];
-    const full = await streamSpec({
-      client: anthropic,
-      model: 'claude-sonnet-4-6',
-      system: 'sys',
-      user: 'user',
-      onChunk: (c) => chunks.push(c),
+  it('rejects with a useful message when claude exits nonzero and includes stderr', async () => {
+    const { spawnProcess } = createFakeSpawn((child) => {
+      child.stderr.write('missing oauth session');
+      child.emit('close', 2);
     });
-    expect(chunks).toEqual(['keep']);
-    expect(full).toBe('keep');
+
+    await expect(
+      streamSpec({
+        model: 'claude-sonnet-4-6',
+        system: 'sys',
+        user: 'user',
+        onChunk: () => undefined,
+        spawnProcess,
+      }),
+    ).rejects.toThrow('Claude CLI exited with code 2: missing oauth session');
   });
 });

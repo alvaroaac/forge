@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { Spec, SpecStreamChunk } from '../../shared/types';
+import type { Spec, SpecGenerateDone, SpecGenerateError, SpecStreamChunk } from '../../shared/types';
 
 function toGeneratedSpec(issueId: string, content: string): Spec {
   return {
@@ -15,6 +15,7 @@ export function useSpecStream(issueId: string | null) {
   const [spec, setSpec] = useState<Spec | null>(null);
   const [streaming, setStreaming] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentIssueIdRef = useRef<string | null>(null);
   const setupVersionRef = useRef(0);
 
@@ -33,6 +34,7 @@ export function useSpecStream(issueId: string | null) {
     setSpec(null);
     setStreaming('');
     setIsStreaming(false);
+    setErrorMessage(null);
   }, []);
 
   const commitPersistedSpec = useCallback(
@@ -68,6 +70,18 @@ export function useSpecStream(issueId: string | null) {
     [isCurrentRun],
   );
 
+  const failStreaming = useCallback(
+    (targetIssueId: string, setupVersion: number, message: string): void => {
+      if (!isCurrentRun(targetIssueId, setupVersion)) {
+        return;
+      }
+
+      setErrorMessage(message);
+      setIsStreaming(false);
+    },
+    [isCurrentRun],
+  );
+
   const handleChunk = useCallback(
     (targetIssueId: string, setupVersion: number, chunk: SpecStreamChunk): void => {
       if (chunk.issueId !== targetIssueId) {
@@ -86,6 +100,28 @@ export function useSpecStream(issueId: string | null) {
       setStreaming((current) => current + chunk.delta);
     },
     [isCurrentRun],
+  );
+
+  const handleDone = useCallback(
+    (targetIssueId: string, setupVersion: number, payload: SpecGenerateDone): void => {
+      if (payload.issueId !== targetIssueId) {
+        return;
+      }
+
+      finishStreaming(targetIssueId, setupVersion);
+    },
+    [finishStreaming],
+  );
+
+  const handleError = useCallback(
+    (targetIssueId: string, setupVersion: number, payload: SpecGenerateError): void => {
+      if (payload.issueId !== targetIssueId) {
+        return;
+      }
+
+      failStreaming(targetIssueId, setupVersion, payload.message);
+    },
+    [failStreaming],
   );
 
   useEffect(() => {
@@ -118,18 +154,26 @@ export function useSpecStream(issueId: string | null) {
     const unsubscribe = window.forge.spec.onChunk((chunk: SpecStreamChunk) => {
       handleChunk(issueId, setupVersion, chunk);
     });
+    const unsubscribeDone = window.forge.spec.onDone((payload: SpecGenerateDone) => {
+      handleDone(issueId, setupVersion, payload);
+    });
+    const unsubscribeError = window.forge.spec.onError((payload: SpecGenerateError) => {
+      handleError(issueId, setupVersion, payload);
+    });
 
     return () => {
       cancelled = true;
       unsubscribe();
+      unsubscribeDone();
+      unsubscribeError();
 
       if (currentIssueIdRef.current === issueId) {
         currentIssueIdRef.current = null;
       }
     };
-  }, [issueId, commitPersistedSpec, handleChunk, resetStreamState]);
+  }, [issueId, commitPersistedSpec, handleChunk, handleDone, handleError, resetStreamState]);
 
-  const generate = useCallback(async (): Promise<void> => {
+  const generate = useCallback(async (model?: string): Promise<void> => {
     if (!issueId) {
       return;
     }
@@ -142,16 +186,23 @@ export function useSpecStream(issueId: string | null) {
 
     setStreaming('');
     setIsStreaming(true);
+    setErrorMessage(null);
 
     try {
-      const result = await window.forge.spec.generate(issueId);
+      const result = model
+        ? await window.forge.spec.generate(issueId, model)
+        : await window.forge.spec.generate(issueId);
       commitGeneratedSpec(issueId, setupVersion, result.content);
-    } catch {
-      // Keep the default spec state when preload rejects.
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (isCurrentIssue(issueId)) {
+        setErrorMessage(message);
+        setIsStreaming(false);
+      }
     } finally {
       finishStreaming(issueId, setupVersion);
     }
-  }, [issueId, commitGeneratedSpec, finishStreaming, isCurrentIssue]);
+  }, [issueId, commitGeneratedSpec, failStreaming, finishStreaming, isCurrentIssue]);
 
-  return { spec, streaming, isStreaming, generate };
+  return { spec, streaming, isStreaming, errorMessage, generate };
 }

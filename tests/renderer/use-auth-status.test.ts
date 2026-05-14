@@ -32,6 +32,17 @@ function waitForNextTick(): Promise<void> {
   });
 }
 
+function createSpecApi() {
+  return {
+    get: vi.fn(),
+    generate: vi.fn(),
+    write: vi.fn(),
+    onChunk: vi.fn(),
+    onDone: vi.fn(),
+    onError: vi.fn(),
+  };
+}
+
 describe('useAuthStatus', () => {
   it('starts with all connections false and applies the resolved auth status', async () => {
     const deferred = createDeferred<AuthStatus>();
@@ -40,8 +51,8 @@ describe('useAuthStatus', () => {
     window.forge = {
       auth: { check },
       config: { get: vi.fn(), set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn() },
-      spec: { get: vi.fn(), generate: vi.fn(), onChunk: vi.fn() },
+      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+      spec: createSpecApi(),
     };
 
     const { result } = renderHook(() => useAuthStatus());
@@ -79,8 +90,8 @@ describe('useAuthStatus', () => {
     window.forge = {
       auth: { check },
       config: { get: vi.fn(), set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn() },
-      spec: { get: vi.fn(), generate: vi.fn(), onChunk: vi.fn() },
+      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+      spec: createSpecApi(),
     };
 
     window.addEventListener('unhandledrejection', unhandledRejection);
@@ -119,8 +130,8 @@ describe('useConfig', () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get, set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn() },
-      spec: { get: vi.fn(), generate: vi.fn(), onChunk: vi.fn() },
+      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+      spec: createSpecApi(),
     };
 
     const { result } = renderHook(() => useConfig());
@@ -156,8 +167,8 @@ describe('useConfig', () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get, set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn() },
-      spec: { get: vi.fn(), generate: vi.fn(), onChunk: vi.fn() },
+      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+      spec: createSpecApi(),
     };
 
     window.addEventListener('unhandledrejection', unhandledRejection);

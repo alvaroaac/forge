@@ -1,5 +1,4 @@
 import type { IpcMain } from 'electron';
-import Anthropic from '@anthropic-ai/sdk';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -8,7 +7,7 @@ import { createConfigStore } from '../services/config-store';
 import { createIssuesCache } from '../services/issues-cache';
 import { checkAll } from '../services/auth-checker';
 import type { RawLinearIssue } from '../services/linear-service';
-import { fetchIssues } from '../services/linear-service';
+import { fetchIssueDetail, fetchIssues } from '../services/linear-service';
 import { readRepoContext } from '../services/repo-reader';
 import { streamSpec } from '../services/spec-generator';
 import { writeSpec } from '../services/spec-writer';
@@ -16,11 +15,17 @@ import { configPath, issuesCachePath } from '../lib/paths';
 import { registerAuthHandlers } from './auth';
 import { registerConfigHandlers } from './config';
 import { registerLinearHandlers } from './linear';
-import { registerSpecGenerateHandler, registerSpecGetHandler } from './spec';
+import {
+  registerSpecGenerateHandler,
+  registerSpecGetHandler,
+  registerSpecWriteHandler,
+} from './spec';
 
 interface LinearClient {
   getCurrentUser(): Promise<{ id: string; name: string; email: string }>;
+  checkAuth(tokenPath?: string): Promise<boolean>;
   fetchAssignedIssues(assigneeId: string): Promise<RawLinearIssue[]>;
+  fetchIssueDetail(identifier: string): Promise<RawLinearIssue | null>;
 }
 
 type LinearClientOptions = {
@@ -56,14 +61,15 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
   const cfg = await store.get();
   const createLinearClient = await loadLinearClient(appRoot);
   const client = createLinearClient({ teamKey: cfg.linearTeamKey, titlePrefix: '' });
-  const anthropic = new Anthropic();
   const templateMd = await loadTemplate(appRoot);
 
   registerConfigHandlers(ipc, store);
-  registerAuthHandlers(ipc, store, checkAll);
+  registerAuthHandlers(ipc, store, checkAll, client);
   registerLinearHandlers(ipc, {
     cache,
     fetchIssues: (linearClient) => fetchIssues(linearClient as LinearClient),
+    fetchIssueDetail: (linearClient, issueId) =>
+      fetchIssueDetail(linearClient as LinearClient, issueId),
     client,
   });
   registerSpecGetHandler(ipc, store);
@@ -72,8 +78,7 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
     cache,
     readRepoContext,
     streamSpec,
-    writeSpec,
-    anthropic,
     templateMd,
   });
+  registerSpecWriteHandler(ipc, { store, writeSpec });
 }

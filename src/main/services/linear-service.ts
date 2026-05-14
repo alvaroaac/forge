@@ -6,6 +6,10 @@ interface LinearClientShape {
   fetchAssignedIssues(id: string): Promise<RawLinearIssue[]>;
 }
 
+interface LinearDetailClientShape {
+  fetchIssueDetail(identifier: string): Promise<RawLinearIssue | null>;
+}
+
 export interface RawLinearIssue {
   id: string;
   identifier: string;
@@ -42,4 +46,16 @@ export function mapIssue(raw: RawLinearIssue): Issue {
 export async function fetchIssues(client: LinearClientShape): Promise<Issue[]> {
   const raw = await fetchRaw(client);
   return raw.map(mapIssue);
+}
+
+export async function fetchIssueDetail(
+  client: LinearDetailClientShape,
+  issueId: string,
+): Promise<Issue | null> {
+  const raw = await client.fetchIssueDetail(issueId);
+  if (!raw) {
+    return null;
+  }
+
+  return mapIssue(raw);
 }

@@ -14,16 +14,27 @@ const LINEAR_TOKEN_PATH = join(homedir(), '.humanlayer', 'riptide', 'linear.json
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-function getAuthHeader() {
+function readAuthHeader(tokenPath = LINEAR_TOKEN_PATH) {
   if (process.env.LINEAR_API_KEY) {
     return process.env.LINEAR_API_KEY;
   }
-  if (existsSync(LINEAR_TOKEN_PATH)) {
-    const tokens = JSON.parse(readFileSync(LINEAR_TOKEN_PATH, 'utf-8'));
-    if (tokens.access_token) {
-      return `Bearer ${tokens.access_token}`;
+  try {
+    if (existsSync(tokenPath)) {
+      const tokens = JSON.parse(readFileSync(tokenPath, 'utf-8'));
+      if (tokens.access_token) {
+        return `Bearer ${tokens.access_token}`;
+      }
     }
+  } catch {
+    return null;
   }
+  return null;
+}
+
+function getAuthHeader(tokenPath = LINEAR_TOKEN_PATH) {
+  const authorization = readAuthHeader(tokenPath);
+  if (authorization) return authorization;
+
   console.error(
     'ERROR: No Linear auth found.\n' +
     '  Option 1: Run `linear login` to authenticate via OAuth\n' +
@@ -34,15 +45,20 @@ function getAuthHeader() {
 
 // ─── GraphQL helper ───────────────────────────────────────────────────────────
 
-async function linearRequest(query, variables = {}) {
+async function linearRequest(query, variables = {}, opts = {}) {
+  const authorization = opts.authorization ?? getAuthHeader(opts.tokenPath);
   const res = await fetch(LINEAR_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: getAuthHeader(),
+      Authorization: authorization,
     },
     body: JSON.stringify({ query, variables }),
   });
+
+  if (res.ok === false) {
+    throw new Error(`Linear API HTTP ${res.status}`);
+  }
 
   const json = await res.json();
   if (json.errors) {
@@ -463,6 +479,63 @@ export function createLinearClient({ teamKey, titlePrefix }) {
   }
 
   /**
+   * Non-fatal auth health check for UI status surfaces.
+   *
+   * @param {string} [tokenPath]
+   * @returns {Promise<boolean>}
+   */
+  async function checkAuth(tokenPath = LINEAR_TOKEN_PATH) {
+    const authorization = readAuthHeader(tokenPath);
+    if (!authorization) return false;
+
+    try {
+      const data = await linearRequest(`
+        query {
+          viewer { id }
+        }
+      `, {}, { authorization });
+      return typeof data.viewer?.id === 'string' && data.viewer.id.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Fetches a single issue with full detail by identifier (e.g. 'FUL-1').
+   *
+   * @param {string} identifier
+   * @returns {Promise<{
+   *   id: string,
+   *   identifier: string,
+   *   title: string,
+   *   description: string | null,
+   *   state: { name: string, type: string },
+   *   priority: number,
+   *   labels: { nodes: Array<{ name: string }> },
+   *   url: string,
+   *   updatedAt: string,
+   * } | null>}
+   */
+  async function fetchIssueDetail(identifier) {
+    const data = await linearRequest(`
+      query($identifier: String!) {
+        issue(id: $identifier) {
+          id
+          identifier
+          title
+          description
+          state { name type }
+          priority
+          labels { nodes { name } }
+          url
+          updatedAt
+        }
+      }
+    `, { identifier });
+    return data.issue ?? null;
+  }
+
+  /**
    * All open issues assigned to assigneeId on the bound team.
    *
    * @param {string} assigneeId
@@ -516,6 +589,8 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     createRelation,
     createComment,
     getCurrentUser,
+    checkAuth,
+    fetchIssueDetail,
     fetchAssignedIssues,
   };
 }

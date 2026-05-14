@@ -4,6 +4,7 @@ import type { ConfigStore } from '../../src/main/services/config-store';
 import type { AuthStatus, AppConfig } from '../../src/shared/types';
 import { IpcChannel, type IpcChannelName } from '../../src/shared/ipc-channels';
 import { registerAuthHandlers } from '../../src/main/ipc/auth';
+import type { LinearAuthClient } from '../../src/main/services/auth-checker';
 
 type IpcMainHandler = (event: unknown, ...args: unknown[]) => Promise<unknown> | unknown;
 type IpcMainLike = {
@@ -11,7 +12,16 @@ type IpcMainLike = {
 };
 
 type ConfigStoreDouble = Pick<ConfigStore, 'get' | 'set'>;
-type CheckAllFn = (params: { linearTokenPath: string }) => Promise<AuthStatus>;
+type CheckAllFn = (params: {
+  linearTokenPath: string;
+  linearClient: LinearAuthClient;
+}) => Promise<AuthStatus>;
+
+function createLinearClient(): LinearAuthClient {
+  return {
+    checkAuth: vi.fn(),
+  };
+}
 
 describe('registerAuthHandlers', () => {
   it('registers auth:check on ipcMain', () => {
@@ -26,8 +36,9 @@ describe('registerAuthHandlers', () => {
       set: vi.fn(),
     };
     const checkAll: CheckAllFn = vi.fn();
+    const linearClient = createLinearClient();
 
-    registerAuthHandlers(ipc as IpcMain, store, checkAll);
+    registerAuthHandlers(ipc as IpcMain, store, checkAll, linearClient);
 
     expect(registrations).toHaveLength(1);
     expect(registrations[0]?.channel).toBe(IpcChannel.AuthCheck);
@@ -53,8 +64,9 @@ describe('registerAuthHandlers', () => {
       set: vi.fn(),
     };
     const checkAll: CheckAllFn = vi.fn().mockResolvedValue(status);
+    const linearClient = createLinearClient();
 
-    registerAuthHandlers(ipc as IpcMain, store, checkAll);
+    registerAuthHandlers(ipc as IpcMain, store, checkAll, linearClient);
     const handler = registered.get(IpcChannel.AuthCheck);
     expect(handler).toBeDefined();
 
@@ -62,7 +74,7 @@ describe('registerAuthHandlers', () => {
 
     expect(store.get).toHaveBeenCalledTimes(1);
     expect(checkAll).toHaveBeenCalledTimes(1);
-    expect(checkAll).toHaveBeenCalledWith({ linearTokenPath: cfg.linearTokenPath });
+    expect(checkAll).toHaveBeenCalledWith({ linearTokenPath: cfg.linearTokenPath, linearClient });
     expect(result).toEqual(status);
   });
 });

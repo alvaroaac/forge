@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fetchRaw, mapIssue, RawLinearIssue } from '../../src/main/services/linear-service';
+import {
+  fetchIssueDetail,
+  fetchRaw,
+  mapIssue,
+  RawLinearIssue,
+} from '../../src/main/services/linear-service';
 
 type LinearClientShape = {
   getCurrentUser: () => Promise<{ id: string; name: string; email: string }>;
@@ -76,5 +81,47 @@ describe('linear-service.fetchRaw', () => {
     expect(client.getCurrentUser).toHaveBeenCalled();
     expect(client.fetchAssignedIssues).toHaveBeenCalledWith('u1');
     expect(raw).toEqual([issue]);
+  });
+});
+
+describe('linear-service.fetchIssueDetail', () => {
+  it('maps a fetched detail issue to the internal Issue shape', async () => {
+    const raw = {
+      id: 'uuid-1',
+      identifier: 'FUL-9',
+      title: 'Fresh',
+      description: 'Fresh detail text',
+      state: { name: 'Todo', type: 'unstarted' },
+      priority: 3,
+      labels: { nodes: [{ name: 'ops' }] },
+      url: 'https://linear.app/acme/issue/FUL-9',
+      updatedAt: '2026-05-13T00:00:00.000Z',
+    } satisfies RawLinearIssue;
+    const client = {
+      fetchIssueDetail: vi.fn().mockResolvedValue(raw),
+    };
+
+    const issue = await fetchIssueDetail(client, 'FUL-9');
+
+    expect(client.fetchIssueDetail).toHaveBeenCalledWith('FUL-9');
+    expect(issue).toEqual({
+      id: 'FUL-9',
+      title: 'Fresh',
+      description: 'Fresh detail text',
+      status: 'todo',
+      priority: 'medium',
+      labels: ['ops'],
+      url: 'https://linear.app/acme/issue/FUL-9',
+      updatedAt: '2026-05-13T00:00:00.000Z',
+      isBug: false,
+    });
+  });
+
+  it('returns null when the issue is not found', async () => {
+    const client = {
+      fetchIssueDetail: vi.fn().mockResolvedValue(null),
+    };
+
+    await expect(fetchIssueDetail(client, 'FUL-404')).resolves.toBeNull();
   });
 });

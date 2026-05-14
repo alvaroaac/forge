@@ -66,6 +66,24 @@ describe('spec:get', () => {
     });
   });
 
+  it('cleans saved Claude wrapper text before returning Spec content', async () => {
+    const store = createStore(dir);
+
+    mkdirSync(join(dir, 'thoughts', 'tasks', 'FUL-7'), { recursive: true });
+    const filePath = join(dir, 'thoughts', 'tasks', 'FUL-7', 'initial-spec.md');
+    writeFileSync(
+      filePath,
+      'Permission needed\n\n```markdown\n# Spec: FUL-7\n\n## Task Summary\nBody\n```',
+      'utf-8',
+    );
+
+    const handler = createHandler(store);
+
+    const result = (await handler({}, { issueId: 'FUL-7' })) as Spec | null;
+
+    expect(result?.content).toBe('# Spec: FUL-7\n\n## Task Summary\nBody');
+  });
+
   it('returns Spec for safe project slug issue id', async () => {
     const store = createStore(dir);
     mkdirSync(join(dir, 'thoughts', 'tasks', 'phase1-mvp'), { recursive: true });

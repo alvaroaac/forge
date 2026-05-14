@@ -18,11 +18,16 @@ describe('ForgeApi shape', () => {
     },
     linear: {
       fetch: promiseFn<Issue[]>([]),
+      fetchIssueDetail: promiseFn<Issue | null>(null),
       refresh: promiseFn<Issue[]>([]),
     },
     spec: {
       get: promiseFn<Spec | null>(null),
       generate: promiseFn<{ issueId: string; content: string }>({
+        issueId: 'FUL-1',
+        content: '',
+      }),
+      write: promiseFn<{ issueId: string; content: string }>({
         issueId: 'FUL-1',
         content: '',
       }),
@@ -32,6 +37,14 @@ describe('ForgeApi shape', () => {
           delta: '',
           done: false,
         } satisfies SpecStreamChunk);
+        return () => undefined;
+      },
+      onDone: (handler) => {
+        handler({ issueId: 'FUL-1' });
+        return () => undefined;
+      },
+      onError: (handler) => {
+        handler({ issueId: 'FUL-1', message: 'failed' });
         return () => undefined;
       },
     },

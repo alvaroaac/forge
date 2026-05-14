@@ -47,6 +47,9 @@ describe('SpecDrawer', () => {
         spec={null}
         streaming=""
         isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
         onGenerate={vi.fn()}
         onCopy={vi.fn()}
       />,
@@ -70,6 +73,9 @@ describe('SpecDrawer', () => {
         spec={spec}
         streaming=""
         isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
         onGenerate={vi.fn()}
         onCopy={vi.fn()}
       />,
@@ -92,6 +98,9 @@ describe('SpecDrawer', () => {
         spec={spec}
         streaming=""
         isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
         onGenerate={vi.fn()}
         onCopy={vi.fn()}
       />,
@@ -116,6 +125,9 @@ describe('SpecDrawer', () => {
         spec={spec}
         streaming=""
         isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
         onGenerate={vi.fn()}
         onCopy={vi.fn()}
       />,
@@ -137,6 +149,9 @@ describe('SpecDrawer', () => {
         spec={spec}
         streaming=""
         isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
         onGenerate={vi.fn()}
         onCopy={vi.fn()}
       />,
@@ -158,6 +173,9 @@ describe('SpecDrawer', () => {
         spec={spec}
         streaming=""
         isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
         onGenerate={vi.fn()}
         onCopy={vi.fn()}
       />,
@@ -175,6 +193,9 @@ describe('SpecDrawer', () => {
         spec={spec}
         streaming=""
         isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
         onGenerate={vi.fn()}
         onCopy={vi.fn()}
       />,
@@ -193,6 +214,9 @@ describe('SpecDrawer', () => {
         spec={spec}
         streaming=""
         isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
         onGenerate={vi.fn()}
         onCopy={vi.fn()}
       />,

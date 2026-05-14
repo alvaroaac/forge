@@ -7,6 +7,10 @@ type MarkdownSectionProps = {
 
 const BULLET_RE = /^[•\-*]\s+/;
 const NUMBERED_RE = /^(\d+)\.\s+/;
+const BLOCKQUOTE_RE = /^>\s?/;
+const HEADING_RE = /^(#{1,6})\s+(.+)$/;
+const RULE_RE = /^-{3,}$/;
+const FENCE_RE = /^```/;
 
 type LineKind = 'paragraph' | 'bullet' | 'numbered';
 
@@ -60,6 +64,39 @@ function renderBody(lines: string[]) {
   while (i < lines.length) {
     const trimmed = lines[i].trim();
     if (!trimmed) {
+      i += 1;
+      continue;
+    }
+
+    if (FENCE_RE.test(trimmed)) {
+      i += 1;
+      continue;
+    }
+
+    if (RULE_RE.test(trimmed)) {
+      output.push(<hr key={`rule-${blockKey++}`} className="md-rule" />);
+      i += 1;
+      continue;
+    }
+
+    const heading = trimmed.match(HEADING_RE);
+    if (heading) {
+      output.push(
+        <h4 key={`title-${blockKey++}`} className="md-title">
+          {renderInlineMarkdown(heading[2] ?? '', blockKey)}
+        </h4>,
+      );
+      i += 1;
+      continue;
+    }
+
+    if (BLOCKQUOTE_RE.test(trimmed)) {
+      const text = trimmed.replace(BLOCKQUOTE_RE, '');
+      output.push(
+        <blockquote key={`quote-${blockKey++}`} className="md-quote">
+          {renderInlineMarkdown(text, blockKey)}
+        </blockquote>,
+      );
       i += 1;
       continue;
     }

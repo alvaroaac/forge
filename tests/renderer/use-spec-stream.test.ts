@@ -3,7 +3,12 @@ import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useSpecStream } from '../../src/renderer/hooks/use-spec-stream';
-import type { Spec, SpecStreamChunk } from '../../src/shared/types';
+import type {
+  Spec,
+  SpecGenerateDone,
+  SpecGenerateError,
+  SpecStreamChunk,
+} from '../../src/shared/types';
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -12,6 +17,8 @@ type Deferred<T> = {
 };
 
 type ChunkHandler = (chunk: SpecStreamChunk) => void;
+type DoneHandler = (payload: SpecGenerateDone) => void;
+type ErrorHandler = (payload: SpecGenerateError) => void;
 
 function createDeferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
@@ -35,14 +42,21 @@ function createSpec(issueId: string, content: string): Spec {
 
 function setForge(options: {
   get: (issueId: string) => Promise<Spec | null>;
-  generate: (issueId: string) => Promise<{ issueId: string; content: string }>;
+  generate: (issueId: string, model?: string) => Promise<{ issueId: string; content: string }>;
   onChunk: (handler: ChunkHandler) => () => void;
+  onDone?: (handler: DoneHandler) => () => void;
+  onError?: (handler: ErrorHandler) => () => void;
 }) {
   window.forge = {
     auth: { check: vi.fn() },
     config: { get: vi.fn(), set: vi.fn() },
-    linear: { fetch: vi.fn(), refresh: vi.fn() },
-    spec: options,
+    linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+    spec: {
+      ...options,
+      write: vi.fn(),
+      onDone: options.onDone ?? vi.fn(() => vi.fn()),
+      onError: options.onError ?? vi.fn(() => vi.fn()),
+    },
   };
 }
 
@@ -75,6 +89,7 @@ describe('useSpecStream', () => {
       spec: null,
       streaming: '',
       isStreaming: false,
+      errorMessage: null,
       generate: expect.any(Function),
     });
 
@@ -120,6 +135,22 @@ describe('useSpecStream', () => {
     });
   });
 
+  it('passes the selected model through to spec generation', async () => {
+    const get = vi.fn().mockResolvedValue(null);
+    const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-7', content: 'AB' });
+    const onChunk = vi.fn(() => vi.fn());
+
+    setForge({ get, generate, onChunk });
+
+    const { result } = renderHook(() => useSpecStream('FUL-7'));
+
+    await act(async () => {
+      await result.current.generate('opus');
+    });
+
+    expect(generate).toHaveBeenCalledWith('FUL-7', 'opus');
+  });
+
   it('does nothing when the issue id is null', async () => {
     const get = vi.fn().mockResolvedValue(null);
     const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-7', content: 'AB' });
@@ -133,6 +164,7 @@ describe('useSpecStream', () => {
       spec: null,
       streaming: '',
       isStreaming: false,
+      errorMessage: null,
       generate: expect.any(Function),
     });
 
@@ -147,6 +179,7 @@ describe('useSpecStream', () => {
       spec: null,
       streaming: '',
       isStreaming: false,
+      errorMessage: null,
       generate: expect.any(Function),
     });
   });
@@ -192,6 +225,7 @@ describe('useSpecStream', () => {
       spec: null,
       streaming: '',
       isStreaming: false,
+      errorMessage: null,
       generate: expect.any(Function),
     });
     expect(unsubscribeA).toHaveBeenCalledTimes(1);
@@ -289,6 +323,7 @@ describe('useSpecStream', () => {
         spec: null,
         streaming: '',
         isStreaming: false,
+        errorMessage: null,
         generate: expect.any(Function),
       });
 
@@ -319,10 +354,47 @@ describe('useSpecStream', () => {
       expect(result.current.spec).toBeNull();
       expect(result.current.streaming).toBe('');
       expect(result.current.isStreaming).toBe(false);
+      await waitFor(() => {
+        expect(result.current.errorMessage).toBe('generate failed');
+      });
       expect(unhandledRejection).not.toHaveBeenCalled();
     } finally {
       window.removeEventListener('unhandledrejection', unhandledRejection);
     }
+  });
+
+  it('surfaces spec generation errors delivered through preload events', async () => {
+    const get = vi.fn().mockResolvedValue(null);
+    const generation = createDeferred<{ issueId: string; content: string }>();
+    const generate = vi.fn(() => generation.promise);
+    const onChunk = vi.fn(() => vi.fn());
+    const errorHandlers: ErrorHandler[] = [];
+    const onError = vi.fn((handler: ErrorHandler) => {
+      errorHandlers.push(handler);
+      return vi.fn();
+    });
+
+    setForge({ get, generate, onChunk, onError });
+
+    const { result } = renderHook(() => useSpecStream('FUL-7'));
+
+    await act(async () => {
+      void result.current.generate();
+    });
+
+    expect(result.current.isStreaming).toBe(true);
+
+    await act(async () => {
+      errorHandlers[0]?.({ issueId: 'FUL-7', message: 'Claude CLI missing login' });
+    });
+
+    expect(result.current.isStreaming).toBe(false);
+    expect(result.current.errorMessage).toBe('Claude CLI missing login');
+
+    await act(async () => {
+      generation.resolve({ issueId: 'FUL-7', content: '' });
+      await generation.promise;
+    });
   });
 
   it('survives the StrictMode setup-cleanup-setup cycle without leaking subscriptions', async () => {
