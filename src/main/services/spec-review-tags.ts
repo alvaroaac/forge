@@ -10,7 +10,7 @@ export const FORGE_REVISED_SPEC_TAG = {
 
 export const FORGE_REVIEW_RESPONSE_TEMPLATE = `${FORGE_REVIEW_SUMMARY_TAG.open}
 {
-  "verdict": "approved" | "changes_requested",
+  "verdict": "changes_requested",
   "reviewerSummary": "string",
   "commentCount": 0,
   "appliedChanges": ["string"],

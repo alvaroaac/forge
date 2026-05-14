@@ -37,29 +37,42 @@ function toStringArray(value: unknown, fieldName: string): string[] {
   return value;
 }
 
-function parseSummaryJson(rawSummaryJson: string): SpecReviewSummary {
-  let parsed: unknown;
+function parseJsonObject(rawSummaryJson: string): Record<string, unknown> {
   try {
-    parsed = JSON.parse(rawSummaryJson);
+    return toSummaryRecord(JSON.parse(rawSummaryJson));
   } catch {
     throw new Error('Invalid review summary JSON.');
   }
+}
 
-  const summary = toSummaryRecord(parsed);
-  if (summary.verdict !== 'approved' && summary.verdict !== 'changes_requested') {
+function parseVerdict(value: unknown): SpecReviewSummary['verdict'] {
+  if (value !== 'approved' && value !== 'changes_requested') {
     throw new Error('Invalid review summary JSON: verdict must be approved or changes_requested.');
   }
-  if (typeof summary.reviewerSummary !== 'string') {
+  return value;
+}
+
+function parseReviewerSummary(value: unknown): string {
+  if (typeof value !== 'string') {
     throw new Error('Invalid review summary JSON: reviewerSummary must be a string.');
   }
-  if (typeof summary.commentCount !== 'number' || !Number.isFinite(summary.commentCount)) {
+  return value;
+}
+
+function parseCommentCount(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new Error('Invalid review summary JSON: commentCount must be a number.');
   }
+  return value;
+}
+
+function parseSummaryJson(rawSummaryJson: string): SpecReviewSummary {
+  const summary = parseJsonObject(rawSummaryJson);
 
   return {
-    verdict: summary.verdict,
-    reviewerSummary: summary.reviewerSummary,
-    commentCount: summary.commentCount,
+    verdict: parseVerdict(summary.verdict),
+    reviewerSummary: parseReviewerSummary(summary.reviewerSummary),
+    commentCount: parseCommentCount(summary.commentCount),
     appliedChanges: toStringArray(summary.appliedChanges, 'appliedChanges'),
     unresolvedComments: toStringArray(summary.unresolvedComments, 'unresolvedComments'),
   };

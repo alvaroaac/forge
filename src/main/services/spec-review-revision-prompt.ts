@@ -18,7 +18,8 @@ export function buildSpecReviewRevisionPrompt(input: {
     '## Raw Review Feedback',
     input.reviewFeedback,
     '',
-    'Return only the two tagged sections below, with no preamble and no extra tags:',
+    'Return only the two tagged sections below, with no preamble and no extra tags.',
+    'The summary block must be valid JSON. Set verdict to either "approved" or "changes_requested".',
     '',
     FORGE_REVIEW_RESPONSE_TEMPLATE,
   ].join('\n');
