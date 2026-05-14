@@ -8,7 +8,7 @@ import type { ConfigStore } from '../services/config-store';
 import type { IssuesCache } from '../services/issues-cache';
 import type { RepoContext } from '../services/repo-reader';
 import { buildSpecPrompt } from '../services/spec-prompt';
-import type { Issue, Spec, SpecReviewResult, SpecStreamChunk } from '../../shared/types';
+import type { Issue, Spec, SpecReviewResult } from '../../shared/types';
 
 type SpecGenerateEventSender = {
   send: (channel: string, payload: unknown) => void;
