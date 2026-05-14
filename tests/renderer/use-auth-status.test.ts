@@ -37,6 +37,7 @@ function createSpecApi() {
     get: vi.fn(),
     generate: vi.fn(),
     write: vi.fn(),
+    launchReview: vi.fn(),
     onChunk: vi.fn(),
     onDone: vi.fn(),
     onError: vi.fn(),

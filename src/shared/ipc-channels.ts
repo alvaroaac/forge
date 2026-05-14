@@ -4,6 +4,7 @@ export const IpcChannel = {
   LinearFetchIssueDetail: 'linear:fetch-issue-detail',
   LinearRefresh: 'linear:refresh',
   SpecGenerate: 'spec:generate',
+  SpecLaunchReview: 'spec:launch-review',
   SpecStreamChunk: 'spec:stream-chunk',
   SpecGenerateDone: 'spec:generate-done',
   SpecGenerateError: 'spec:generate-error',

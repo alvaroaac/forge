@@ -3,17 +3,12 @@ import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { IpcChannel } from '../../shared/ipc-channels';
 import { cleanSpecMarkdown } from '../../shared/spec-markdown';
+import { assertSafeIssueId, isSafeIssueId } from '../lib/issue-id';
 import type { ConfigStore } from '../services/config-store';
 import type { IssuesCache } from '../services/issues-cache';
 import type { RepoContext } from '../services/repo-reader';
 import { buildSpecPrompt } from '../services/spec-prompt';
-import type { Issue, Spec, SpecStreamChunk } from '../../shared/types';
-
-const SAFE_ISSUE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
-
-function isSafeIssueId(issueId: string): boolean {
-  return SAFE_ISSUE_ID.test(issueId);
-}
+import type { Issue, Spec, SpecReviewResult, SpecStreamChunk } from '../../shared/types';
 
 type SpecGenerateEventSender = {
   send: (channel: string, payload: unknown) => void;
@@ -31,6 +26,12 @@ type SpecGeneratePayload = {
 type SpecWritePayload = {
   issueId: string;
   content: string;
+};
+
+type SpecLaunchReviewPayload = {
+  issueId: string;
+  content: string;
+  model: string;
 };
 
 type StreamSpecFn = (input: {
@@ -53,6 +54,10 @@ export interface SpecWriteDeps {
   writeSpec: (opts: { repoPath: string; issueId: string; content: string }) => Promise<string>;
 }
 
+export interface SpecLaunchReviewDeps {
+  launchReview: (input: SpecLaunchReviewPayload) => Promise<SpecReviewResult>;
+}
+
 function specPath(repoPath: string, issueId: string): string | null {
   if (!isSafeIssueId(issueId)) {
     return null;
@@ -69,12 +74,6 @@ function findIssue(issues: Issue[], issueId: string): Issue {
     throw new Error(`Issue not found in cache: ${issueId}`);
   }
   return found;
-}
-
-function assertSafeIssueId(issueId: string): void {
-  if (!isSafeIssueId(issueId)) {
-    throw new Error(`Unsafe issue id: ${issueId}`);
-  }
 }
 
 function pickSpecModel(payload: SpecGeneratePayload, fallbackModel: string): string {
@@ -158,4 +157,17 @@ export function registerSpecWriteHandler(ipc: IpcMain, deps: SpecWriteDeps): voi
 
     return { issueId: payload.issueId, content };
   });
+}
+
+export function registerSpecLaunchReviewHandler(ipc: IpcMain, deps: SpecLaunchReviewDeps): void {
+  ipc.handle(
+    IpcChannel.SpecLaunchReview,
+    async (_event, payload: SpecLaunchReviewPayload): Promise<SpecReviewResult> => {
+      return deps.launchReview({
+        issueId: payload.issueId,
+        content: payload.content,
+        model: payload.model,
+      });
+    },
+  );
 }

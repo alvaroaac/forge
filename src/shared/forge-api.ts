@@ -3,6 +3,7 @@ import type {
   AuthStatus,
   Issue,
   Spec,
+  SpecReviewResult,
   SpecGenerateDone,
   SpecGenerateError,
   SpecStreamChunk,
@@ -21,6 +22,7 @@ export interface ForgeApi {
     get: (issueId: string) => Promise<Spec | null>;
     generate: (issueId: string, model?: string) => Promise<{ issueId: string; content: string }>;
     write: (issueId: string, content: string) => Promise<{ issueId: string; content: string }>;
+    launchReview: (issueId: string, content: string, model: string) => Promise<SpecReviewResult>;
     onChunk: (handler: (chunk: SpecStreamChunk) => void) => () => void;
     onDone: (handler: (payload: SpecGenerateDone) => void) => () => void;
     onError: (handler: (payload: SpecGenerateError) => void) => () => void;

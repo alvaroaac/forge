@@ -23,6 +23,8 @@ const api: ForgeApi = {
     get: (issueId) => ipcRenderer.invoke(IpcChannel.SpecGet, { issueId }),
     generate: (issueId, model) => ipcRenderer.invoke(IpcChannel.SpecGenerate, { issueId, model }),
     write: (issueId, content) => ipcRenderer.invoke(IpcChannel.SpecWrite, { issueId, content }),
+    launchReview: (issueId, content, model) =>
+      ipcRenderer.invoke(IpcChannel.SpecLaunchReview, { issueId, content, model }),
     onChunk: (handler) => {
       return subscribe<SpecStreamChunk>(IpcChannel.SpecStreamChunk, handler);
     },

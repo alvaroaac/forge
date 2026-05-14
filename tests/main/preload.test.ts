@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { ForgeApi } from '../../src/shared/forge-api';
-import type { AppConfig, AuthStatus, Issue, Spec, SpecStreamChunk } from '../../src/shared/types';
+import type {
+  AppConfig,
+  AuthStatus,
+  Issue,
+  Spec,
+  SpecReviewResult,
+  SpecStreamChunk,
+} from '../../src/shared/types';
 
 describe('ForgeApi shape', () => {
   const promiseFn =
@@ -30,6 +37,16 @@ describe('ForgeApi shape', () => {
       write: promiseFn<{ issueId: string; content: string }>({
         issueId: 'FUL-1',
         content: '',
+      }),
+      launchReview: promiseFn<SpecReviewResult>({
+        content: '# Revised',
+        summary: {
+          verdict: 'approved',
+          reviewerSummary: 'Looks good.',
+          commentCount: 0,
+          appliedChanges: [],
+          unresolvedComments: [],
+        },
       }),
       onChunk: (handler) => {
         handler({

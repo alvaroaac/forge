@@ -10,6 +10,8 @@ import type { RawLinearIssue } from '../services/linear-service';
 import { fetchIssueDetail, fetchIssues } from '../services/linear-service';
 import { readRepoContext } from '../services/repo-reader';
 import { streamSpec } from '../services/spec-generator';
+import { launchSpecReview } from '../services/spec-review-bridge';
+import { reviseSpecWithReview } from '../services/spec-review-revision';
 import { writeSpec } from '../services/spec-writer';
 import { configPath, issuesCachePath } from '../lib/paths';
 import { registerAuthHandlers } from './auth';
@@ -18,6 +20,7 @@ import { registerLinearHandlers } from './linear';
 import {
   registerSpecGenerateHandler,
   registerSpecGetHandler,
+  registerSpecLaunchReviewHandler,
   registerSpecWriteHandler,
 } from './spec';
 
@@ -81,4 +84,25 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
     templateMd,
   });
   registerSpecWriteHandler(ipc, { store, writeSpec });
+  registerSpecLaunchReviewHandler(ipc, {
+    launchReview: ({ issueId, content, model }) =>
+      launchSpecReview(
+        { issueId, content, model },
+        {
+          reviseWithReview: ({ model: selectedModel, originalSpecMarkdown, reviewFeedback }) =>
+            reviseSpecWithReview({
+              model: selectedModel,
+              originalSpecMarkdown,
+              reviewFeedback,
+              runModel: ({ model: runModel, system, user }) =>
+                streamSpec({
+                  model: runModel,
+                  system,
+                  user,
+                  onChunk: () => undefined,
+                }),
+            }),
+        },
+      ),
+  });
 }

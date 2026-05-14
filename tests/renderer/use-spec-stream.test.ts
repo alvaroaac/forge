@@ -54,6 +54,7 @@ function setForge(options: {
     spec: {
       ...options,
       write: vi.fn(),
+      launchReview: vi.fn(),
       onDone: options.onDone ?? vi.fn(() => vi.fn()),
       onError: options.onError ?? vi.fn(() => vi.fn()),
     },
