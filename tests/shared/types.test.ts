@@ -6,6 +6,8 @@ import type {
   AuthStatus,
   IssueStatus,
   Priority,
+  SpecReviewSummary,
+  SpecReviewResult,
 } from '../../src/shared/types';
 import { ok, err, type Result } from '../../src/shared/result';
 
@@ -38,5 +40,22 @@ describe('shared types', () => {
   it('Result helpers preserve custom error types', () => {
     expectTypeOf(ok<string, 'not-found'>('value')).toEqualTypeOf<Result<string, 'not-found'>>();
     expectTypeOf(err<number>(42)).toEqualTypeOf<Result<never, number>>();
+  });
+
+  it('SpecReviewSummary has durable review fields', () => {
+    expectTypeOf<SpecReviewSummary>().toEqualTypeOf<{
+      verdict: 'approved' | 'changes_requested';
+      reviewerSummary: string;
+      commentCount: number;
+      appliedChanges: string[];
+      unresolvedComments: string[];
+    }>();
+  });
+
+  it('SpecReviewResult carries revised content and summary', () => {
+    expectTypeOf<SpecReviewResult>().toEqualTypeOf<{
+      content: string;
+      summary: SpecReviewSummary;
+    }>();
   });
 });

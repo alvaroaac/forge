@@ -53,3 +53,16 @@ export interface SpecGenerateError {
   issueId: string;
   message: string;
 }
+
+export interface SpecReviewSummary {
+  verdict: 'approved' | 'changes_requested';
+  reviewerSummary: string;
+  commentCount: number;
+  appliedChanges: string[];
+  unresolvedComments: string[];
+}
+
+export interface SpecReviewResult {
+  content: string;
+  summary: SpecReviewSummary;
+}
