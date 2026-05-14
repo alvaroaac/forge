@@ -1,7 +1,7 @@
 import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Issue } from '../../src/shared/types';
+import type { Issue, Spec, SpecReviewSummary } from '../../src/shared/types';
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -20,6 +20,12 @@ const renderState: {
   issueListPanelProps: { onOpen: (issue: Issue, which: 'detail' | 'spec') => void } | null;
   specDrawerIssue: Issue | null;
   specDrawerProps: {
+    spec: Spec | null;
+    streaming: string;
+    reviewedContent: string | null;
+    reviewSummary: SpecReviewSummary | null;
+    reviewStatusMessage: string | null;
+    reviewErrorMessage: string | null;
     claudeModel: string;
     onClaudeModelChange: (model: string) => void;
     onGenerate: () => void;
@@ -27,11 +33,13 @@ const renderState: {
     onWrite: (content: string) => void;
   } | null;
   generate: ReturnType<typeof vi.fn>;
+  streamSpec: Spec | null;
 } = {
   issueListPanelProps: null,
   specDrawerIssue: null,
   specDrawerProps: null,
   generate: vi.fn(),
+  streamSpec: null,
 };
 
 vi.mock('../../src/renderer/components/top-bar', () => ({
@@ -52,6 +60,12 @@ vi.mock('../../src/renderer/components/issue-list-panel', () => ({
 vi.mock('../../src/renderer/components/spec-drawer', () => ({
   SpecDrawer: (props: {
     issue: Issue | null;
+    spec: Spec | null;
+    streaming: string;
+    reviewedContent: string | null;
+    reviewSummary: SpecReviewSummary | null;
+    reviewStatusMessage: string | null;
+    reviewErrorMessage: string | null;
     claudeModel: string;
     onClaudeModelChange: (model: string) => void;
     onGenerate: () => void;
@@ -103,7 +117,7 @@ vi.mock('../../src/renderer/hooks/use-issues', () => ({
 
 vi.mock('../../src/renderer/hooks/use-spec-stream', () => ({
   useSpecStream: () => ({
-    spec: null,
+    spec: renderState.streamSpec,
     streaming: '',
     isStreaming: false,
     errorMessage: null,
@@ -119,6 +133,7 @@ describe('App detail drawer refresh', () => {
     renderState.specDrawerIssue = null;
     renderState.specDrawerProps = null;
     renderState.generate = vi.fn();
+    renderState.streamSpec = null;
   });
 
   afterEach(() => {
@@ -291,5 +306,162 @@ describe('App detail drawer refresh', () => {
     });
 
     expect(specWrite).toHaveBeenCalledWith('FUL-1', '# Spec');
+  });
+
+  it('replaces displayed draft content after a successful review result', async () => {
+    const launchReview = vi.fn().mockResolvedValue({
+      content: '# Revised spec\n\n## Task Summary\nUpdated',
+      summary: {
+        verdict: 'approved',
+        reviewerSummary: 'Looks good',
+        commentCount: 2,
+        appliedChanges: ['Refined summary'],
+        unresolvedComments: [],
+      },
+    });
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview,
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+    };
+    renderState.streamSpec = {
+      issueId: 'FUL-1',
+      content: '# Original spec',
+      generatedAt: '2026-05-14T12:00:00.000Z',
+      approved: false,
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[0], 'spec');
+    });
+
+    await act(async () => {
+      renderState.specDrawerProps?.onLaunchReview('# Original spec');
+    });
+
+    await waitFor(() => {
+      expect(renderState.specDrawerProps?.reviewedContent).toBe('# Revised spec\n\n## Task Summary\nUpdated');
+      expect(renderState.specDrawerProps?.reviewSummary?.verdict).toBe('approved');
+    });
+  });
+
+  it('keeps previous displayed content when review fails', async () => {
+    const launchReview = vi.fn().mockRejectedValue(new Error('Review bridge failed'));
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview,
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+    };
+    renderState.streamSpec = {
+      issueId: 'FUL-1',
+      content: '# Original spec',
+      generatedAt: '2026-05-14T12:00:00.000Z',
+      approved: false,
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[0], 'spec');
+    });
+
+    await act(async () => {
+      renderState.specDrawerProps?.onLaunchReview('# Original spec');
+    });
+
+    await waitFor(() => {
+      expect(renderState.specDrawerProps?.reviewedContent).toBeNull();
+      expect(renderState.specDrawerProps?.reviewErrorMessage).toBe('Review bridge failed');
+    });
+  });
+
+  it('writes only revised spec markdown after a successful review', async () => {
+    const launchReview = vi.fn().mockResolvedValue({
+      content: '# Revised spec only',
+      summary: {
+        verdict: 'changes_requested',
+        reviewerSummary: 'Please tighten wording',
+        commentCount: 1,
+        appliedChanges: ['Adjusted copy'],
+        unresolvedComments: ['Need final sign-off'],
+      },
+    });
+    const specWrite = vi.fn().mockResolvedValue({ issueId: 'FUL-1', content: '# Revised spec only' });
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: specWrite,
+        launchReview,
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+    };
+    renderState.streamSpec = {
+      issueId: 'FUL-1',
+      content: '# Original spec',
+      generatedAt: '2026-05-14T12:00:00.000Z',
+      approved: false,
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[0], 'spec');
+    });
+
+    await act(async () => {
+      renderState.specDrawerProps?.onLaunchReview('# Original spec');
+    });
+
+    await waitFor(() => {
+      expect(renderState.specDrawerProps?.reviewedContent).toBe('# Revised spec only');
+    });
+
+    await act(async () => {
+      renderState.specDrawerProps?.onWrite(renderState.specDrawerProps?.reviewedContent ?? '');
+    });
+
+    expect(specWrite).toHaveBeenCalledWith('FUL-1', '# Revised spec only');
+    expect(specWrite).not.toHaveBeenCalledWith(
+      'FUL-1',
+      expect.stringContaining('Please tighten wording'),
+    );
   });
 });

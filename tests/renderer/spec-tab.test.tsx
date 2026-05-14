@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { SpecTab } from '../../src/renderer/components/spec-tab';
-import type { Issue, Spec } from '../../src/shared/types';
+import type { Issue, Spec, SpecReviewSummary } from '../../src/shared/types';
 
 const issue: Issue = {
   id: 'FUL-7',
@@ -22,6 +22,14 @@ const spec: Spec = {
 Persisted body`,
   generatedAt: '2026-05-13T12:00:00.000Z',
   approved: false,
+};
+
+const reviewSummary: SpecReviewSummary = {
+  verdict: 'changes_requested',
+  reviewerSummary: 'Clarify rollout assumptions and clean acceptance criteria.',
+  commentCount: 3,
+  appliedChanges: ['Adjusted scope wording', 'Updated acceptance checks'],
+  unresolvedComments: ['Need final owner call on migration timing'],
 };
 
 describe('SpecTab', () => {
@@ -185,6 +193,121 @@ Persisted body`);
 Persisted body`);
     expect(onWrite).toHaveBeenCalledWith(`## Saved
 Persisted body`);
+  });
+
+  it('calls onLaunchReview with the displayed cleaned content', () => {
+    const onLaunchReview = vi.fn();
+    const wrappedSpec: Spec = {
+      ...spec,
+      content: 'Permission needed\n\n```markdown\n# Spec: FUL-7\n\n## Task Summary\nBody\n```',
+    };
+
+    render(
+      <SpecTab
+        issue={issue}
+        spec={wrappedSpec}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onLaunchReview={onLaunchReview}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Launch Review/i }));
+
+    expect(onLaunchReview).toHaveBeenCalledWith('# Spec: FUL-7\n\n## Task Summary\nBody');
+  });
+
+  it('disables launch review while review is pending', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={spec}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        isReviewPending={true}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Launch Review/i }).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('renders pending status text while review is running', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={spec}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        isReviewPending={true}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Review in progress...')).toBeTruthy();
+  });
+
+  it('keeps review changes collapsed by default and expands on click', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={spec}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        reviewSummary={reviewSummary}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Review changes/i })).toBeTruthy();
+    expect(screen.queryByText(reviewSummary.reviewerSummary)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Review changes/i }));
+
+    expect(screen.getByText(reviewSummary.reviewerSummary)).toBeTruthy();
+  });
+
+  it('renders review summary fields when expanded', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={spec}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        reviewSummary={reviewSummary}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Review changes/i }));
+
+    expect(screen.getByText(reviewSummary.verdict)).toBeTruthy();
+    expect(screen.getByText(reviewSummary.reviewerSummary)).toBeTruthy();
+    expect(screen.getByText(String(reviewSummary.commentCount))).toBeTruthy();
+    expect(screen.getByText('Adjusted scope wording')).toBeTruthy();
+    expect(screen.getByText('Updated acceptance checks')).toBeTruthy();
+    expect(screen.getByText('Need final owner call on migration timing')).toBeTruthy();
   });
 
   it('cleans generated wrapper text before rendering actions', () => {

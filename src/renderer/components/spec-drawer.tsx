@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import type { Issue, Spec } from '../../shared/types';
+import type { Issue, Spec, SpecReviewSummary } from '../../shared/types';
 import { DetailTab } from './detail-tab';
 import { IconClose, IconExternal } from './icons';
 import { LabelBadge } from './label-badge';
@@ -16,6 +16,11 @@ type SpecDrawerProps = {
   onClose: () => void;
   spec: Spec | null;
   streaming: string;
+  reviewedContent?: string | null;
+  reviewSummary?: SpecReviewSummary | null;
+  isReviewPending?: boolean;
+  reviewStatusMessage?: string | null;
+  reviewErrorMessage?: string | null;
   isStreaming: boolean;
   errorMessage: string | null;
   claudeModel: string;
@@ -49,6 +54,11 @@ export function SpecDrawer({
   onClose,
   spec,
   streaming,
+  reviewedContent = null,
+  reviewSummary = null,
+  isReviewPending = false,
+  reviewStatusMessage = null,
+  reviewErrorMessage = null,
   isStreaming,
   errorMessage,
   claudeModel,
@@ -112,6 +122,11 @@ export function SpecDrawer({
                   issue={issue}
                   spec={spec}
                   streaming={streaming}
+                  reviewedContent={reviewedContent}
+                  reviewSummary={reviewSummary}
+                  isReviewPending={isReviewPending}
+                  reviewStatusMessage={reviewStatusMessage}
+                  reviewErrorMessage={reviewErrorMessage}
                   isStreaming={isStreaming}
                   errorMessage={errorMessage}
                   claudeModel={claudeModel}

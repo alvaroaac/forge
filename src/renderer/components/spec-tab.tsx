@@ -1,4 +1,6 @@
-import type { Issue, Spec } from '../../shared/types';
+import { useEffect, useState } from 'react';
+
+import type { Issue, Spec, SpecReviewSummary } from '../../shared/types';
 import { cleanSpecMarkdown } from '../../shared/spec-markdown';
 import { splitSections } from '../lib/markdown';
 import { MarkdownSection } from './markdown-section';
@@ -10,6 +12,11 @@ type SpecTabProps = {
   issue: Issue;
   spec: Spec | null;
   streaming: string;
+  reviewedContent?: string | null;
+  reviewSummary?: SpecReviewSummary | null;
+  isReviewPending?: boolean;
+  reviewStatusMessage?: string | null;
+  reviewErrorMessage?: string | null;
   isStreaming: boolean;
   errorMessage: string | null;
   claudeModel: string;
@@ -24,10 +31,23 @@ function pickContent(spec: Spec | null, streaming: string): string {
   return streaming ? streaming : (spec?.content ?? '');
 }
 
+function pickDisplayedContent(spec: Spec | null, streaming: string, reviewedContent: string | null): string {
+  if (reviewedContent) {
+    return reviewedContent;
+  }
+
+  return pickContent(spec, streaming);
+}
+
 export function SpecTab({
   issue,
   spec,
   streaming,
+  reviewedContent = null,
+  reviewSummary = null,
+  isReviewPending = false,
+  reviewStatusMessage = null,
+  reviewErrorMessage = null,
   isStreaming,
   errorMessage,
   claudeModel,
@@ -37,10 +57,18 @@ export function SpecTab({
   onWrite = () => undefined,
   onCopy,
 }: SpecTabProps) {
-  const content = cleanSpecMarkdown(pickContent(spec, streaming));
+  const [showReviewChanges, setShowReviewChanges] = useState(false);
+  const content = cleanSpecMarkdown(pickDisplayedContent(spec, streaming, reviewedContent));
+  const combinedErrorMessage = reviewErrorMessage ?? errorMessage;
+  const effectiveReviewStatus = isReviewPending ? 'Review in progress...' : reviewStatusMessage;
   const modelOptions = CLAUDE_MODEL_OPTIONS.includes(claudeModel)
     ? CLAUDE_MODEL_OPTIONS
     : [claudeModel, ...CLAUDE_MODEL_OPTIONS];
+
+  useEffect(() => {
+    setShowReviewChanges(false);
+  }, [reviewSummary]);
+
   const modelSelect = (
     <label className="model-picker">
       <span className="mono dim">Model</span>
@@ -62,9 +90,9 @@ export function SpecTab({
   if (!content && !isStreaming) {
     return (
       <div className="drawer-empty">
-        {errorMessage ? (
+        {combinedErrorMessage ? (
           <div className="mono" style={{ marginBottom: 12, color: 'var(--danger)', fontSize: 11 }}>
-            {errorMessage}
+            {combinedErrorMessage}
           </div>
         ) : null}
         <div style={{ marginBottom: 16, color: 'var(--text-2)' }}>
@@ -92,7 +120,7 @@ export function SpecTab({
       <div className="spec-meta-strip">
         <span className="mono dim">thoughts/tasks/{issue.id}/initial-spec.md</span>
         {isStreaming ? <span className="mono dim">· streaming…</span> : null}
-        {errorMessage ? (
+        {combinedErrorMessage ? (
           <span className="mono" style={{ color: 'var(--danger)' }}>
             · failed
           </span>
@@ -100,7 +128,12 @@ export function SpecTab({
         <span style={{ flex: 1 }} />
         {modelSelect}
         <div className="spec-actions">
-          <button className="btn-ghost" type="button" onClick={() => onLaunchReview(content)}>
+          <button
+            className="btn-ghost"
+            type="button"
+            disabled={isReviewPending}
+            onClick={() => onLaunchReview(content)}
+          >
             <IconTerminal size={11} stroke={2} /> Launch Review
           </button>
           <button className="btn-ghost" type="button" onClick={() => onWrite(content)}>
@@ -111,9 +144,14 @@ export function SpecTab({
           </button>
         </div>
       </div>
-      {errorMessage ? (
+      {combinedErrorMessage ? (
         <div className="mono" style={{ color: 'var(--danger)', fontSize: 11, marginBottom: 10 }}>
-          {errorMessage}
+          {combinedErrorMessage}
+        </div>
+      ) : null}
+      {effectiveReviewStatus ? (
+        <div className="mono dim" style={{ fontSize: 11, marginBottom: 10 }}>
+          {effectiveReviewStatus}
         </div>
       ) : null}
       <div className="spec-scroll">
@@ -121,6 +159,42 @@ export function SpecTab({
           <MarkdownSection key={`${section.h}-${index}`} h={section.h} body={section.body} />
         ))}
       </div>
+      {reviewSummary ? (
+        <div style={{ marginTop: 12 }}>
+          <button className="btn-ghost" type="button" onClick={() => setShowReviewChanges((current) => !current)}>
+            Review changes
+          </button>
+          {showReviewChanges ? (
+            <div style={{ marginTop: 10, fontSize: 12 }}>
+              <div>
+                <strong>Verdict:</strong> {reviewSummary.verdict}
+              </div>
+              <div>
+                <strong>Reviewer summary:</strong> {reviewSummary.reviewerSummary}
+              </div>
+              <div>
+                <strong>Comment count:</strong> {reviewSummary.commentCount}
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <strong>Applied changes:</strong>
+                <ul>
+                  {reviewSummary.appliedChanges.map((change) => (
+                    <li key={change}>{change}</li>
+                  ))}
+                </ul>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <strong>Unresolved comments:</strong>
+                <ul>
+                  {reviewSummary.unresolvedComments.map((comment) => (
+                    <li key={comment}>{comment}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

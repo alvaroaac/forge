@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import type { Issue } from '../shared/types';
+import type { Issue, SpecReviewSummary } from '../shared/types';
 import { RightPanel } from './components/right-panel';
 import { SpecDrawer, type DrawerTab } from './components/spec-drawer';
 import { TopBar } from './components/top-bar';
@@ -33,6 +33,10 @@ export function App() {
   const [tab, setTab] = useState<Tab>('Todo');
   const [drawer, setDrawer] = useState<{ issue: Issue; tab: DrawerTab } | null>(null);
   const [claudeModel, setClaudeModel] = useState(DEFAULT_CLAUDE_MODEL);
+  const [reviewedContent, setReviewedContent] = useState<string | null>(null);
+  const [reviewSummary, setReviewSummary] = useState<SpecReviewSummary | null>(null);
+  const [isReviewPending, setIsReviewPending] = useState(false);
+  const [reviewErrorMessage, setReviewErrorMessage] = useState<string | null>(null);
   const drawerIssueId = drawer?.issue.id ?? null;
   const { spec, streaming, isStreaming, errorMessage, generate } = useSpecStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
@@ -84,6 +88,13 @@ export function App() {
     };
   }, [drawerIssueId]);
 
+  useEffect(() => {
+    setReviewedContent(null);
+    setReviewSummary(null);
+    setIsReviewPending(false);
+    setReviewErrorMessage(null);
+  }, [drawerIssueId]);
+
   const hasSpecFor = (id: string) => {
     return specIds.current.has(id) || (drawerIssueId === id && !!spec);
   };
@@ -103,11 +114,30 @@ export function App() {
 
   const onGenerateSpec = () => {
     void window.forge.config.set({ claudeModel });
+    setReviewedContent(null);
+    setReviewSummary(null);
+    setReviewErrorMessage(null);
     void generate(claudeModel);
   };
 
-  const onLaunchReviewSpec = (content: string) => {
-    void navigator.clipboard.writeText(content);
+  const onLaunchReviewSpec = async (content: string) => {
+    if (!drawerIssueId || isReviewPending) {
+      return;
+    }
+
+    setIsReviewPending(true);
+    setReviewErrorMessage(null);
+
+    try {
+      const result = await window.forge.spec.launchReview(drawerIssueId, content, claudeModel);
+      setReviewedContent(result.content);
+      setReviewSummary(result.summary);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Review launch failed';
+      setReviewErrorMessage(message);
+    } finally {
+      setIsReviewPending(false);
+    }
   };
 
   const onWriteSpec = (content: string) => {
@@ -151,6 +181,11 @@ export function App() {
         onClose={() => setDrawer(null)}
         spec={spec}
         streaming={streaming}
+        reviewedContent={reviewedContent}
+        reviewSummary={reviewSummary}
+        isReviewPending={isReviewPending}
+        reviewStatusMessage={isReviewPending ? 'Review in progress...' : null}
+        reviewErrorMessage={reviewErrorMessage}
         isStreaming={isStreaming}
         errorMessage={errorMessage}
         claudeModel={claudeModel}
