@@ -19,11 +19,12 @@
    - rejects empty revised spec
    - cleans fenced/preamble revised markdown
 4. Added shared tag/template constants in `src/main/services/spec-review-tags.ts` to keep prompt and parser in sync.
+5. Addressed QA feedback by making the prompt's summary example valid JSON, documenting the allowed verdict values in prose, and splitting summary parsing into smaller validators.
 
 ## Tests run and results
 
 - `npm test -- tests/shared/types.test.ts tests/main/spec-review-revision-prompt.test.ts tests/main/spec-review-response-parser.test.ts`
-  - Result: PASS (3 files, 14 tests)
+  - Result: PASS (3 files, 15 tests)
 - `npm run typecheck`
   - Result: PASS
 
@@ -40,6 +41,8 @@
 ## Commit hash(es)
 
 - `6987a8b`
+- `1cc6e35`
+- `40b289b`
 
 ## Self-review findings
 
