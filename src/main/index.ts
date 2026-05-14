@@ -1,10 +1,50 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, type MenuItemConstructorOptions } from 'electron';
 import { join } from 'node:path';
 import { registerAll } from './ipc/register';
 import { resolveAppRoot } from './lib/app-root';
 
+app.setName('Forge');
+
+function installApplicationMenu(): void {
+  const template: MenuItemConstructorOptions[] = [
+    {
+      label: 'Forge',
+      submenu: [
+        { role: 'about', label: 'About Forge' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide', label: 'Hide Forge' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit', label: 'Quit Forge' },
+      ],
+    },
+    {
+      role: 'fileMenu',
+    },
+    {
+      role: 'editMenu',
+    },
+    {
+      role: 'viewMenu',
+    },
+    {
+      role: 'windowMenu',
+    },
+    {
+      role: 'help',
+      submenu: [],
+    },
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 async function createWindow(): Promise<void> {
   const win = new BrowserWindow({
+    title: 'Forge',
     width: 1440,
     height: 900,
     minWidth: 1240,
@@ -26,6 +66,7 @@ async function createWindow(): Promise<void> {
 }
 
 async function start(): Promise<void> {
+  installApplicationMenu();
   await registerAll(ipcMain, resolveAppRoot(app.getAppPath()));
   await createWindow();
   app.on('activate', () => {
