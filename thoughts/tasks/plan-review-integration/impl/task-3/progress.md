@@ -23,17 +23,20 @@
    - unresolved comments
 4. Ensured `Write to file` persists only spec markdown content (no summary persistence path added).
 5. Logged deferred embedded-review work in `thoughts/tech-debt.md`.
+6. Addressed QA feedback by guarding async review results against stale drawer issues and adding `aria-expanded`/`aria-controls` to the `Review changes` toggle.
 
 ## Tests run and results
 
 - `npm test -- tests/renderer/spec-tab.test.tsx tests/renderer/app.test.tsx`
-  - Result: PASS (23 tests)
+  - Result: PASS (24 tests)
 - `npm test -- tests/renderer/spec-drawer.test.tsx tests/renderer/spec-tab.test.tsx tests/renderer/app.test.tsx`
   - Result: PASS (30 tests)
 - `npm run typecheck`
   - Result: PASS
 - `npm test`
   - Result: PASS (44 files, 208 tests)
+- `npm run lint`
+  - Result: PASS with 0 errors and 2 pre-existing warnings outside this task.
 
 ## Files changed
 
@@ -48,12 +51,15 @@
 ## Commit hash(es)
 
 - `6a2e203`
+- `19b817e`
+- `5b0be2b`
 
 ## Self-review findings
 
 - Renderer/main boundary is preserved; renderer only calls preload API.
 - Launch flow is intentionally simple (single pending string and single error surface) per plan constraints.
 - Revised draft state and summary rendering are drawer-scoped and reset when switching issues.
+- Async review completions now verify the drawer still belongs to the issue that launched the review before applying content, summary, error, or pending-state changes.
 - Summary is visible in UI but never passed into spec write calls.
 
 ## Tech-debt logged
