@@ -176,15 +176,12 @@ export function useTriageStream(issueId: string | null) {
         commitGeneratedBrief(issueId, setupVersion, result.content);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        if (isCurrentIssue(issueId)) {
-          setErrorMessage(message);
-          setIsStreaming(false);
-        }
+        failStreaming(issueId, setupVersion, message);
       } finally {
         finishStreaming(issueId, setupVersion);
       }
     },
-    [issueId, commitGeneratedBrief, finishStreaming, isCurrentIssue],
+    [issueId, commitGeneratedBrief, finishStreaming, failStreaming],
   );
 
   return { brief, streaming, isStreaming, errorMessage, generate };

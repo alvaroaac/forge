@@ -313,4 +313,69 @@ describe('useTriageStream', () => {
       window.removeEventListener('unhandledrejection', unhandledRejection);
     }
   });
+
+  it('ignores stale rejected generations after navigation and returns to a newer setup', async () => {
+    const generationA = createDeferred<TriageBrief>();
+    const generationB = createDeferred<TriageBrief>();
+    const generationC = createDeferred<TriageBrief>();
+    let ful7Count = 0;
+    let ful8Count = 0;
+    const generate = vi.fn((issueId: string) => {
+      if (issueId === 'FUL-8') {
+        ful8Count += 1;
+        return generationB.promise;
+      }
+
+      ful7Count += 1;
+      if (ful7Count === 1) {
+        return generationA.promise;
+      }
+
+      return generationC.promise;
+    });
+
+    const onChunk = vi.fn(() => vi.fn());
+
+    setForge({ generate, onChunk });
+
+    const { result, rerender } = renderHook(({ issueId }) => useTriageStream(issueId), {
+      initialProps: { issueId: 'FUL-7' as string | null },
+    });
+
+    await act(async () => {
+      void result.current.generate();
+    });
+
+    await act(async () => {
+      rerender({ issueId: 'FUL-8' });
+    });
+
+    await act(async () => {
+      void result.current.generate();
+    });
+
+    await act(async () => {
+      rerender({ issueId: 'FUL-7' });
+    });
+
+    await act(async () => {
+      void result.current.generate();
+    });
+
+    await act(async () => {
+      generationB.resolve(createBrief('FUL-8', 'other'));
+      generationA.reject(new Error('stale run failed'));
+      generationC.resolve(createBrief('FUL-7', 'fresh'));
+      await generationB.promise;
+      await generationC.promise;
+    });
+
+    await waitFor(() => {
+      expect(result.current.brief).toEqual(expect.objectContaining({ issueId: 'FUL-7', content: 'fresh' }));
+    });
+
+    expect(result.current.errorMessage).toBeNull();
+    expect(result.current.isStreaming).toBe(false);
+    expect(result.current.brief).toEqual(expect.objectContaining({ issueId: 'FUL-7', content: 'fresh' }));
+  });
 });
