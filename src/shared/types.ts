@@ -57,6 +57,34 @@ export interface SpecGenerateError {
   message: string;
 }
 
+export interface TriageStreamChunk {
+  issueId: string;
+  delta: string;
+  done: boolean;
+}
+
+export interface TriageGenerateDone {
+  issueId: string;
+}
+
+export interface TriageGenerateError {
+  issueId: string;
+  message: string;
+}
+
+export interface TriageBrief {
+  issueId: string;
+  content: string;
+  generatedAt: string;
+}
+
+export interface TriageWriteResult {
+  issueId: string;
+  path: string;
+  written: boolean;
+  exists: boolean;
+}
+
 export interface SpecReviewSummary {
   verdict: 'approved' | 'changes_requested';
   reviewerSummary: string;
