@@ -7,7 +7,7 @@ import { createConfigStore } from '../services/config-store';
 import { createIssuesCache } from '../services/issues-cache';
 import { checkAll } from '../services/auth-checker';
 import type { RawLinearIssue } from '../services/linear-service';
-import { fetchIssueDetail, fetchIssues } from '../services/linear-service';
+import { fetchIssueDetail, fetchIssues, fetchTriage } from '../services/linear-service';
 import { readRepoContext } from '../services/repo-reader';
 import { streamSpec } from '../services/spec-generator';
 import { launchSpecReview } from '../services/spec-review-bridge';
@@ -29,6 +29,7 @@ interface LinearClient {
   checkAuth(tokenPath?: string): Promise<boolean>;
   fetchAssignedIssues(assigneeId: string): Promise<RawLinearIssue[]>;
   fetchIssueDetail(identifier: string): Promise<RawLinearIssue | null>;
+  fetchTeamTriage(): Promise<RawLinearIssue[]>;
 }
 
 type LinearClientOptions = {
@@ -73,6 +74,8 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
     fetchIssues: (linearClient) => fetchIssues(linearClient as LinearClient),
     fetchIssueDetail: (linearClient, issueId) =>
       fetchIssueDetail(linearClient as LinearClient, issueId),
+    fetchTriage: (linearClient) => fetchTriage(linearClient as LinearClient),
+    getViewerId: (linearClient) => linearClient.getCurrentUser().then((me) => me.id),
     client,
   });
   registerSpecGetHandler(ipc, store);
