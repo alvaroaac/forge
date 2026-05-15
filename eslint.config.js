@@ -37,6 +37,13 @@ export default [
     languageOptions: { globals: { ...globals.node } },
   },
   {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['src/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
