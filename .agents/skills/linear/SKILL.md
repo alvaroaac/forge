@@ -34,6 +34,7 @@ const linear = createLinearClient({ teamKey: 'CSI', titlePrefix: '' });
 - **`findIssues()`** → `Map<normalizedTitle, { id, identifier, url, title }>` — every issue in the team whose title contains `titlePrefix`.
 - **`getCurrentUser()`** → `{ id, name, email }` — the authenticated viewer (per the OAuth token).
 - **`fetchAssignedIssues(assigneeId)`** → `Array<{ id, identifier, title, description, state: { name, type }, priority, labels: { nodes: [{ name }] }, url, updatedAt }>` — open issues on the bound team assigned to `assigneeId`. Excludes `completed`/`canceled` states server-side.
+- **`fetchTeamTriage()`** → `Array<{ id, identifier, title, description, state: { name, type }, priority, labels: { nodes: [{ name }] }, url, updatedAt, assignee: { id } | null }>` — every issue on the bound team whose state.type is `triage`. Returned items also include `assignee` so callers can render an "assigned to me" filter without a second query.
 - **`fetchIssueDetail(identifier)`** → `{ id, identifier, title, description, state: { name, type }, priority, labels: { nodes: [{ name }] }, url, updatedAt } | null` — single-issue detail read by identifier like `FUL-42`.
 - **`getIssue(identifier)`** → `{ id, identifier, title, url } | null` — fetch by identifier like `CSI-11`.
 - **`getProjectAndMilestones(projectName)`** → `{ projectId, milestoneMap }` — project lookup plus milestone name-to-id map.
