@@ -1,4 +1,4 @@
-export type IssueStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
+export type IssueStatus = 'triage' | 'todo' | 'in_progress' | 'in_review' | 'done';
 export type Priority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
 
 export interface Issue {

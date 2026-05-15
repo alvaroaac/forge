@@ -1,4 +1,4 @@
-import { describe, it, expectTypeOf } from 'vitest';
+import { describe, it, expect, expectTypeOf } from 'vitest';
 import type {
   Issue,
   Spec,
@@ -57,5 +57,10 @@ describe('shared types', () => {
       content: string;
       summary: SpecReviewSummary;
     }>();
+  });
+
+  it('allows triage as a valid IssueStatus', () => {
+    const status: IssueStatus = 'triage';
+    expect(status).toBe('triage');
   });
 });
