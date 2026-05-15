@@ -75,7 +75,8 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
     fetchIssueDetail: (linearClient, issueId) =>
       fetchIssueDetail(linearClient as LinearClient, issueId),
     fetchTriage: (linearClient) => fetchTriage(linearClient as LinearClient),
-    getViewerId: (linearClient) => linearClient.getCurrentUser().then((me) => me.id),
+    getViewerId: (linearClient) =>
+      (linearClient as LinearClient).getCurrentUser().then((me) => me.id),
     client,
   });
   registerSpecGetHandler(ipc, store);

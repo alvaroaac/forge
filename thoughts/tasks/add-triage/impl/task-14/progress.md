@@ -10,6 +10,8 @@ Implement IPC handlers for `linear:fetchTeamTriage` and `linear:getViewerId` wit
 - `thoughts/tasks/add-triage/impl/task-14/progress.md`
 
 ## Validation
+- Addressing QA blocking typecheck issue:
+  - `npm run typecheck && npm test -- tests/main/ipc-linear.test.ts` (pass)
 - Ran focused baseline test before implementation:
   - `npm test -- tests/main/ipc-linear.test.ts` (passed before edits in this worktree)
 - Ran requested focused verification after implementation:
@@ -25,6 +27,12 @@ Implement IPC handlers for `linear:fetchTeamTriage` and `linear:getViewerId` wit
   - all five handlers are registered
   - team triage handler invokes `fetchTriage` once and returns mapped issues
   - viewer-id handler returns cached id and invokes `getViewerId` only once per session
+- Follow-up type-safety fix:
+  - Cast `linearClient` to `LinearClient` inside the `getViewerId` adapter in `register.ts` before calling `getCurrentUser()`, matching other adapter casts.
+
+## Fix Commit
+- `ad989b3` (initial implementation)
+- `0955425` (`fix(ipc): cast linearClient before getCurrentUser in adapter`)
 
 ## Tech Debt
 - None intentionally skipped for this task.
