@@ -14,6 +14,7 @@ const issue: Issue = {
   url: '',
   updatedAt: '',
   isBug: false,
+  assigneeId: null,
 };
 
 describe('IssueCard', () => {

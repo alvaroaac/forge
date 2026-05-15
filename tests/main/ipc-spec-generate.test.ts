@@ -66,6 +66,7 @@ const issueTemplate: Omit<Issue, 'id' | 'title' | 'description'> = {
   isBug: false,
   url: 'https://example.com',
   updatedAt: '2026-01-01T00:00:00Z',
+  assigneeId: null,
 };
 
 function isSpecChunk(payload: SentPayload): payload is SpecStreamChunk {

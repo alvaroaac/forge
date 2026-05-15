@@ -11,6 +11,7 @@ export interface Issue {
   url: string;
   updatedAt: string;
   isBug: boolean;
+  assigneeId: string | null;
 }
 
 export interface CommentThread {

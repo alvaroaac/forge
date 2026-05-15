@@ -59,6 +59,7 @@ const issues: Issue[] = [
     url: '',
     updatedAt: '',
     isBug: true,
+    assigneeId: null,
   },
   {
     id: 'FUL-2',
@@ -70,6 +71,7 @@ const issues: Issue[] = [
     url: '',
     updatedAt: '',
     isBug: false,
+    assigneeId: null,
   },
   {
     id: 'FUL-3',
@@ -81,6 +83,7 @@ const issues: Issue[] = [
     url: '',
     updatedAt: '',
     isBug: false,
+    assigneeId: null,
   },
   {
     id: 'FUL-4',
@@ -92,6 +95,7 @@ const issues: Issue[] = [
     isBug: true,
     url: '',
     updatedAt: '',
+    assigneeId: null,
   },
 ];
 
@@ -208,6 +212,7 @@ describe('IssueListPanel', () => {
             url: '',
             updatedAt: '',
             isBug: false,
+            assigneeId: null,
           },
           {
             id: 'FUL-B',
@@ -219,6 +224,7 @@ describe('IssueListPanel', () => {
             url: '',
             updatedAt: '',
             isBug: false,
+            assigneeId: null,
           },
           {
             id: 'FUL-C',
@@ -230,6 +236,7 @@ describe('IssueListPanel', () => {
             url: '',
             updatedAt: '',
             isBug: false,
+            assigneeId: null,
           },
           {
             id: 'FUL-D',
@@ -241,6 +248,7 @@ describe('IssueListPanel', () => {
             url: '',
             updatedAt: '',
             isBug: false,
+            assigneeId: null,
           },
           {
             id: 'FUL-H',
@@ -252,6 +260,7 @@ describe('IssueListPanel', () => {
             url: '',
             updatedAt: '',
             isBug: false,
+            assigneeId: null,
           },
         ]}
         tab="In Progress"

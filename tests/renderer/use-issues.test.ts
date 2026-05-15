@@ -33,6 +33,7 @@ function createIssue(id: string): Issue {
     url: '',
     updatedAt: '2026-05-13T00:00:00.000Z',
     isBug: false,
+    assigneeId: null,
   };
 }
 

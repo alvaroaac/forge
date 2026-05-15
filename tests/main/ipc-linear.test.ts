@@ -37,9 +37,9 @@ describe('registerLinearHandlers', () => {
     expect(registrations.some((entry) => entry.channel === IpcChannel.LinearFetchIssues)).toBe(
       true,
     );
-    expect(
-      registrations.some((entry) => entry.channel === IpcChannel.LinearFetchIssueDetail),
-    ).toBe(true);
+    expect(registrations.some((entry) => entry.channel === IpcChannel.LinearFetchIssueDetail)).toBe(
+      true,
+    );
     expect(registrations.some((entry) => entry.channel === IpcChannel.LinearRefresh)).toBe(true);
     registrations.forEach((entry) => {
       expect(typeof entry.handler).toBe('function');
@@ -59,6 +59,7 @@ describe('registerLinearHandlers', () => {
         url: 'https://example.com/ful-1',
         updatedAt: '2026-01-01T00:00:00Z',
         isBug: false,
+        assigneeId: null,
       },
     ];
     const ipc: IpcMainLike = {
@@ -81,6 +82,7 @@ describe('registerLinearHandlers', () => {
         url: 'https://example.com/ful-2',
         updatedAt: '2026-01-02T00:00:00Z',
         isBug: true,
+        assigneeId: null,
       },
     ]);
     const fetchIssueDetail: FetchIssueDetail = vi.fn();
@@ -111,6 +113,7 @@ describe('registerLinearHandlers', () => {
         url: 'https://example.com/ful-2',
         updatedAt: '2026-01-02T00:00:00Z',
         isBug: true,
+        assigneeId: null,
       },
     ];
     const ipc: IpcMainLike = {
@@ -151,6 +154,7 @@ describe('registerLinearHandlers', () => {
       url: 'https://example.com/ful-3',
       updatedAt: '2026-01-03T00:00:00Z',
       isBug: false,
+      assigneeId: null,
     } satisfies Issue;
     const ipc: IpcMainLike = {
       handle(channel, listener) {

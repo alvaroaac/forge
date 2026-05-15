@@ -12,6 +12,7 @@ const issue: Issue = {
   url: 'u',
   updatedAt: '',
   isBug: true,
+  assigneeId: null,
 };
 
 describe('buildSpecPrompt', () => {

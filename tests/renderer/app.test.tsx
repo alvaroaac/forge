@@ -97,6 +97,7 @@ const issues: Issue[] = [
     url: 'https://linear.app/acme/issue/FUL-1',
     updatedAt: '2026-05-13T00:00:00.000Z',
     isBug: false,
+    assigneeId: null,
   },
   {
     id: 'FUL-2',
@@ -108,6 +109,7 @@ const issues: Issue[] = [
     url: 'https://linear.app/acme/issue/FUL-2',
     updatedAt: '2026-05-13T00:00:00.000Z',
     isBug: false,
+    assigneeId: null,
   },
 ];
 
@@ -355,7 +357,9 @@ describe('App detail drawer refresh', () => {
     });
 
     await waitFor(() => {
-      expect(renderState.specDrawerProps?.reviewedContent).toBe('# Revised spec\n\n## Task Summary\nUpdated');
+      expect(renderState.specDrawerProps?.reviewedContent).toBe(
+        '# Revised spec\n\n## Task Summary\nUpdated',
+      );
       expect(renderState.specDrawerProps?.reviewSummary?.verdict).toBe('approved');
     });
   });
@@ -482,7 +486,9 @@ describe('App detail drawer refresh', () => {
         unresolvedComments: ['Need final sign-off'],
       },
     });
-    const specWrite = vi.fn().mockResolvedValue({ issueId: 'FUL-1', content: '# Revised spec only' });
+    const specWrite = vi
+      .fn()
+      .mockResolvedValue({ issueId: 'FUL-1', content: '# Revised spec only' });
     window.forge = {
       auth: { check: vi.fn() },
       config: { get: vi.fn(), set: vi.fn() },

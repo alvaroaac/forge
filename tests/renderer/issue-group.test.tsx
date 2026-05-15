@@ -45,6 +45,7 @@ const issues: Issue[] = [
     url: '',
     updatedAt: '',
     isBug: false,
+    assigneeId: null,
   },
   {
     id: 'FUL-2',
@@ -56,6 +57,7 @@ const issues: Issue[] = [
     url: '',
     updatedAt: '',
     isBug: false,
+    assigneeId: null,
   },
   {
     id: 'FUL-3',
@@ -67,6 +69,7 @@ const issues: Issue[] = [
     url: '',
     updatedAt: '',
     isBug: true,
+    assigneeId: null,
   },
   {
     id: 'FUL-4',
@@ -78,6 +81,7 @@ const issues: Issue[] = [
     url: '',
     updatedAt: '',
     isBug: false,
+    assigneeId: null,
   },
 ];
 

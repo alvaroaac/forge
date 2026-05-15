@@ -14,6 +14,7 @@ const issue: Issue = {
   url: '',
   updatedAt: '',
   isBug: false,
+  assigneeId: null,
 };
 
 const spec: Spec = {
@@ -238,7 +239,9 @@ Persisted body`);
       />,
     );
 
-    expect(screen.getByRole('button', { name: /Launch Review/i }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: /Launch Review/i }).hasAttribute('disabled')).toBe(
+      true,
+    );
   });
 
   it('renders pending status text while review is running', () => {
@@ -277,16 +280,16 @@ Persisted body`);
     );
 
     expect(screen.getByRole('button', { name: /Review changes/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded')).toBe(
-      'false',
-    );
+    expect(
+      screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded'),
+    ).toBe('false');
     expect(screen.queryByText(reviewSummary.reviewerSummary)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Review changes/i }));
 
-    expect(screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded')).toBe(
-      'true',
-    );
+    expect(
+      screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded'),
+    ).toBe('true');
     expect(screen.getByText(reviewSummary.reviewerSummary)).toBeTruthy();
   });
 

@@ -20,6 +20,7 @@ export interface RawLinearIssue {
   labels: { nodes: Array<{ name: string }> };
   url: string;
   updatedAt: string;
+  assignee?: { id: string } | null;
 }
 
 export async function fetchRaw(client: LinearClientShape): Promise<RawLinearIssue[]> {
@@ -40,6 +41,7 @@ export function mapIssue(raw: RawLinearIssue): Issue {
     url: raw.url,
     updatedAt: raw.updatedAt,
     isBug: isBug({ labels, issueType: null }),
+    assigneeId: raw.assignee?.id ?? null,
   };
 }
 

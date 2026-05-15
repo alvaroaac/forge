@@ -20,6 +20,7 @@ const sample: Issue = {
   url: '',
   updatedAt: '',
   isBug: false,
+  assigneeId: null,
 };
 
 describe('issues-cache', () => {
