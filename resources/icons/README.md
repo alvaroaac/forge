@@ -1,6 +1,7 @@
 # Forge app icon
 
-`forge-source.svg` is the temporary source icon for macOS packaging.
+`forge-source.svg` is the source icon for macOS packaging. The current artwork is
+the `03·C Tile F` concept from `resources/design/Forge Logo Concepts v2.html`.
 
 To replace it, update `forge-source.svg` with the final icon artwork, then run:
 

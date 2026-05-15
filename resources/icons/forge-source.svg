@@ -1,39 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Forge">
   <defs>
-    <linearGradient id="bg" x1="180" y1="120" x2="844" y2="904" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7180f5" />
-      <stop offset="1" stop-color="#2430a8" />
-    </linearGradient>
-    <linearGradient id="roof" x1="256" y1="280" x2="768" y2="752" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f6f8ff" />
-      <stop offset="1" stop-color="#b8c0ff" />
-    </linearGradient>
+    <mask id="tile-f-cut" maskUnits="userSpaceOnUse">
+      <rect width="1024" height="1024" fill="white" />
+      <rect x="224" y="224" width="128" height="576" fill="black" />
+      <rect x="352" y="224" width="448" height="128" fill="black" />
+      <rect x="352" y="448" width="288" height="128" fill="black" />
+    </mask>
   </defs>
-  <rect width="1024" height="1024" rx="224" fill="#0a0c12" />
-  <rect x="92" y="92" width="840" height="840" rx="188" fill="url(#bg)" />
-  <path
-    d="M218 505 512 258l294 247"
-    fill="none"
-    stroke="url(#roof)"
-    stroke-width="82"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
-  <path
-    d="M298 500v264c0 34 28 62 62 62h304c34 0 62-28 62-62V500"
-    fill="none"
-    stroke="#f6f8ff"
-    stroke-width="74"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
-  <path
-    d="M452 826V650c0-24 20-44 44-44h32c24 0 44 20 44 44v176"
-    fill="none"
-    stroke="#0a0c12"
-    stroke-width="54"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    opacity="0.9"
-  />
+  <rect width="1024" height="1024" rx="224" fill="#7180F5" mask="url(#tile-f-cut)" />
 </svg>
