@@ -21,6 +21,7 @@ describe('ForgeApi shape', () => {
         linear: true,
         claudeCode: false,
         codex: false,
+        computron: false,
       }),
     },
     linear: {

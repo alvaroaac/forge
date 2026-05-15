@@ -4,6 +4,7 @@ import { AuthRow } from './auth-row';
 const AUTH_ROWS: Array<{ key: keyof AuthStatus; name: string }> = [
   { key: 'claudeCode', name: 'Claude Code' },
   { key: 'codex', name: 'Codex CLI' },
+  { key: 'computron', name: 'Computron' },
   { key: 'linear', name: 'Linear' },
 ];
 

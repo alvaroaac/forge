@@ -30,6 +30,7 @@ describe('shared types', () => {
       linear: boolean;
       claudeCode: boolean;
       codex: boolean;
+      computron: boolean;
     }>();
   });
 

@@ -39,6 +39,7 @@ export interface AuthStatus {
   linear: boolean;
   claudeCode: boolean;
   codex: boolean;
+  computron: boolean;
 }
 
 export interface SpecStreamChunk {

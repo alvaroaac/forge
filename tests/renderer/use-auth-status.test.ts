@@ -62,12 +62,14 @@ describe('useAuthStatus', () => {
       linear: false,
       claudeCode: false,
       codex: false,
+      computron: false,
     });
 
     deferred.resolve({
       linear: true,
       claudeCode: true,
       codex: false,
+      computron: false,
     });
 
     await waitFor(() => {
@@ -75,6 +77,7 @@ describe('useAuthStatus', () => {
         linear: true,
         claudeCode: true,
         codex: false,
+        computron: false,
       });
     });
 
@@ -104,6 +107,7 @@ describe('useAuthStatus', () => {
         linear: false,
         claudeCode: false,
         codex: false,
+        computron: false,
       });
 
       deferred.reject(new Error('auth load failed'));
@@ -114,6 +118,7 @@ describe('useAuthStatus', () => {
         linear: false,
         claudeCode: false,
         codex: false,
+        computron: false,
       });
       expect(unhandledRejection).not.toHaveBeenCalled();
       expect(check).toHaveBeenCalledTimes(1);

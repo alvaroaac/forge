@@ -1,5 +1,6 @@
 import { tryExec } from '../lib/exec';
 import type { AuthStatus } from '../../shared/types';
+import { checkComputron } from './computron-checker';
 
 export interface LinearAuthClient {
   checkAuth: (tokenPath?: string) => Promise<boolean>;
@@ -25,11 +26,13 @@ export async function checkLinearApi(client: LinearAuthClient, tokenPath: string
 export async function checkAll(opts: {
   linearTokenPath: string;
   linearClient: LinearAuthClient;
+  computronRepoPath: string;
 }): Promise<AuthStatus> {
-  const [linear, claudeCode, codex] = await Promise.all([
+  const [linear, claudeCode, codex, computron] = await Promise.all([
     checkLinearApi(opts.linearClient, opts.linearTokenPath),
     checkCli('claude auth status'),
     checkCli('codex login status'),
+    checkComputron(opts.computronRepoPath),
   ]);
-  return { linear, claudeCode, codex };
+  return { linear, claudeCode, codex, computron };
 }

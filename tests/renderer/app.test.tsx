@@ -79,7 +79,7 @@ vi.mock('../../src/renderer/components/spec-drawer', () => ({
 }));
 
 vi.mock('../../src/renderer/hooks/use-auth-status', () => ({
-  useAuthStatus: () => ({ linear: true, claudeCode: true, codex: true }),
+  useAuthStatus: () => ({ linear: true, claudeCode: true, codex: true, computron: true }),
 }));
 
 vi.mock('../../src/renderer/hooks/use-config', () => ({

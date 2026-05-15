@@ -15,6 +15,7 @@ type ConfigStoreDouble = Pick<ConfigStore, 'get' | 'set'>;
 type CheckAllFn = (params: {
   linearTokenPath: string;
   linearClient: LinearAuthClient;
+  computronRepoPath: string;
 }) => Promise<AuthStatus>;
 
 function createLinearClient(): LinearAuthClient {
@@ -59,7 +60,7 @@ describe('registerAuthHandlers', () => {
       computronRepoPath: '',
       claudeModel: 'claude-sonnet-4-6',
     };
-    const status: AuthStatus = { linear: true, claudeCode: false, codex: true };
+    const status: AuthStatus = { linear: true, claudeCode: false, codex: true, computron: false };
     const store: ConfigStoreDouble = {
       get: vi.fn().mockResolvedValue(cfg),
       set: vi.fn(),
@@ -75,7 +76,11 @@ describe('registerAuthHandlers', () => {
 
     expect(store.get).toHaveBeenCalledTimes(1);
     expect(checkAll).toHaveBeenCalledTimes(1);
-    expect(checkAll).toHaveBeenCalledWith({ linearTokenPath: cfg.linearTokenPath, linearClient });
+    expect(checkAll).toHaveBeenCalledWith({
+      linearTokenPath: cfg.linearTokenPath,
+      linearClient,
+      computronRepoPath: cfg.computronRepoPath,
+    });
     expect(result).toEqual(status);
   });
 });
