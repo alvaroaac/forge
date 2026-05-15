@@ -37,6 +37,8 @@ export function App() {
   const [reviewSummary, setReviewSummary] = useState<SpecReviewSummary | null>(null);
   const [isReviewPending, setIsReviewPending] = useState(false);
   const [reviewErrorMessage, setReviewErrorMessage] = useState<string | null>(null);
+  const [mineOnly, setMineOnly] = useState(false);
+  const [viewerId, setViewerId] = useState<string | null>(null);
   const drawerIssueId = drawer?.issue.id ?? null;
   const { spec, streaming, isStreaming, errorMessage, generate } = useSpecStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
@@ -52,6 +54,17 @@ export function App() {
       setClaudeModel(config.claudeModel);
     }
   }, [config?.claudeModel]);
+
+  useEffect(() => {
+    if (tab !== 'Triage' || viewerId !== null) {
+      return;
+    }
+
+    void (async () => {
+      const nextViewerId = await window.forge.linear.getViewerId();
+      setViewerId(nextViewerId ?? null);
+    })();
+  }, [tab, viewerId]);
 
   useEffect(() => {
     if (!drawerIssueId || !spec) {
@@ -197,6 +210,9 @@ export function App() {
           activeId={drawerIssueId}
           hasSpecFor={hasSpecFor}
           onRefresh={refresh}
+          mineOnly={mineOnly}
+          onMineOnlyChange={setMineOnly}
+          viewerId={viewerId}
         />
         <RightPanel auth={auth} />
       </div>

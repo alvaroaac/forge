@@ -5,11 +5,12 @@ import { IconRefresh } from './icons';
 import { IssueGroup } from './issue-group';
 import { PillTab } from './pill-tab';
 
-export type Tab = 'Todo' | 'In Progress' | 'In Review' | 'Done';
+export type Tab = 'Triage' | 'Todo' | 'In Progress' | 'In Review' | 'Done';
 
-const TABS: Tab[] = ['Todo', 'In Progress', 'In Review', 'Done'];
+const TABS: Tab[] = ['Triage', 'Todo', 'In Progress', 'In Review', 'Done'];
 
 const TAB_KEY: Record<Tab, IssueStatus> = {
+  Triage: 'triage',
   Todo: 'todo',
   'In Progress': 'in_progress',
   'In Review': 'in_review',
@@ -26,6 +27,9 @@ type IssueListPanelProps = {
   activeId: string | null;
   hasSpecFor: (issueId: string) => boolean;
   onRefresh: () => void;
+  mineOnly: boolean;
+  onMineOnlyChange: (next: boolean) => void;
+  viewerId: string | null;
 };
 
 function counts(issues: Issue[]) {
@@ -53,8 +57,13 @@ export function IssueListPanel({
   activeId,
   hasSpecFor,
   onRefresh,
+  mineOnly,
+  onMineOnlyChange,
+  viewerId,
 }: IssueListPanelProps) {
-  const visibleIssues = issues.filter((issue) => issue.status === TAB_KEY[tab]);
+  const visibleIssues = issues
+    .filter((issue) => issue.status === TAB_KEY[tab])
+    .filter((issue) => tab === 'Triage' && mineOnly && viewerId !== null ? issue.assigneeId === viewerId : true);
   const visibleGroups = groupVisible(visibleIssues);
   const issueCounts = counts(issues);
 
@@ -74,6 +83,17 @@ export function IssueListPanel({
           ))}
         </div>
         <div className="panel-left-tools">
+          {tab === 'Triage' && (
+            <label>
+              <input
+                type="checkbox"
+                checked={mineOnly}
+                onChange={(event) => onMineOnlyChange(event.currentTarget.checked)}
+                aria-label="Mine only"
+              />
+              Mine only
+            </label>
+          )}
           <button
             className="icon-btn"
             type="button"
