@@ -9,7 +9,7 @@ const PRIORITY_TABLE: Record<number, Priority> = {
 };
 const BUG_RX = /^bug$/i;
 const STATUS_TABLE: Record<string, IssueStatus> = {
-  triage: 'todo',
+  triage: 'triage',
   backlog: 'todo',
   unstarted: 'todo',
   started: 'in_progress',
