@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spec — add-triage</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --bg-elev: #14181d;
+    --bg-code: #0f1216;
+    --border: #1f2630;
+    --border-strong: #2a3340;
+    --text: #d8dee5;
+    --text-dim: #8a95a3;
+    --text-faint: #5b6573;
+    --accent: #ffb86b;
+    --accent-dim: #a87a48;
+    --link: #7ec4ff;
+    --green: #6dd58c;
+    --red: #ef6b6b;
+    --yellow: #f0c674;
+    --purple: #b290e1;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+  /* Sidebar */
+  aside {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--bg-elev);
+    border-right: 1px solid var(--border);
+    padding: 24px 18px;
+    font-size: 13px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .brand-mark {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-weight: 600;
+    color: #1a1206;
+    font-size: 12px;
+  }
+  .brand-name {
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: var(--text);
+  }
+  .toc-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--text-faint);
+    margin: 16px 0 8px;
+  }
+  .toc { list-style: none; padding: 0; margin: 0; }
+  .toc li { margin: 2px 0; }
+  .toc a {
+    display: block;
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: var(--text-dim);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  .toc a:hover {
+    background: rgba(255,255,255,.03);
+    color: var(--text);
+  }
+  .toc a.section {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .toc a.sub {
+    padding-left: 22px;
+    font-size: 12px;
+  }
+  /* Main */
+  main {
+    padding: 40px 56px 80px;
+    max-width: 920px;
+    width: 100%;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0 28px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-elev);
+    color: var(--text-dim);
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+  .chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--yellow);
+  }
+  .chip.status-draft .chip-dot { background: var(--yellow); }
+  .chip.branch .chip-dot { background: var(--purple); }
+  .chip.date .chip-dot { background: var(--text-faint); }
+  h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 6px;
+    letter-spacing: -.01em;
+  }
+  h1 .h1-tag {
+    font-size: 13px;
+    font-family: var(--mono);
+    color: var(--accent);
+    background: rgba(255, 184, 107, .08);
+    border: 1px solid rgba(255, 184, 107, .25);
+    padding: 2px 8px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-right: 10px;
+  }
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 48px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 32px 0 8px;
+    color: var(--text);
+  }
+  h3 .step {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 14px;
+    margin-right: 6px;
+  }
+  p { margin: 10px 0; color: var(--text); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.55;
+    font-family: var(--mono);
+  }
+  pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--text);
+  }
+  /* Cards */
+  .card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin: 14px 0;
+  }
+  .card.accent {
+    border-left: 3px solid var(--accent);
+  }
+  .card.warn {
+    border-left: 3px solid var(--red);
+  }
+  .card.info {
+    border-left: 3px solid var(--link);
+  }
+  .card-title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  /* Approach steps */
+  .approach-step {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 14px 0;
+  }
+  .approach-step h3 {
+    margin-top: 0;
+  }
+  /* Open question checklist */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 8px 0;
+    background: var(--bg-elev);
+  }
+  .checklist .box {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1.5px solid var(--text-faint);
+    margin-top: 3px;
+  }
+  .checklist .q-body strong { color: var(--accent); }
+  .rec {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--green);
+    border: 1px solid rgba(109, 213, 140, .3);
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: rgba(109, 213, 140, .05);
+  }
+  /* Tag list for affected files */
+  .file-list code {
+    color: var(--link);
+  }
+  /* Definition rows */
+  .def-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 14px;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .def-row:last-child { border-bottom: none; }
+  .def-row .key { color: var(--text-dim); font-family: var(--mono); font-size: 12.5px; }
+  .out-of-scope li { color: var(--text-dim); }
+  .out-of-scope strong { color: var(--text); }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4452; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside>
+  <div class="brand">
+    <div class="brand-mark">F</div>
+    <div class="brand-name">FORGE&nbsp;SPEC</div>
+  </div>
+  <div class="toc-label">Sections</div>
+  <ul class="toc">
+    <li><a class="section" href="#summary">Task Summary</a></li>
+    <li><a class="section" href="#context">Context</a></li>
+    <li><a class="sub" href="#ctx-where">Where it lives</a></li>
+    <li><a class="sub" href="#ctx-conv">Conventions</a></li>
+    <li><a class="sub" href="#ctx-deps">External deps</a></li>
+    <li><a class="section" href="#approach">Suggested Approach</a></li>
+    <li><a class="sub" href="#s1">1. IssueStatus + mapping</a></li>
+    <li><a class="sub" href="#s2">2. Linear client</a></li>
+    <li><a class="sub" href="#s3">3. Triage tab UI</a></li>
+    <li><a class="sub" href="#s4">4. Config field</a></li>
+    <li><a class="sub" href="#s5">5. Computron health</a></li>
+    <li><a class="sub" href="#s6">6. Brief generator</a></li>
+    <li><a class="sub" href="#s7">7. Triage prompt</a></li>
+    <li><a class="sub" href="#s8">8. IPC + renderer</a></li>
+    <li><a class="sub" href="#s9">9. Triage writer</a></li>
+    <li><a class="sub" href="#s10">10. Tests</a></li>
+    <li><a class="section" href="#questions">Open Questions</a></li>
+    <li><a class="section" href="#oos">Out of Scope</a></li>
+  </ul>
+</aside>
+
+<main>
+  <h1><span class="h1-tag">add-triage</span>Triage tab with computron-aware engineering brief</h1>
+  <div class="meta">
+    <span class="chip status-draft"><span class="chip-dot"></span>Status&nbsp;·&nbsp;Draft</span>
+    <span class="chip date"><span class="chip-dot"></span>2026-05-14</span>
+    <span class="chip branch"><span class="chip-dot"></span>branch&nbsp;<code style="background:transparent;border:none;padding:0;color:var(--purple)">add-triage</code>&nbsp;←&nbsp;<code style="background:transparent;border:none;padding:0;color:var(--text-dim)">plan-review-integration</code></span>
+    <span class="chip"><span class="chip-dot" style="background:var(--text-faint)"></span>Issue&nbsp;·&nbsp;N/A (project-level)</span>
+  </div>
+
+  <h2 id="summary">Task Summary</h2>
+  <p>Add a new <strong>Triage</strong> tab to the Forge issue list that surfaces Linear issues in the <code>triage</code> workflow-state. For these issues, replace the existing spec-generation flow with a different AI deliverable — an <strong>engineering brief</strong> — that helps a human reviewer decide what to do with the ticket. The brief is produced by spawning <code>claude</code> with read-only filesystem access to a separate, configurable repository called <strong>computron</strong>, so the model can ground its suggestions in real code rather than guess from the issue text alone.</p>
+  <p>Introduce a new configurable filesystem path (<code>computronRepoPath</code>) following the same pattern as the existing <code>linearTeamKey</code> / <code>repoPath</code> config fields.</p>
+
+  <h2 id="context">Context</h2>
+
+  <h3 id="ctx-where">Where the feature lives today</h3>
+  <div class="card">
+    <div class="def-row"><span class="key">Issue list</span><span><code>src/renderer/components/issue-list-panel.tsx</code> — four fixed tabs (<code>Todo</code>, <code>In Progress</code>, <code>In Review</code>, <code>Done</code>) driven by <code>Tab</code> union; tab-to-status map at top of file.</span></div>
+    <div class="def-row"><span class="key">Issue type</span><span><code>src/shared/types.ts</code> — <code>IssueStatus = 'todo' | 'in_progress' | 'in_review' | 'done'</code>. No <code>triage</code> value yet.</span></div>
+    <div class="def-row"><span class="key">Status mapping</span><span><code>src/main/services/linear-mapping.ts</code> — maps Linear <code>state.type</code> to <code>IssueStatus</code>.</span></div>
+    <div class="def-row"><span class="key">Linear fetch</span><span><code>linear-service.ts</code> → <code>fetchAssignedIssues(viewerId)</code>. Underlying query at <code>.agents/skills/linear/reference/linear.mjs:551</code> filters <code>state.type nin ["completed","canceled"]</code> and scopes by assignee — triage issues typically unassigned, never appear today.</span></div>
+    <div class="def-row"><span class="key">Spec generation</span><span><code>spec-generator.ts</code> exposes <code>streamSpec({ model, system, user, onChunk })</code> — spawns <code>claude -p --model M --append-system-prompt SYS --output-format text</code>. <code>buildClaudeArgs</code> hard-coded; no allowance for <code>--add-dir</code> or <code>--allowedTools</code>.</span></div>
+    <div class="def-row"><span class="key">Spec drawer</span><span><code>spec-drawer.tsx</code> + <code>use-spec-stream.ts</code> + <code>ipc/spec.ts</code> — full chain we mirror for the triage brief.</span></div>
+    <div class="def-row"><span class="key">Spec write</span><span><code>spec-writer.ts</code> persists markdown under <code>thoughts/tasks/&lt;issueId&gt;/initial-spec.md</code> on user action.</span></div>
+    <div class="def-row"><span class="key">Repo context reader</span><span><code>repo-reader.ts</code> reads <code>AGENTS.md</code> + <code>thoughts/*.md</code> from configured <code>repoPath</code>. <strong>Not</strong> reused for computron — there the model does its own reading via filesystem tools.</span></div>
+    <div class="def-row"><span class="key">Config store</span><span><code>config-store.ts</code> — JSON file; <code>DEFAULTS</code> constant merged with user overrides.</span></div>
+    <div class="def-row"><span class="key">Auth checks</span><span><code>auth-checker.ts</code> — startup verification for Linear / Claude Code / Codex.</span></div>
+  </div>
+
+  <h3 id="ctx-conv">Conventions from <code>AGENTS.md</code></h3>
+  <ul>
+    <li>Local-first, no backend. Linear is source of truth.</li>
+    <li>Config-driven — no hardcoded paths or team IDs.</li>
+    <li>Sellable-aware — built for distribution from day one.</li>
+    <li>All Linear writes/reads go through <code>.agents/skills/linear/reference/linear.mjs</code>. Extend the client there; do <strong>not</strong> hand-roll GraphQL.</li>
+    <li><code>thoughts/tasks/&lt;task-slug&gt;/</code> is the agent handshake folder. Non-Linear-tracked work → free-form kebab-case slug (this task: <code>add-triage</code>).</li>
+  </ul>
+
+  <h3 id="ctx-deps">External dependencies</h3>
+  <div class="card warn">
+    <div class="card-title">Verify before implementation</div>
+    <p><code>claude</code> CLI must accept <code>--add-dir &lt;path&gt;</code> and <code>--allowedTools "Read,Glob,Grep"</code>. <strong>Confirm exact flag syntax against the installed <code>claude</code> version</strong> before coding — pin verified syntax in the implementation plan. If actual flag is <code>--allowed-tools</code>, the spec is wrong and must be corrected first.</p>
+  </div>
+
+  <h2 id="approach">Suggested Approach</h2>
+
+  <div class="approach-step" id="s1">
+    <h3><span class="step">01</span>Extend <code>IssueStatus</code> and Linear mapping</h3>
+    <ul>
+      <li><code>src/shared/types.ts</code>: add <code>'triage'</code> to the <code>IssueStatus</code> union.</li>
+      <li><code>linear-mapping.ts</code>: extend <code>mapStatus</code> so <code>state.type === 'triage'</code> → <code>'triage'</code>.</li>
+      <li>Search renderer for <code>switch</code> / <code>Record&lt;IssueStatus,...&gt;</code> usages and add the <code>triage</code> arm. Likely: <code>classify.ts</code>, <code>status-dot.tsx</code>, <code>pill-tab.tsx</code> consumers.</li>
+      <li>Add <code>assigneeId: string | null</code> to the <code>Issue</code> shape so the renderer can implement the "Mine only" toggle without re-querying.</li>
+    </ul>
+  </div>
+
+  <div class="approach-step" id="s2">
+    <h3><span class="step">02</span>Linear client — team-wide triage fetch</h3>
+    <p>In <code>.agents/skills/linear/reference/linear.mjs</code>, add a new operation:</p>
+    <pre><code>async function fetchTeamTriage(teamId) {
+  // GraphQL: issues where team.id == teamId AND state.type == "triage"
+  // Return same shape as fetchAssignedIssues, plus assignee { id } | null.
+}</code></pre>
+    <ul>
+      <li>Document in <code>.agents/skills/linear/SKILL.md</code> under <em>Reads</em>.</li>
+      <li>Expose through <code>linear-service.ts</code> as <code>fetchTriage(client, teamId)</code>.</li>
+      <li>Wire into a new IPC channel <code>linear:fetchTeamTriage</code> (mirror existing <code>linear:fetchIssues</code>).</li>
+    </ul>
+  </div>
+
+  <div class="approach-step" id="s3">
+    <h3><span class="step">03</span>Issue list — Triage tab + Mine-only toggle</h3>
+    <ul>
+      <li><code>issue-list-panel.tsx</code>: extend <code>Tab</code> union with <code>'Triage'</code>. Place it as the <strong>first</strong> tab — triage is the entry point for new work.</li>
+      <li>Combine results from existing assigned-issues fetch with the new team-triage fetch in <code>use-issues.ts</code>. De-duplicate by issue id (an issue can be both assigned and in triage).</li>
+      <li>Small toggle ("Mine only") visible only when the Triage tab is active. Filters by <code>assigneeId === currentViewerId</code>.</li>
+      <li>Cache <code>currentViewerId</code> in main process after first <code>getCurrentUser()</code> call. Expose via new IPC <code>linear:getViewerId</code>.</li>
+    </ul>
+  </div>
+
+  <div class="approach-step" id="s4">
+    <h3><span class="step">04</span>Config — <code>computronRepoPath</code></h3>
+    <ul>
+      <li><code>AppConfig</code> in <code>types.ts</code>: add <code>computronRepoPath: string</code>.</li>
+      <li><code>config-store.ts</code> <code>DEFAULTS</code>: add <code>computronRepoPath: ''</code>.</li>
+      <li>Config UI (<code>hooks/use-config.ts</code> + edit surface): add input field.</li>
+      <li>Validation: empty path allowed at startup, but <strong>block the "Generate brief" action</strong> if path is empty or invalid.</li>
+    </ul>
+  </div>
+
+  <div class="approach-step" id="s5">
+    <h3><span class="step">05</span>Computron health check</h3>
+    <ul>
+      <li>New <code>computron-checker.ts</code>: returns <code>true</code> iff <code>computronRepoPath</code> non-empty, path exists, contains <code>.git</code>.</li>
+      <li>Wire into <code>auth-checker.ts</code> health surface as a new row labelled "Computron".</li>
+      <li>Renderer auth panel (<code>auth-row.tsx</code>) gains a row. Same UI pattern as existing rows.</li>
+    </ul>
+  </div>
+
+  <div class="approach-step" id="s6">
+    <h3><span class="step">06</span>Triage brief generator</h3>
+    <p>Refactor <code>spec-generator.ts</code> first so both spec and triage flows share spawn machinery:</p>
+    <ul>
+      <li>Split <code>buildClaudeArgs</code> to accept an <code>extraArgs: readonly string[]</code> parameter. Existing spec call passes <code>[]</code>. Triage call passes <code>['--add-dir', computronRepoPath, '--allowedTools', 'Read,Glob,Grep']</code>.</li>
+      <li><strong>Decision pinned:</strong> keep <code>spec-generator.ts</code>, export a lower-level <code>streamClaude</code>, keep <code>streamSpec</code> as a thin wrapper. Avoids touching all spec call sites.</li>
+    </ul>
+    <p>New module <code>src/main/services/triage-generator.ts</code>:</p>
+    <ul>
+      <li><code>streamTriageBrief({ issue, computronRepoPath, model, onChunk }) → Promise&lt;string&gt;</code></li>
+      <li>Calls <code>streamClaude</code> with the triage prompt + extra args.</li>
+    </ul>
+  </div>
+
+  <div class="approach-step" id="s7">
+    <h3><span class="step">07</span>Triage prompt</h3>
+    <p>New module <code>src/main/services/triage-prompt.ts</code>:</p>
+    <pre><code>const SYSTEM = `You are reviewing an unrefined Linear triage issue. Your goal is
+to produce a short engineering brief that helps a human reviewer decide what to
+do with this ticket.
+
+You have read-only access to the team's main codebase at the current working
+directory (mounted via --add-dir). Use Glob and Grep to locate code likely
+relevant to the issue. Use Read sparingly — only on files that look directly
+related. Cap yourself at roughly 6 tool calls.
+
+Output sections, in this exact order:
+
+1. **What the user likely wants** — 1–3 sentences, plain language.
+2. **Likely affected components** — bullet list of file paths or modules in
+   the computron repo, one-line reason each.
+3. **Open questions for reporter** — bullet list of things ambiguous in the
+   issue.
+4. **Suggested next step** — one of: "Needs reproduction", "Needs spec",
+   "Probable duplicate of &lt;X&gt;", "Ready for spec", "Out of scope" — plus one
+   sentence why.
+
+Return only the markdown brief. No preamble, no postscript, no code fences
+wrapping the whole output.`;</code></pre>
+    <p>User-prompt body: issue id / title / priority / labels / description, plus an explicit reminder that <code>cwd</code> is the computron repo root.</p>
+  </div>
+
+  <div class="approach-step" id="s8">
+    <h3><span class="step">08</span>IPC + renderer plumbing</h3>
+    <ul>
+      <li>New IPC channels (mirror spec channels):
+        <ul>
+          <li><code>triage:generate</code> — kicks off stream; deltas pushed via <code>triage:chunk</code> events.</li>
+          <li><code>triage:write</code> — persists brief markdown on demand.</li>
+          <li><code>triage:done</code> / <code>triage:error</code> — terminal events.</li>
+        </ul>
+      </li>
+      <li>New <code>ipc/triage.ts</code> registered in <code>ipc/register.ts</code>.</li>
+      <li>New hook <code>hooks/use-triage-stream.ts</code> — copy of <code>use-spec-stream.ts</code> adapted for new channels.</li>
+      <li>New component <code>components/triage-drawer.tsx</code> — separate from <code>SpecDrawer</code>. Renders brief markdown, "Generate brief" button (disabled until computron health passes), "Write to file" button.</li>
+      <li><code>app.tsx</code>: when user opens a triage issue, mount <code>TriageDrawer</code> instead of <code>SpecDrawer</code>. Pick by <code>issue.status === 'triage'</code>.</li>
+    </ul>
+  </div>
+
+  <div class="approach-step" id="s9">
+    <h3><span class="step">09</span>Triage writer</h3>
+    <ul>
+      <li>New <code>triage-writer.ts</code> mirroring <code>spec-writer.ts</code>.</li>
+      <li>Writes brief markdown to <code>thoughts/tasks/&lt;issueId&gt;/triage-brief.md</code>.</li>
+      <li>Fires <strong>only</strong> on explicit user button-press — never auto-write.</li>
+    </ul>
+  </div>
+
+  <div class="approach-step" id="s10">
+    <h3><span class="step">10</span>Tests</h3>
+    <p>For each new module, add a unit test in the matching <code>__tests__/</code> folder following existing pattern:</p>
+    <ul>
+      <li><code>linear-mapping</code> — <code>triage</code> mapping case.</li>
+      <li><code>triage-prompt</code> — snapshot of user prompt for a fixed issue.</li>
+      <li><code>triage-generator</code> — spawn-mock test, mirrors <code>spec-generator</code> test shape.</li>
+      <li><code>computron-checker</code> — missing path / missing <code>.git</code> / valid path cases.</li>
+      <li><code>triage-writer</code> — writes to expected path, creates folder.</li>
+      <li><code>TriageDrawer</code> renderer test under <code>src/renderer/components/__tests__/</code>.</li>
+    </ul>
+  </div>
+
+  <h2 id="questions">Open Questions</h2>
+  <ul class="checklist">
+    <li><span class="box"></span><span class="q-body"><strong>claude CLI flag syntax</strong> — confirm <code>--add-dir</code> and <code>--allowedTools "Read,Glob,Grep"</code> exist on the version we depend on. If syntax differs (e.g. <code>--allowed-tools</code>), pin corrected form in the implementation plan before coding.</span></li>
+    <li><span class="box"></span><span class="q-body"><strong>Mine-only default</strong> — Triage tab default: toggle off (show full team queue) or on (show only my triage)? <span class="rec">REC: off</span> The value of the tab is the team queue; toggle is an escape hatch.</span></li>
+    <li><span class="box"></span><span class="q-body"><strong>Triage tab placement</strong> — first tab (entry point) or last (cold-storage feel)? <span class="rec">REC: first</span></span></li>
+    <li><span class="box"></span><span class="q-body"><strong>Viewer-id caching strategy</strong> — fetch at startup and cache, or lazy-fetch on first Triage tab open? <span class="rec">REC: lazy</span> Keeps startup fast, matches existing on-demand patterns.</span></li>
+    <li><span class="box"></span><span class="q-body"><strong>Tool-call cap enforcement</strong> — prompt says "~6 tool calls" but CLI doesn't enforce. Acceptable as soft prompt-level constraint, or need a hard limit via <code>--max-turns</code> (if such flag exists)?</span></li>
+    <li><span class="box"></span><span class="q-body"><strong>Triage-brief duplicate prevention</strong> — if user re-generates a brief, overwrite <code>triage-brief.md</code> silently, prompt, or version it? <span class="rec">REC: prompt on overwrite</span> Matches common spec-write behaviour.</span></li>
+  </ul>
+
+  <h2 id="oos">Out of Scope (tech-debt candidates)</h2>
+  <ul class="out-of-scope">
+    <li><strong>Prefetched gh-API context fallback</strong> — earlier brainstorming considered a <code>gh api</code> based context fetcher as a fallback when <code>computronRepoPath</code> is unset. Skipped for v1; logged here so we don't lose it.</li>
+    <li><strong>Background brief generation</strong> — briefs are generated on user demand only; no auto-generate on triage-tab open.</li>
+    <li><strong>Multi-repo computron support</strong> — only one configured path. If a team operates across N services, that's a later iteration.</li>
+  </ul>
+
+</main>
+</div>
+</body>
+</html>
