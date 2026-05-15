@@ -3,12 +3,14 @@ import { useEffect, useRef, useState } from 'react';
 import type { Issue, SpecReviewSummary } from '../shared/types';
 import { RightPanel } from './components/right-panel';
 import { SpecDrawer, type DrawerTab } from './components/spec-drawer';
+import { TriageDrawer } from './components/triage-drawer';
 import { TopBar } from './components/top-bar';
 import { IssueListPanel, type Tab } from './components/issue-list-panel';
 import { useAuthStatus } from './hooks/use-auth-status';
 import { useConfig } from './hooks/use-config';
 import { useIssues } from './hooks/use-issues';
 import { useSpecStream } from './hooks/use-spec-stream';
+import { useTriageStream } from './hooks/use-triage-stream';
 
 const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-4-6';
 
@@ -40,7 +42,14 @@ export function App() {
   const [mineOnly, setMineOnly] = useState(false);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const drawerIssueId = drawer?.issue.id ?? null;
-  const { spec, streaming, isStreaming, errorMessage, generate } = useSpecStream(drawerIssueId);
+  const { spec, streaming, isStreaming, errorMessage, generate: generateSpec } = useSpecStream(drawerIssueId);
+  const {
+    brief,
+    streaming: triageStreaming,
+    isStreaming: isTriageStreaming,
+    errorMessage: triageErrorMessage,
+    generate,
+  } = useTriageStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
   const currentDrawerIssueId = useRef<string | null>(null);
   const activeReviewIssueId = useRef<string | null>(null);
@@ -137,7 +146,7 @@ export function App() {
     setReviewedContent(null);
     setReviewSummary(null);
     setReviewErrorMessage(null);
-    void generate(claudeModel);
+    void generateSpec(claudeModel);
   };
 
   const onLaunchReviewSpec = async (content: string) => {
@@ -197,6 +206,8 @@ export function App() {
     setDrawer({ ...drawer, tab: nextTab });
   };
 
+  const isTriageIssue = drawer?.issue.status === 'triage';
+
   return (
     <div className="app">
       <TopBar auth={auth} teamKey={config?.linearTeamKey ?? '—'} lastSync={formatSync(lastSync)} />
@@ -217,27 +228,40 @@ export function App() {
         <RightPanel auth={auth} />
       </div>
 
-      <SpecDrawer
-        issue={drawer?.issue ?? null}
-        tab={drawer?.tab ?? 'spec'}
-        setTab={setDrawerTab}
-        onClose={() => setDrawer(null)}
-        spec={spec}
-        streaming={streaming}
-        reviewedContent={reviewedContent}
-        reviewSummary={reviewSummary}
-        isReviewPending={isReviewPending}
-        reviewStatusMessage={isReviewPending ? 'Review in progress...' : null}
-        reviewErrorMessage={reviewErrorMessage}
-        isStreaming={isStreaming}
-        errorMessage={errorMessage}
-        claudeModel={claudeModel}
-        onClaudeModelChange={onClaudeModelChange}
-        onGenerate={onGenerateSpec}
-        onLaunchReview={onLaunchReviewSpec}
-        onWrite={onWriteSpec}
-        onCopy={onCopy}
-      />
+      {isTriageIssue ? (
+        <TriageDrawer
+          issue={drawer?.issue ?? null}
+          canGenerate={auth.computron}
+          isStreaming={isTriageStreaming}
+          streaming={triageStreaming}
+          brief={brief}
+          errorMessage={triageErrorMessage}
+          onGenerate={() => void generate()}
+          onClose={() => setDrawer(null)}
+        />
+      ) : (
+        <SpecDrawer
+          issue={drawer?.issue ?? null}
+          tab={drawer?.tab ?? 'spec'}
+          setTab={setDrawerTab}
+          onClose={() => setDrawer(null)}
+          spec={spec}
+          streaming={streaming}
+          reviewedContent={reviewedContent}
+          reviewSummary={reviewSummary}
+          isReviewPending={isReviewPending}
+          reviewStatusMessage={isReviewPending ? 'Review in progress...' : null}
+          reviewErrorMessage={reviewErrorMessage}
+          isStreaming={isStreaming}
+          errorMessage={errorMessage}
+          claudeModel={claudeModel}
+          onClaudeModelChange={onClaudeModelChange}
+          onGenerate={onGenerateSpec}
+          onLaunchReview={onLaunchReviewSpec}
+          onWrite={onWriteSpec}
+          onCopy={onCopy}
+        />
+      )}
     </div>
   );
 }
