@@ -15,7 +15,7 @@ Status: DONE
 - `thoughts/tasks/add-triage/impl/task-2/progress.md`
 
 ## Commit SHA(s)
-- `0e61f61`
+- `a9363e3`
 
 ## Self-review findings
 - Scoped change only affects mapping behavior and its corresponding unit test.

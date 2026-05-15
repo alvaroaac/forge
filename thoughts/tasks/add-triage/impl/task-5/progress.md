@@ -15,7 +15,7 @@
 - `thoughts/tasks/add-triage/impl/task-5/progress.md`
 
 ## Commit SHA(s)
-- `a5f4a91`
+- `a2c817d`
 
 ## Self-review findings
 - Change is narrowly scoped and follows existing service-layer pattern used by `fetchIssues`.

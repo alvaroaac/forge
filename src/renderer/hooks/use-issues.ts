@@ -43,7 +43,7 @@ export function useIssues() {
     } catch {
       // Keep the current issues and sync timestamp when preload rejects.
     }
-  }, []);
+  }, [loadAll]);
 
   useEffect(() => {
     isActiveRef.current = true;

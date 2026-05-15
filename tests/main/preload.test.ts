@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ForgeApi } from '../../src/shared/forge-api';
 import { IpcChannel } from '../../src/shared/ipc-channels';
 
 interface ElectronMock {
@@ -10,6 +11,14 @@ const on = vi.fn();
 const off = vi.fn();
 
 let exposedApi: unknown;
+
+function getForgeApi(): ForgeApi {
+  if (!exposedApi) {
+    throw new Error('forge API was not exposed');
+  }
+
+  return exposedApi as ForgeApi;
+}
 
 vi.mock('electron', () => {
   const api: ElectronMock = {
@@ -44,19 +53,19 @@ describe('preload API', () => {
   });
 
   it('calls linear.fetchTeamTriage through IpcChannel.LinearFetchTeamTriage', async () => {
-    const forge = exposedApi as any;
+    const forge = getForgeApi();
     await forge.linear.fetchTeamTriage();
     expect(invoke).toHaveBeenCalledWith(IpcChannel.LinearFetchTeamTriage);
   });
 
   it('calls linear.getViewerId through IpcChannel.LinearGetViewerId', async () => {
-    const forge = exposedApi as any;
+    const forge = getForgeApi();
     await forge.linear.getViewerId();
     expect(invoke).toHaveBeenCalledWith(IpcChannel.LinearGetViewerId);
   });
 
   it('calls triage.generate through IpcChannel.TriageGenerate with issueId and optional model', async () => {
-    const forge = exposedApi as any;
+    const forge = getForgeApi();
     await forge.triage.generate('FUL-7');
     expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGenerate, { issueId: 'FUL-7', model: undefined });
     await forge.triage.generate('FUL-7', 'opus');
@@ -67,7 +76,7 @@ describe('preload API', () => {
   });
 
   it('calls triage.write through IpcChannel.TriageWrite with overwrite default false', async () => {
-    const forge = exposedApi as any;
+    const forge = getForgeApi();
     await forge.triage.write('FUL-7', 'hello');
     expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageWrite, {
       issueId: 'FUL-7',
@@ -83,7 +92,7 @@ describe('preload API', () => {
   });
 
   it('subscribes to triage stream/done/error channels and unsubscribes', () => {
-    const forge = exposedApi as any;
+    const forge = getForgeApi();
     const onChunk = vi.fn();
     const onDone = vi.fn();
     const onError = vi.fn();

@@ -164,7 +164,6 @@ describe('useTriageStream', () => {
 
     await act(async () => {
       void result.current.generate();
-      generation.promise;
     });
 
     await waitFor(() => {
@@ -319,10 +318,8 @@ describe('useTriageStream', () => {
     const generationB = createDeferred<TriageBrief>();
     const generationC = createDeferred<TriageBrief>();
     let ful7Count = 0;
-    let ful8Count = 0;
     const generate = vi.fn((issueId: string) => {
       if (issueId === 'FUL-8') {
-        ful8Count += 1;
         return generationB.promise;
       }
 

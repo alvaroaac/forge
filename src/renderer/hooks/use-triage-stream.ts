@@ -181,7 +181,7 @@ export function useTriageStream(issueId: string | null) {
         finishStreaming(issueId, setupVersion);
       }
     },
-    [issueId, commitGeneratedBrief, finishStreaming, failStreaming],
+    [issueId, isCurrentIssue, commitGeneratedBrief, finishStreaming, failStreaming],
   );
 
   return { brief, streaming, isStreaming, errorMessage, generate };
