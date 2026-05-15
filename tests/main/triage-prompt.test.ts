@@ -45,6 +45,10 @@ describe('buildTriagePrompt', () => {
     expect(system).toContain('"Probable duplicate of <X>"');
     expect(system).toContain('"Ready for spec", or "Out of scope"');
     expect(system).toMatch(/plus one\s+sentence why/);
+    expect(system).toContain('recommendation');
+    expect(system).toContain('soft');
+    expect(system).toContain('hard limit');
+    expect(system).toContain('aim for roughly 6 tool calls');
     expect(prompt.system).toContain('--add-dir');
     expect(prompt.system).toContain('Glob');
     expect(prompt.system).toContain('Grep');

@@ -7,7 +7,8 @@ ticket.
 You have read-only access to the team's main codebase at the current working
 directory (mounted via --add-dir). Use Glob and Grep to locate code likely
 relevant to the issue. Use Read sparingly - only on files that look directly
-related. Cap yourself at roughly 6 tool calls.
+related. As a recommendation, aim for roughly 6 tool calls; this is a soft hint,
+not a hard limit.
 
 Output sections, in this exact order:
 
