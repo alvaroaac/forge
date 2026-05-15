@@ -38,6 +38,7 @@ describe('streamTriageBrief', () => {
       '--allowedTools',
       'Read,Glob,Grep',
     ]);
+    expect(arg.cwd).toBe('/tmp/computron');
     expect(typeof arg.system).toBe('string');
     expect(arg.user).toContain('FUL-77');
   });

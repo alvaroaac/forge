@@ -10,6 +10,7 @@ export interface StreamTriageBriefInput {
     model: string;
     system: string;
     user: string;
+    cwd?: string;
     extraArgs: readonly string[];
     onChunk: (delta: string) => void;
   }) => Promise<string>;
@@ -21,6 +22,7 @@ export async function streamTriageBrief(input: StreamTriageBriefInput): Promise<
     model: input.model,
     system,
     user,
+    cwd: input.computronRepoPath,
     extraArgs: ['--add-dir', input.computronRepoPath, '--allowedTools', 'Read,Glob,Grep'],
     onChunk: input.onChunk,
   });

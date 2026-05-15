@@ -650,6 +650,50 @@ button { font-family: inherit; }
   padding: 18px 28px 18px;
 }
 
+.spec-activity {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  max-width: 440px;
+  padding: 32px 28px;
+  margin: 0 auto;
+  color: var(--text-2);
+}
+.spec-activity-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.spec-activity-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 45%, transparent);
+  animation: spec-pulse 1.35s ease-out infinite;
+}
+.spec-activity-title {
+  color: var(--text-1);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.spec-activity-list {
+  margin: 0 0 0 22px;
+  padding: 0;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+@keyframes spec-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 45%, transparent); }
+  70% { box-shadow: 0 0 0 8px color-mix(in oklch, var(--accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent); }
+}
+
 .spec-foot {
   flex: none;
   border-top: 1px solid var(--border);

@@ -42,7 +42,14 @@ export function App() {
   const [mineOnly, setMineOnly] = useState(false);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const drawerIssueId = drawer?.issue.id ?? null;
-  const { spec, streaming, isStreaming, errorMessage, generate: generateSpec } = useSpecStream(drawerIssueId);
+  const {
+    spec,
+    streaming,
+    streamStatus,
+    isStreaming,
+    errorMessage,
+    generate: generateSpec,
+  } = useSpecStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
   const currentDrawerIssueId = useRef<string | null>(null);
   const activeReviewIssueId = useRef<string | null>(null);
@@ -233,6 +240,7 @@ export function App() {
           onClose={() => setDrawer(null)}
           spec={spec}
           streaming={streaming}
+          streamStatus={streamStatus}
           reviewedContent={reviewedContent}
           reviewSummary={reviewSummary}
           isReviewPending={isReviewPending}

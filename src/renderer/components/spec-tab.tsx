@@ -12,6 +12,7 @@ type SpecTabProps = {
   issue: Issue;
   spec: Spec | null;
   streaming: string;
+  streamStatus?: string[];
   reviewedContent?: string | null;
   reviewSummary?: SpecReviewSummary | null;
   isReviewPending?: boolean;
@@ -43,6 +44,7 @@ export function SpecTab({
   issue,
   spec,
   streaming,
+  streamStatus = [],
   reviewedContent = null,
   reviewSummary = null,
   isReviewPending = false,
@@ -115,6 +117,8 @@ export function SpecTab({
   }
 
   const sections = splitSections(content);
+  const currentStatus = streamStatus[streamStatus.length - 1] ?? 'Starting Claude';
+  const priorStatuses = streamStatus.slice(0, -1);
 
   return (
     <div className="spec-tab">
@@ -155,11 +159,30 @@ export function SpecTab({
           {effectiveReviewStatus}
         </div>
       ) : null}
-      <div className="spec-scroll">
-        {sections.map((section, index) => (
-          <MarkdownSection key={`${section.h}-${index}`} h={section.h} body={section.body} />
-        ))}
-      </div>
+      {!content && isStreaming ? (
+        <div className="spec-activity" role="status" aria-live="polite">
+          <div className="spec-activity-head">
+            <span className="spec-activity-pulse" aria-hidden="true" />
+            <div>
+              <div className="spec-activity-title">Generating spec</div>
+              <div className="mono dim">{currentStatus}</div>
+            </div>
+          </div>
+          {priorStatuses.length > 0 ? (
+            <ul className="spec-activity-list">
+              {priorStatuses.map((status) => (
+                <li key={status}>{status}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : (
+        <div className="spec-scroll">
+          {sections.map((section, index) => (
+            <MarkdownSection key={`${section.h}-${index}`} h={section.h} body={section.body} />
+          ))}
+        </div>
+      )}
       {reviewSummary ? (
         <div style={{ marginTop: 12 }}>
           <button

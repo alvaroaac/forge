@@ -132,7 +132,13 @@ describe('launchSpecReview', () => {
         '--output-file',
         join(createdReviewDir, 'plan-review-output.md'),
       ],
-      options: { shell: false, stdio: ['ignore', 'ignore', 'pipe'] },
+      options: expect.objectContaining({
+        shell: false,
+        stdio: ['ignore', 'ignore', 'pipe'],
+        env: expect.objectContaining({
+          PATH: expect.stringContaining('/Applications/Codex.app/Contents/Resources'),
+        }),
+      }),
     });
     expect(writtenInputPath).toBe(join(createdReviewDir, 'review-input.md'));
     expect(writtenInputContent).toBe('# Spec: FUL-42\n\n## Task Summary\nBody');

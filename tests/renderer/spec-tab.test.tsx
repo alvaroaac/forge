@@ -120,6 +120,28 @@ Streaming body`}
     expect(screen.getByText(/streaming…/i)).toBeTruthy();
   });
 
+  it('shows generation activity before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        streamStatus={['Starting Claude', 'Claude initialized the repo session']}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText('Generating spec')).toBeTruthy();
+    expect(screen.getByText('Claude initialized the repo session')).toBeTruthy();
+    expect(screen.getByText('Starting Claude')).toBeTruthy();
+  });
+
   it('copies the live streaming content while streaming', () => {
     const onCopy = vi.fn();
 

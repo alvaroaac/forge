@@ -34,25 +34,33 @@ interface StreamSpecInput {
   model: string;
   system: string;
   user: string;
+  extraArgs?: readonly string[];
+  cwd?: string;
   onChunk: (delta: string) => void;
+  onStatus?: (status: string) => void;
 }
 
 type StreamSpecDouble = (input: StreamSpecInput) => Promise<string>;
+type PreflightClaudeRepoAccessDouble = (input: {
+  repoPath: string;
+}) => Promise<void>;
 
 interface SpecDeps {
   store: ConfigStoreDouble;
   cache: IssuesCacheDouble;
   readRepoContext: (repoPath: string) => Promise<RepoContext>;
   streamSpec: StreamSpecDouble;
+  preflightClaudeRepoAccess?: PreflightClaudeRepoAccessDouble;
   templateMd: string;
 }
 
-function createStore(repoPath: string): ConfigStoreDouble {
+function createStore(repoPath: string, computronRepoPath = ''): ConfigStoreDouble {
   return {
     get: vi.fn().mockResolvedValue({
       linearTokenPath: '/tmp/linear-token.json',
       linearTeamKey: 'FUL',
       repoPath,
+      computronRepoPath,
       claudeModel: 'claude-sonnet-4-6',
     }),
     set: vi.fn(),
@@ -113,7 +121,8 @@ describe('spec:generate', () => {
       }),
     );
     const sent: Array<{ channel: IpcChannelName; payload: SentPayload }> = [];
-    const streamSpec = vi.fn(async ({ onChunk }: StreamSpecInput): Promise<string> => {
+    const streamSpec = vi.fn(async ({ onChunk, onStatus }: StreamSpecInput): Promise<string> => {
+      onStatus?.('Claude initialized the repo session');
       onChunk('A');
       onChunk('B');
       return 'AB';
@@ -142,13 +151,25 @@ describe('spec:generate', () => {
     expect(sent).toEqual([
       {
         channel: IpcChannel.SpecStreamChunk,
-        payload: { issueId: 'FUL-7', delta: 'A', done: false },
+        payload: {
+          issueId: 'FUL-7',
+          delta: '',
+          done: false,
+          status: 'Claude initialized the repo session',
+        },
       },
       {
         channel: IpcChannel.SpecStreamChunk,
-        payload: { issueId: 'FUL-7', delta: 'B', done: false },
+        payload: { issueId: 'FUL-7', delta: 'A', done: false, status: undefined },
       },
-      { channel: IpcChannel.SpecStreamChunk, payload: { issueId: 'FUL-7', delta: '', done: true } },
+      {
+        channel: IpcChannel.SpecStreamChunk,
+        payload: { issueId: 'FUL-7', delta: 'B', done: false, status: undefined },
+      },
+      {
+        channel: IpcChannel.SpecStreamChunk,
+        payload: { issueId: 'FUL-7', delta: '', done: true, status: undefined },
+      },
       { channel: IpcChannel.SpecGenerateDone, payload: { issueId: 'FUL-7' } },
     ]);
     expect(readRepoContext).toHaveBeenCalledWith(dir);
@@ -190,6 +211,83 @@ describe('spec:generate', () => {
 
     const streamSpecInput = (streamSpec.mock.calls as unknown as Array<[StreamSpecInput]>)[0]?.[0];
     expect(streamSpecInput).toMatchObject({ model: 'opus' });
+  });
+
+  it('uses computron repo context, preflights access, and mounts computron for spec generation', async () => {
+    const issue: Issue = {
+      id: 'FUL-7',
+      title: 'Build UI',
+      description: 'Add streaming spec preview.',
+      ...issueTemplate,
+    };
+    const cache: IssuesCacheDouble = {
+      read: vi.fn().mockResolvedValue([issue]),
+      write: vi.fn(),
+    };
+    const readRepoContext = vi.fn().mockResolvedValue({
+      agentsMd: 'COMPUTRON-AGENTS',
+      thoughts: [],
+    });
+    const preflightClaudeRepoAccess = vi.fn(async (): Promise<void> => undefined);
+    const streamSpec = vi.fn(async (): Promise<string> => '# Spec');
+    const handler = createHandler({
+      store: createStore(dir, '/tmp/computron'),
+      cache,
+      readRepoContext,
+      streamSpec,
+      preflightClaudeRepoAccess,
+      templateMd: 'TMPL',
+    });
+    const event = { sender: { send: vi.fn() } };
+
+    await handler(event, { issueId: 'FUL-7', model: 'opus' });
+
+    expect(readRepoContext).toHaveBeenCalledWith('/tmp/computron');
+    expect(preflightClaudeRepoAccess).toHaveBeenCalledWith({
+      repoPath: '/tmp/computron',
+    });
+    expect(streamSpec).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extraArgs: ['--add-dir', '/tmp/computron', '--allowedTools', 'Read,Glob,Grep'],
+        cwd: '/tmp/computron',
+        user: expect.stringContaining('COMPUTRON-AGENTS'),
+      }),
+    );
+  });
+
+  it('surfaces preflight failures before starting the full spec stream', async () => {
+    const issue: Issue = {
+      id: 'FUL-7',
+      title: 'Build UI',
+      description: 'Add streaming spec preview.',
+      ...issueTemplate,
+    };
+    const cache: IssuesCacheDouble = {
+      read: vi.fn().mockResolvedValue([issue]),
+      write: vi.fn(),
+    };
+    const readRepoContext = vi.fn().mockResolvedValue({ agentsMd: '', thoughts: [] });
+    const preflightClaudeRepoAccess = vi.fn(async (): Promise<void> => {
+      throw new Error('permissions pending');
+    });
+    const streamSpec = vi.fn(async (): Promise<string> => 'ignored');
+    const handler = createHandler({
+      store: createStore(dir, '/tmp/computron'),
+      cache,
+      readRepoContext,
+      streamSpec,
+      preflightClaudeRepoAccess,
+      templateMd: 'TMPL',
+    });
+    const event = { sender: { send: vi.fn() } };
+
+    await expect(handler(event, { issueId: 'FUL-7' })).rejects.toThrow('permissions pending');
+
+    expect(streamSpec).not.toHaveBeenCalled();
+    expect(event.sender.send).toHaveBeenCalledWith(IpcChannel.SpecGenerateError, {
+      issueId: 'FUL-7',
+      message: 'permissions pending',
+    });
   });
 
   it('throws when issue is not in cache', async () => {

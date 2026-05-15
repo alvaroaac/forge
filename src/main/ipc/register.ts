@@ -15,6 +15,7 @@ import { reviseSpecWithReview } from '../services/spec-review-revision';
 import { streamTriageBrief } from '../services/triage-generator';
 import { writeTriageBrief } from '../services/triage-writer';
 import { writeSpec } from '../services/spec-writer';
+import { checkRepoAccess } from '../services/repo-access-checker';
 import { configPath, issuesCachePath } from '../lib/paths';
 import { registerAuthHandlers } from './auth';
 import { registerConfigHandlers } from './config';
@@ -88,6 +89,7 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
     cache,
     readRepoContext,
     streamSpec,
+    preflightClaudeRepoAccess: ({ repoPath }) => checkRepoAccess(repoPath),
     templateMd,
   });
   registerSpecWriteHandler(ipc, { store, writeSpec });

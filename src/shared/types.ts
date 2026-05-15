@@ -46,6 +46,7 @@ export interface SpecStreamChunk {
   issueId: string;
   delta: string;
   done: boolean;
+  status?: string;
 }
 
 export interface SpecGenerateDone {

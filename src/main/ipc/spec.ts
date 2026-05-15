@@ -38,14 +38,22 @@ type StreamSpecFn = (input: {
   model: string;
   system: string;
   user: string;
+  extraArgs?: readonly string[];
+  cwd?: string;
   onChunk: (delta: string) => void;
+  onStatus?: (status: string) => void;
 }) => Promise<string>;
+
+type PreflightClaudeRepoAccessFn = (input: {
+  repoPath: string;
+}) => Promise<void>;
 
 export interface SpecGenerateDeps {
   store: ConfigStore;
   cache: IssuesCache;
   readRepoContext: (repoPath: string) => Promise<RepoContext>;
   streamSpec: StreamSpecFn;
+  preflightClaudeRepoAccess?: PreflightClaudeRepoAccessFn;
   templateMd: string;
 }
 
@@ -89,8 +97,22 @@ function sendSpecChunk(
   issueId: string,
   delta: string,
   done: boolean,
+  status?: string,
 ): void {
-  sender.send(IpcChannel.SpecStreamChunk, { issueId, delta, done });
+  sender.send(IpcChannel.SpecStreamChunk, { issueId, delta, done, status });
+}
+
+function specRepoPath(cfg: { repoPath: string; computronRepoPath?: string }): string {
+  const targetRepoPath = cfg.computronRepoPath?.trim();
+  return targetRepoPath || cfg.repoPath;
+}
+
+function specExtraArgs(repoPath: string): readonly string[] {
+  if (!repoPath) {
+    return [];
+  }
+
+  return ['--add-dir', repoPath, '--allowedTools', 'Read,Glob,Grep'];
 }
 
 export function registerSpecGetHandler(ipc: IpcMain, store: ConfigStore): void {
@@ -125,14 +147,22 @@ export function registerSpecGenerateHandler(ipc: IpcMain, deps: SpecGenerateDeps
         const cfg = await deps.store.get();
         const issues = await deps.cache.read();
         const issue = findIssue(issues, payload.issueId);
-        const context = await deps.readRepoContext(cfg.repoPath);
+        const targetRepoPath = specRepoPath(cfg);
+        const model = pickSpecModel(payload, cfg.claudeModel);
+        const context = await deps.readRepoContext(targetRepoPath);
         const prompt = buildSpecPrompt({ issue, context, templateMd: deps.templateMd });
+        if (cfg.computronRepoPath && deps.preflightClaudeRepoAccess) {
+          await deps.preflightClaudeRepoAccess({ repoPath: cfg.computronRepoPath });
+        }
         const content = cleanSpecMarkdown(
           await deps.streamSpec({
-            model: pickSpecModel(payload, cfg.claudeModel),
+            model,
             system: prompt.system,
             user: prompt.user,
+            extraArgs: specExtraArgs(targetRepoPath),
+            cwd: targetRepoPath || undefined,
             onChunk: (delta) => sendSpecChunk(event.sender, payload.issueId, delta, false),
+            onStatus: (status) => sendSpecChunk(event.sender, payload.issueId, '', false, status),
           }),
         );
         sendSpecChunk(event.sender, payload.issueId, '', true);

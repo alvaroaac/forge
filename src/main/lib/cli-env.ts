@@ -1,5 +1,7 @@
 import { delimiter } from 'node:path';
 import { homedir } from 'node:os';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 const CLI_PATH_ENTRIES = [
   `${homedir()}/.local/bin`,
@@ -14,6 +16,24 @@ const CLI_PATH_ENTRIES = [
   '/sbin',
 ];
 
+function compareNodeVersionDesc(left: string, right: string): number {
+  return right.localeCompare(left, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+export function discoverNvmBinPaths(home = homedir()): string[] {
+  const nodeVersionsDir = join(home, '.nvm', 'versions', 'node');
+
+  try {
+    return readdirSync(nodeVersionsDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort(compareNodeVersionDesc)
+      .map((version) => join(nodeVersionsDir, version, 'bin'));
+  } catch {
+    return [];
+  }
+}
+
 function uniquePathEntries(entries: string[]): string[] {
   const seen = new Set<string>();
   return entries.filter((entry) => {
@@ -27,7 +47,11 @@ function uniquePathEntries(entries: string[]): string[] {
 }
 
 export function buildCliPath(basePath = process.env.PATH ?? ''): string {
-  return uniquePathEntries([...CLI_PATH_ENTRIES, ...basePath.split(delimiter)]).join(delimiter);
+  return uniquePathEntries([
+    ...CLI_PATH_ENTRIES,
+    ...discoverNvmBinPaths(),
+    ...basePath.split(delimiter),
+  ]).join(delimiter);
 }
 
 export function buildCliEnv(

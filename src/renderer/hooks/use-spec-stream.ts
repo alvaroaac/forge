@@ -14,6 +14,7 @@ function toGeneratedSpec(issueId: string, content: string): Spec {
 export function useSpecStream(issueId: string | null) {
   const [spec, setSpec] = useState<Spec | null>(null);
   const [streaming, setStreaming] = useState('');
+  const [streamStatus, setStreamStatus] = useState<string[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentIssueIdRef = useRef<string | null>(null);
@@ -33,6 +34,7 @@ export function useSpecStream(issueId: string | null) {
   const resetStreamState = useCallback((): void => {
     setSpec(null);
     setStreaming('');
+    setStreamStatus([]);
     setIsStreaming(false);
     setErrorMessage(null);
   }, []);
@@ -94,6 +96,20 @@ export function useSpecStream(issueId: string | null) {
 
       if (chunk.done) {
         setIsStreaming(false);
+        return;
+      }
+
+      if (chunk.status) {
+        const nextStatus = chunk.status;
+        setStreamStatus((current) => {
+          if (current[current.length - 1] === nextStatus) {
+            return current;
+          }
+          return [...current, nextStatus].slice(-5);
+        });
+      }
+
+      if (!chunk.delta) {
         return;
       }
 
@@ -185,6 +201,7 @@ export function useSpecStream(issueId: string | null) {
     const setupVersion = setupVersionRef.current;
 
     setStreaming('');
+    setStreamStatus(['Starting Claude']);
     setIsStreaming(true);
     setErrorMessage(null);
 
@@ -204,5 +221,5 @@ export function useSpecStream(issueId: string | null) {
     }
   }, [issueId, commitGeneratedSpec, failStreaming, finishStreaming, isCurrentIssue]);
 
-  return { spec, streaming, isStreaming, errorMessage, generate };
+  return { spec, streaming, streamStatus, isStreaming, errorMessage, generate };
 }

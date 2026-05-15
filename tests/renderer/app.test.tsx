@@ -22,6 +22,7 @@ const renderState: {
   specDrawerProps: {
     spec: Spec | null;
     streaming: string;
+    streamStatus: string[];
     reviewedContent: string | null;
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;
@@ -78,6 +79,7 @@ vi.mock('../../src/renderer/components/spec-drawer', () => ({
     issue: Issue | null;
     spec: Spec | null;
     streaming: string;
+    streamStatus: string[];
     reviewedContent: string | null;
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;

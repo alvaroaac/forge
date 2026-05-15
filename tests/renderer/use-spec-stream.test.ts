@@ -102,6 +102,7 @@ describe('useSpecStream', () => {
     expect(result.current).toEqual({
       spec: null,
       streaming: '',
+      streamStatus: [],
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -149,6 +150,47 @@ describe('useSpecStream', () => {
     });
   });
 
+  it('tracks status-only chunks without appending them to the streamed markdown', async () => {
+    const get = vi.fn().mockResolvedValue(null);
+    const generation = createDeferred<{ issueId: string; content: string }>();
+    const generate = vi.fn(() => generation.promise);
+    const handlers: ChunkHandler[] = [];
+    const onChunk = vi.fn((handler: ChunkHandler) => {
+      handlers.push(handler);
+      return vi.fn();
+    });
+
+    setForge({ get, generate, onChunk });
+
+    const { result } = renderHook(() => useSpecStream('FUL-7'));
+
+    await act(async () => {
+      void result.current.generate();
+    });
+
+    expect(result.current.streamStatus).toEqual(['Starting Claude']);
+
+    await act(async () => {
+      handlers[0]?.({
+        issueId: 'FUL-7',
+        delta: '',
+        done: false,
+        status: 'Claude initialized the repo session',
+      });
+    });
+
+    expect(result.current.streaming).toBe('');
+    expect(result.current.streamStatus).toEqual([
+      'Starting Claude',
+      'Claude initialized the repo session',
+    ]);
+
+    await act(async () => {
+      generation.resolve({ issueId: 'FUL-7', content: '' });
+      await generation.promise;
+    });
+  });
+
   it('passes the selected model through to spec generation', async () => {
     const get = vi.fn().mockResolvedValue(null);
     const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-7', content: 'AB' });
@@ -177,6 +219,7 @@ describe('useSpecStream', () => {
     expect(result.current).toEqual({
       spec: null,
       streaming: '',
+      streamStatus: [],
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -192,6 +235,7 @@ describe('useSpecStream', () => {
     expect(result.current).toEqual({
       spec: null,
       streaming: '',
+      streamStatus: [],
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -238,6 +282,7 @@ describe('useSpecStream', () => {
     expect(result.current).toEqual({
       spec: null,
       streaming: '',
+      streamStatus: [],
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -336,6 +381,7 @@ describe('useSpecStream', () => {
       expect(result.current).toEqual({
         spec: null,
         streaming: '',
+        streamStatus: [],
         isStreaming: false,
         errorMessage: null,
         generate: expect.any(Function),
