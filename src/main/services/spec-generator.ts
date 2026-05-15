@@ -1,4 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams, type SpawnOptionsWithoutStdio } from 'node:child_process';
+import { buildCliEnv } from '../lib/cli-env';
 
 const CLAUDE_SPEC_TIMEOUT_MS = 120_000;
 
@@ -47,6 +48,7 @@ export async function streamClaude(input: StreamClaudeInput): Promise<string> {
   const claude = spawnProcess('claude', buildClaudeArgs(input), {
     shell: false,
     stdio: ['pipe', 'pipe', 'pipe'],
+    env: buildCliEnv(),
   });
   claude.stdin.end(input.user);
 

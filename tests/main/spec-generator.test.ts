@@ -68,7 +68,13 @@ describe('streamSpec', () => {
           '--output-format',
           'text',
         ],
-        options: { shell: false, stdio: ['pipe', 'pipe', 'pipe'] },
+        options: expect.objectContaining({
+          shell: false,
+          stdio: ['pipe', 'pipe', 'pipe'],
+          env: expect.objectContaining({
+            PATH: expect.stringContaining('/Applications/Codex.app/Contents/Resources'),
+          }),
+        }),
       },
     ]);
     expect(stdinText).toBe('user');
