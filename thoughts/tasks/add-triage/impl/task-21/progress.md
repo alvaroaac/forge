@@ -9,13 +9,11 @@ Route triage issues to `TriageDrawer` from `App` and remove spec drawer renderin
 - `thoughts/tasks/add-triage/impl/task-21/progress.md`
 
 ## Implementation
-- Imported `TriageDrawer` and `useTriageStream` in `app.tsx`.
-- Kept existing `useSpecStream`/spec drawer flow intact for non-triage issues.
-- Added triage stream state (`brief`, `streaming`, `isStreaming`, `errorMessage`, `generate`) for the drawer issue id.
-- Added branch in render: when `drawer?.issue.status === 'triage'`, render `TriageDrawer` with `brief`, `streaming`, `isStreaming`, `errorMessage`, `onGenerate={() => void generate()}`, `canGenerate={auth.computron}`, and `onClose`.
-- Left default tab behavior unchanged (`Todo` initial tab in `App`).
-- Updated app test to include `triage` fixture, mock `TriageDrawer`, mock `useTriageStream`, and assert triage issues render `TriageDrawer` while spec drawer props are not used.
-- Drawer mocks now only capture state when `issue` is present to avoid initial-null-drawer assertions.
+- Added a `TriageDrawerContainer` in `src/renderer/app.tsx` to own `useTriageStream(issue.id)`.
+- `TriageDrawerContainer` now passes `brief`, `streaming`, `isStreaming`, `errorMessage`, `onGenerate={() => void generate()}`, `canGenerate`, `issue`, and `onClose` into `TriageDrawer`.
+- Removed `useTriageStream` ownership from `App` and switched triage rendering to use `TriageDrawerContainer`.
+- Kept non-triage rendering through `SpecDrawer` unchanged and preserved default tab `Todo` behavior.
+- Updated app test path remains the same; no behavior changes were needed beyond compatibility with the containerized triage stream ownership.
 
 ## Tests Run
 - `npm test -- tests/renderer/app.test.tsx`
@@ -26,7 +24,7 @@ Route triage issues to `TriageDrawer` from `App` and remove spec drawer renderin
 - Typecheck: passed (main, renderer, and test typecheck).
 
 ## Commit
-- Not committed yet.
+- `2fc3fad`
 
 ## Tech Debt
 - None logged for this task.

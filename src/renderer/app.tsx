@@ -43,13 +43,6 @@ export function App() {
   const [viewerId, setViewerId] = useState<string | null>(null);
   const drawerIssueId = drawer?.issue.id ?? null;
   const { spec, streaming, isStreaming, errorMessage, generate: generateSpec } = useSpecStream(drawerIssueId);
-  const {
-    brief,
-    streaming: triageStreaming,
-    isStreaming: isTriageStreaming,
-    errorMessage: triageErrorMessage,
-    generate,
-  } = useTriageStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
   const currentDrawerIssueId = useRef<string | null>(null);
   const activeReviewIssueId = useRef<string | null>(null);
@@ -206,8 +199,6 @@ export function App() {
     setDrawer({ ...drawer, tab: nextTab });
   };
 
-  const isTriageIssue = drawer?.issue.status === 'triage';
-
   return (
     <div className="app">
       <TopBar auth={auth} teamKey={config?.linearTeamKey ?? '—'} lastSync={formatSync(lastSync)} />
@@ -228,15 +219,10 @@ export function App() {
         <RightPanel auth={auth} />
       </div>
 
-      {isTriageIssue ? (
-        <TriageDrawer
-          issue={drawer?.issue ?? null}
+      {drawer?.issue?.status === 'triage' ? (
+        <TriageDrawerContainer
+          issue={drawer.issue}
           canGenerate={auth.computron}
-          isStreaming={isTriageStreaming}
-          streaming={triageStreaming}
-          brief={brief}
-          errorMessage={triageErrorMessage}
-          onGenerate={() => void generate()}
           onClose={() => setDrawer(null)}
         />
       ) : (
@@ -263,5 +249,34 @@ export function App() {
         />
       )}
     </div>
+  );
+}
+
+type TriageDrawerContainerProps = {
+  issue: Issue;
+  canGenerate: boolean;
+  onClose: () => void;
+};
+
+function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerContainerProps) {
+  const {
+    brief,
+    streaming,
+    isStreaming,
+    errorMessage,
+    generate,
+  } = useTriageStream(issue.id);
+
+  return (
+    <TriageDrawer
+      issue={issue}
+      brief={brief}
+      streaming={streaming}
+      isStreaming={isStreaming}
+      errorMessage={errorMessage}
+      onGenerate={() => void generate()}
+      canGenerate={canGenerate}
+      onClose={onClose}
+    />
   );
 }
