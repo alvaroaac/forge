@@ -10,14 +10,27 @@ export interface StreamSpecInput {
   spawnProcess?: SpawnProcess;
 }
 
+export interface StreamClaudeInput extends StreamSpecInput {
+  extraArgs?: readonly string[];
+}
+
 type SpawnProcess = (
   command: string,
   args: readonly string[],
   options: SpawnOptionsWithoutStdio,
 ) => ChildProcessWithoutNullStreams;
 
-function buildClaudeArgs(input: StreamSpecInput): string[] {
-  return ['-p', '--model', input.model, '--append-system-prompt', input.system, '--output-format', 'text'];
+function buildClaudeArgs(input: StreamClaudeInput): string[] {
+  return [
+    '-p',
+    '--model',
+    input.model,
+    '--append-system-prompt',
+    input.system,
+    ...(input.extraArgs ?? []),
+    '--output-format',
+    'text',
+  ];
 }
 
 function toCliError(code: number | null, stderr: string): Error {
@@ -29,7 +42,7 @@ function toCliError(code: number | null, stderr: string): Error {
   return new Error(`Claude CLI exited with code ${exitCode}: ${trimmedStderr}`);
 }
 
-export async function streamSpec(input: StreamSpecInput): Promise<string> {
+export async function streamClaude(input: StreamClaudeInput): Promise<string> {
   const spawnProcess = input.spawnProcess ?? spawn;
   const claude = spawnProcess('claude', buildClaudeArgs(input), {
     shell: false,
@@ -79,4 +92,8 @@ export async function streamSpec(input: StreamSpecInput): Promise<string> {
       finish(() => reject(toCliError(code, stderr)));
     });
   });
+}
+
+export async function streamSpec(input: StreamSpecInput): Promise<string> {
+  return streamClaude({ ...input, extraArgs: [] });
 }

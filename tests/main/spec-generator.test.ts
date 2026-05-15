@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { describe, expect, it } from 'vitest';
-import { streamSpec } from '../../src/main/services/spec-generator';
+import { streamClaude, streamSpec } from '../../src/main/services/spec-generator';
 
 type SpawnProcess = NonNullable<Parameters<typeof streamSpec>[0]['spawnProcess']>;
 
@@ -91,5 +91,36 @@ describe('streamSpec', () => {
         spawnProcess,
       }),
     ).rejects.toThrow('Claude CLI exited with code 2: missing oauth session');
+  });
+});
+
+describe('streamClaude', () => {
+  it('inserts extra args after system prompt and before output format', async () => {
+    const { calls, spawnProcess } = createFakeSpawn((child) => {
+      child.emit('close', 0);
+    });
+
+    await streamClaude({
+      model: 'claude-sonnet-4-6',
+      system: 'sys',
+      user: 'user',
+      onChunk: () => undefined,
+      spawnProcess,
+      extraArgs: ['--add-dir', '/tmp/repo', '--allowedTools', 'Read,Glob,Grep'],
+    });
+
+    expect(calls[0]?.args).toEqual([
+      '-p',
+      '--model',
+      'claude-sonnet-4-6',
+      '--append-system-prompt',
+      'sys',
+      '--add-dir',
+      '/tmp/repo',
+      '--allowedTools',
+      'Read,Glob,Grep',
+      '--output-format',
+      'text',
+    ]);
   });
 });
