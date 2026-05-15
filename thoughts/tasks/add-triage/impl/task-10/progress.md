@@ -53,4 +53,4 @@
   `As a recommendation, aim for roughly 6 tool calls; this is a soft hint, not a hard limit.`
 - Strengthened test assertions to require soft-hint semantics (`recommendation`, `soft`, `hard limit`, and `aim for roughly 6 tool calls`).
 - Re-ran: `npm test -- tests/main/triage-prompt.test.ts && npm run typecheck` (pass).
-- Commit SHA for this narrow QA follow-up: `follows this message`.
+- Commit SHA for this narrow QA follow-up: `7380f4c`.
