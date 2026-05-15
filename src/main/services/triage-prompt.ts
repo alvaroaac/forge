@@ -11,10 +11,14 @@ related. Cap yourself at roughly 6 tool calls.
 
 Output sections, in this exact order:
 
-1. What the user likely wants.
-2. Likely affected components.
-3. Open questions for reporter.
-4. Suggested next step.
+1. **What the user likely wants** — 1-3 sentences, plain language.
+2. **Likely affected components** — bullet list of file paths or modules in
+   the computron repo, one-line reason each.
+3. **Open questions for reporter** — bullet list of things ambiguous in the
+   issue.
+4. **Suggested next step** — one of: "Needs reproduction", "Needs spec",
+   "Probable duplicate of <X>", "Ready for spec", or "Out of scope" — plus one
+   sentence why.
 
 Return only the markdown brief. No preamble, no postscript, no code fences
 wrapping the whole output.`;

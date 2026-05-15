@@ -32,3 +32,17 @@
 - No drift found against current task spec.
 - No new tech debt introduced.
 
+
+## Fix Update (Task-10 QA)
+
+- Corrected `src/main/services/triage-prompt.ts` system contract to enforce spec-pinned headings and constraints in exact format:
+  - `**What the user likely wants**` with 1-3 sentences, plain language
+  - `**Likely affected components**` as bullet list with file paths/modules and one-line reasons
+  - `**Open questions for reporter**` as bullet list
+  - `**Suggested next step**` constrained to the allowed set with one-sentence rationale
+- Preserved soft recommendation for approximately 6 tool calls and explicit `Read`, `Glob`, `Grep`, `--add-dir` guidance.
+- Tightened `tests/main/triage-prompt.test.ts` to assert heading order, exact heading tokens, full contract fragments, and prompt/option presence so regressions are caught structurally.
+- Re-ran: `npm test -- tests/main/triage-prompt.test.ts && npm run typecheck` (pass).
+- Commit created for this QA fix.
+
+- Commit SHA for fix: `8b49905`

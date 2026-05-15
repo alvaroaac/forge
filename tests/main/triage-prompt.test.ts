@@ -19,14 +19,37 @@ describe('buildTriagePrompt', () => {
   it('builds system and user prompts for triage brief', () => {
     const prompt = buildTriagePrompt({ issue });
 
-    expect(prompt.system).toMatch(/What the user likely wants/);
-    expect(prompt.system).toMatch(/Likely affected components/);
-    expect(prompt.system).toMatch(/Open questions for reporter/);
-    expect(prompt.system).toMatch(/Suggested next step/);
+    const expectedOrder = [
+      '**What the user likely wants**',
+      '**Likely affected components**',
+      '**Open questions for reporter**',
+      '**Suggested next step**',
+    ];
+
+    const system = prompt.system;
+    const sectionIndexes = expectedOrder.map((heading) => system.indexOf(heading));
+    for (const heading of expectedOrder) {
+      expect(system).toContain(heading);
+    }
+    for (const idx of sectionIndexes) {
+      expect(idx).toBeGreaterThan(-1);
+    }
+    for (let i = 1; i < sectionIndexes.length; i += 1) {
+      expect(sectionIndexes[i]).toBeGreaterThan(sectionIndexes[i - 1]);
+    }
+
+    expect(system).toContain('1-3 sentences, plain language');
+    expect(system).toContain('bullet list of file paths or modules in');
+    expect(system).toContain('the computron repo, one-line reason each');
+    expect(system).toContain('one of: "Needs reproduction", "Needs spec"');
+    expect(system).toContain('"Probable duplicate of <X>"');
+    expect(system).toContain('"Ready for spec", or "Out of scope"');
+    expect(system).toMatch(/plus one\s+sentence why/);
     expect(prompt.system).toContain('--add-dir');
     expect(prompt.system).toContain('Glob');
     expect(prompt.system).toContain('Grep');
     expect(prompt.system).toContain('Read');
+    expect(prompt.system).toContain('roughly 6 tool calls');
 
     expect(prompt.user).toContain('FUL-77');
     expect(prompt.user).toContain('job runner stuck');
