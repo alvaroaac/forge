@@ -22,7 +22,7 @@ function createDeferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-function createIssue(id: string): Issue {
+function createIssue(id: string, assigneeId: string | null = null): Issue {
   return {
     id,
     title: id,
@@ -33,11 +33,15 @@ function createIssue(id: string): Issue {
     url: '',
     updatedAt: '2026-05-13T00:00:00.000Z',
     isBug: false,
-    assigneeId: null,
+    assigneeId,
   };
 }
 
-function setForge(fetch: () => Promise<Issue[]>, refresh: () => Promise<Issue[]>) {
+function setForge(
+  fetch: () => Promise<Issue[]>,
+  refresh: () => Promise<Issue[]>,
+  fetchTeamTriage: () => Promise<Issue[]> = vi.fn(async () => []),
+) {
   window.forge = {
     auth: { check: vi.fn() },
     config: { get: vi.fn(), set: vi.fn() },
@@ -45,7 +49,7 @@ function setForge(fetch: () => Promise<Issue[]>, refresh: () => Promise<Issue[]>
       fetch,
       fetchIssueDetail: vi.fn(),
       refresh,
-      fetchTeamTriage: vi.fn(),
+      fetchTeamTriage,
       getViewerId: vi.fn(),
     },
     spec: {
@@ -189,6 +193,67 @@ describe('useIssues', () => {
     });
 
     expect(refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it('merges assigned issues with team-triage issues', async () => {
+    const fetch = vi.fn().mockResolvedValue([createIssue('CACHE')]);
+    const refresh = vi.fn().mockResolvedValue([createIssue('ASSIGNED', 'dev-1')]);
+    const fetchTeamTriage = vi.fn().mockResolvedValue([
+      createIssue('TRIAGE_UNASSIGNED'),
+      createIssue('TRIAGE_ASSIGNED', 'triage-agent'),
+    ]);
+    setForge(fetch, refresh, fetchTeamTriage);
+
+    const { result } = renderHook(() => useIssues());
+
+    await waitFor(() => {
+      expect(result.current.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'ASSIGNED', assigneeId: 'dev-1' }),
+          expect.objectContaining({ id: 'TRIAGE_UNASSIGNED', assigneeId: null }),
+          expect.objectContaining({ id: 'TRIAGE_ASSIGNED', assigneeId: 'triage-agent' }),
+        ]),
+      );
+    });
+
+    expect(fetchTeamTriage).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-fetches both assigned and triage endpoints during refresh', async () => {
+    const fetch = vi.fn().mockResolvedValue([createIssue('CACHE')]);
+    const refresh = vi.fn().mockResolvedValue([createIssue('ASSIGNED')]);
+    const fetchTeamTriage = vi.fn().mockResolvedValue([createIssue('TRIAGE')]);
+    setForge(fetch, refresh, fetchTeamTriage);
+
+    const { result } = renderHook(() => useIssues());
+
+    await waitFor(() => {
+      expect(refresh).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(refresh).toHaveBeenCalledTimes(2);
+    expect(fetchTeamTriage).toHaveBeenCalledTimes(2);
+  });
+
+  it('prefers triage data when issue ids overlap', async () => {
+    const fetch = vi.fn().mockResolvedValue([createIssue('CACHE')]);
+    const refresh = vi.fn().mockResolvedValue([createIssue('DUPLICATE', 'assigned-owner')]);
+    const fetchTeamTriage = vi
+      .fn()
+      .mockResolvedValue([createIssue('DUPLICATE', 'triage-owner')]);
+    setForge(fetch, refresh, fetchTeamTriage);
+
+    const { result } = renderHook(() => useIssues());
+
+    await waitFor(() => {
+      const issues = result.current.issues.filter((issue) => issue.id === 'DUPLICATE');
+      expect(issues).toHaveLength(1);
+      expect(issues[0].assigneeId).toBe('triage-owner');
+    });
   });
 
   it('keeps defaults when fetch rejects without surfacing an unhandled rejection', async () => {

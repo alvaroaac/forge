@@ -10,12 +10,29 @@ export function useIssues() {
   const isActiveRef = useRef(true);
   const refreshIdRef = useRef(0);
 
+  const loadAll = useCallback(async (): Promise<Issue[]> => {
+    const [assignedIssues, triageIssues] = await Promise.all([
+      window.forge.linear.refresh(),
+      window.forge.linear.fetchTeamTriage(),
+    ]);
+
+    const merged = new Map<string, Issue>();
+    for (const issue of assignedIssues) {
+      merged.set(issue.id, issue);
+    }
+    for (const issue of triageIssues) {
+      merged.set(issue.id, issue);
+    }
+
+    return [...merged.values()];
+  }, []);
+
   const refresh = useCallback(async (): Promise<void> => {
     const refreshId = refreshIdRef.current + 1;
     refreshIdRef.current = refreshId;
 
     try {
-      const nextIssues = await window.forge.linear.refresh();
+      const nextIssues = await loadAll();
 
       if (!isActiveRef.current || refreshId !== refreshIdRef.current) {
         return;
