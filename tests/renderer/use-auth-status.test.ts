@@ -143,6 +143,7 @@ describe('useConfig', () => {
       linearTokenPath: '/tmp/linear-token',
       linearTeamKey: 'FUL',
       repoPath: '/tmp/repo',
+      computronRepoPath: '',
       claudeModel: 'claude-sonnet-4',
     });
 
@@ -151,6 +152,7 @@ describe('useConfig', () => {
         linearTokenPath: '/tmp/linear-token',
         linearTeamKey: 'FUL',
         repoPath: '/tmp/repo',
+        computronRepoPath: '',
         claudeModel: 'claude-sonnet-4',
       });
     });

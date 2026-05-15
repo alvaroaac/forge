@@ -1,8 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { IpcMain } from 'electron';
 import type { ConfigStore } from '../../src/main/services/config-store';
 import { IpcChannel, type IpcChannelName } from '../../src/shared/ipc-channels';
 import { registerConfigHandlers } from '../../src/main/ipc/config';
+import { createConfigStore } from '../../src/main/services/config-store';
 
 type IpcMainHandler = (event: unknown, ...args: unknown[]) => Promise<unknown> | unknown;
 type IpcMainLike = {
@@ -59,5 +63,12 @@ describe('registerConfigHandlers', () => {
     const result = await handler!({}, []);
     expect(result).toEqual(expected);
     expect(store.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('exposes computronRepoPath default as empty string', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'forge-cfg-'));
+    const store = createConfigStore(join(dir, 'config.json'));
+    const cfg = await store.get();
+    expect(cfg.computronRepoPath).toBe('');
   });
 });

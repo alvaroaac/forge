@@ -8,6 +8,7 @@ const DEFAULTS: AppConfig = {
   linearTokenPath: join(homedir(), '.humanlayer', 'riptide', 'linear.json'),
   linearTeamKey: 'FUL',
   repoPath: '',
+  computronRepoPath: '',
   claudeModel: 'claude-sonnet-4-6',
 };
 

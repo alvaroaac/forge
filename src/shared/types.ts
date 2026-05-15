@@ -31,6 +31,7 @@ export interface AppConfig {
   linearTokenPath: string;
   linearTeamKey: string;
   repoPath: string;
+  computronRepoPath: string;
   claudeModel: string;
 }
 

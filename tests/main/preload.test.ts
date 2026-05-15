@@ -70,6 +70,7 @@ describe('ForgeApi shape', () => {
         linearTokenPath: '/tmp/linear-token.json',
         linearTeamKey: 'FUL',
         repoPath: '/tmp/repo',
+        computronRepoPath: '',
         claudeModel: 'claude-sonnet-4-0',
       }),
       set: promiseFn<void>(undefined),

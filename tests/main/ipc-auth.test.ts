@@ -56,6 +56,7 @@ describe('registerAuthHandlers', () => {
       linearTokenPath: '/tmp/linear-token.json',
       linearTeamKey: 'FUL',
       repoPath: '/tmp/repo',
+      computronRepoPath: '',
       claudeModel: 'claude-sonnet-4-6',
     };
     const status: AuthStatus = { linear: true, claudeCode: false, codex: true };
