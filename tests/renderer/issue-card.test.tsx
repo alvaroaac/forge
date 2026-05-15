@@ -95,4 +95,22 @@ describe('IssueCard', () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
     expect(onOpen).toHaveBeenCalledWith(issue, 'spec');
   });
+
+  it('labels the spec action as Brief for triage issues', () => {
+    const triageIssue: Issue = {
+      ...issue,
+      status: 'triage',
+    };
+    const onOpen = vi.fn();
+    const { container } = render(
+      <IssueCard issue={triageIssue} onOpen={onOpen} isActive={false} hasSpec={false} />,
+    );
+    const { getByRole, queryByRole } = within(container);
+
+    fireEvent.click(getByRole('button', { name: /^brief$/i }));
+
+    expect(queryByRole('button', { name: /^spec$/i })).toBeNull();
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onOpen).toHaveBeenCalledWith(triageIssue, 'spec');
+  });
 });

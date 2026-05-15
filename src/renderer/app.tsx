@@ -226,7 +226,7 @@ export function App() {
         <RightPanel auth={auth} />
       </div>
 
-      {drawer?.issue?.status === 'triage' ? (
+      {drawer?.issue?.status === 'triage' && drawer.tab === 'spec' ? (
         <TriageDrawerContainer
           issue={drawer.issue}
           canGenerate={auth.computron}

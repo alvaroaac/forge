@@ -23,6 +23,7 @@ export function IssueCard({ issue, onOpen, isActive, hasSpec }: IssueCardProps) 
   const firstLabel = issue.labels[0] ?? '';
   const openSpecLabel = `Open ${issue.id} ${issue.title}`;
   const openSpec = () => onOpen(issue, 'spec');
+  const specActionLabel = issue.status === 'triage' ? 'Brief' : hasSpec ? 'View Spec' : 'Spec';
 
   return (
     <div
@@ -64,7 +65,7 @@ export function IssueCard({ issue, onOpen, isActive, hasSpec }: IssueCardProps) 
           type="button"
           onClick={() => onOpen(issue, 'spec')}
         >
-          {hasSpec ? 'View Spec' : 'Spec'}
+          {specActionLabel}
         </button>
         <button className="btn-ghost" type="button" onClick={() => onOpen(issue, 'detail')}>
           Detail <IconChevronRight size={10} stroke={2} />

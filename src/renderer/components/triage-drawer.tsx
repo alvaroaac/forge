@@ -43,7 +43,9 @@ export function TriageDrawer({
   };
 
   return (
-    <div className="drawer">
+    <>
+      <div className="drawer-scrim drawer-scrim-open" onClick={onClose} />
+      <aside className="drawer drawer-open">
       <div className="drawer-head">
         <h2>{issue.id}</h2>
         <h3>{issue.title}</h3>
@@ -74,6 +76,7 @@ export function TriageDrawer({
           </button>
         ) : null}
       </div>
-    </div>
+      </aside>
+    </>
   );
 }

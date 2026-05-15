@@ -688,7 +688,7 @@ describe('App detail drawer refresh', () => {
     );
   });
 
-  it('renders TriageDrawer for triage issues and not SpecDrawer', async () => {
+  it('renders TriageDrawer for triage issues opened on the spec action', async () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get: vi.fn(), set: vi.fn() },
@@ -733,5 +733,50 @@ describe('App detail drawer refresh', () => {
     });
     expect(renderState.specDrawerIssue).toBeNull();
     expect(renderState.specDrawerProps).toBeNull();
+  });
+
+  it('renders SpecDrawer detail view for triage issues opened on detail', async () => {
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[2], 'detail');
+    });
+
+    expect(renderState.specDrawerIssue).toEqual(issues[2]);
+    expect(renderState.specDrawerProps).toMatchObject({
+      streaming: '',
+      reviewedContent: null,
+      reviewSummary: null,
+    });
+    expect(renderState.triageDrawerIssue).toBeNull();
+    expect(renderState.triageDrawerProps).toBeNull();
   });
 });

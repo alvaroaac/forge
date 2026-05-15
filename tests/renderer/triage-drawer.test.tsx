@@ -74,7 +74,7 @@ describe('TriageDrawer', () => {
     const writeMock = vi.fn();
     setTriageApi(writeMock);
 
-    render(
+    const { container } = render(
       <TriageDrawer
         issue={issue}
         canGenerate={false}
@@ -87,10 +87,35 @@ describe('TriageDrawer', () => {
       />,
     );
 
+    expect(container.querySelector('.drawer-scrim-open')).toBeTruthy();
+    expect(container.querySelector('.drawer-open')).toBeTruthy();
     const generateButton = screen.getByRole('button', { name: /generate brief/i });
 
     expect(generateButton.getAttribute('disabled')).toBe('');
     expect(screen.getByText(/computronRepoPath/i)).toBeTruthy();
+  });
+
+  it('closes when the drawer scrim is clicked', () => {
+    const writeMock = vi.fn();
+    const onClose = vi.fn();
+    setTriageApi(writeMock);
+
+    const { container } = render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={onClose}
+      />,
+    );
+
+    fireEvent.click(container.querySelector('.drawer-scrim-open')!);
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('shows streaming label while generation is active', () => {
