@@ -40,7 +40,7 @@ Introduce a new configurable filesystem path (`computronRepoPath`) following the
 
 ### External dependencies
 
-- `claude` CLI must accept `--add-dir <path>` and `--allowedTools "Read,Glob,Grep"` flags. **Verify exact flag syntax against installed `claude` version before implementation** — pin the verified syntax in the implementation plan.
+- `claude` CLI (latest) — confirmed by user to support `--add-dir <path>` and `--allowedTools "Read,Glob,Grep"`. Use these flag forms.
 
 ---
 
@@ -70,10 +70,10 @@ async function fetchTeamTriage(teamId) {
 
 ### 3. Issue list — Triage tab + Mine-only toggle
 
-- `issue-list-panel.tsx`: extend `Tab` union with `'Triage'`. Place it as the first tab (triage is the entry point for new work).
+- `issue-list-panel.tsx`: extend `Tab` union with `'Triage'`. Place it as the **first** tab visually, but the **default selected tab on app open remains `Todo`**.
 - Combine results from existing assigned-issues fetch with the new team-triage fetch in `use-issues.ts`. De-duplicate by issue id (an issue can theoretically be both assigned and in triage).
-- Add a small toggle ("Mine only") visible only when the Triage tab is active. Filters by `assigneeId === currentViewerId`.
-- Cache `currentViewerId` in main process after first `getCurrentUser()` call (or fetch fresh on first Triage tab open). Expose via new IPC `linear:getViewerId`.
+- Add a small toggle ("Mine only", **default off**) visible only when the Triage tab is active. Filters by `assigneeId === currentViewerId`.
+- **Lazy** viewer-id fetch: call `linear:getViewerId` on first Triage tab open, cache in main process for the session. Avoids a startup-time round-trip.
 
 ### 4. Config — `computronRepoPath`
 
@@ -163,14 +163,14 @@ Renderer component test for `TriageDrawer` (existing components have rtl-style t
 
 ---
 
-## Open Questions
+## Resolved Decisions
 
-- [ ] **`claude` CLI flag syntax** — confirm `--add-dir` and `--allowedTools "Read,Glob,Grep"` flags exist on the version we depend on. If syntax differs (e.g. `--allowed-tools`), pin the corrected form in the implementation plan before coding.
-- [ ] **Mine-only default** — Triage tab default state: "Mine only" off (show full team queue) or on (show only my triage)? Recommendation: **off**, because the value of the tab is the team queue; toggle is an escape hatch.
-- [ ] **Triage tab placement** — first tab (entry point) or last (cold-storage feel)? Recommendation: **first**.
-- [ ] **Viewer-id caching strategy** — fetch once at startup and cache in main, or lazy-fetch on first Triage tab open? Recommendation: **lazy** — keeps startup fast and matches existing on-demand patterns.
-- [ ] **Tool-call cap enforcement** — the prompt says "~6 tool calls" but the CLI doesn't enforce it. Acceptable to leave as a soft prompt-level constraint, or do we need a hard limit via `--max-turns` (if such flag exists)?
-- [ ] **Triage-brief duplicate prevention** — if the user re-generates a brief, do we overwrite `triage-brief.md` silently, prompt, or version it? Recommendation: **prompt on overwrite**, matching common spec-write behaviour.
+- [x] **`claude` CLI flag syntax** — confirmed (latest CLI). Use `--add-dir` and `--allowedTools "Read,Glob,Grep"`.
+- [x] **Mine-only default** — **off**. Triage tab opens to the full team queue.
+- [x] **Triage tab placement** — **first** in tab order, but **default selected tab on app open remains `Todo`**.
+- [x] **Viewer-id caching strategy** — **lazy**. First Triage tab open triggers `linear:getViewerId`; cache in main for session.
+- [x] **Tool-call cap enforcement** — **soft, prompt-level only**. Phrase the "~6 tool calls" as a recommendation in the system prompt, not a hard cap.
+- [x] **Triage-brief duplicate prevention** — **prompt on overwrite** when `triage-brief.md` already exists.
 
 ---
 

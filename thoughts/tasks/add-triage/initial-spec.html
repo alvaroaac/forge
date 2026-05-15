@@ -318,7 +318,7 @@
     <li><a class="sub" href="#s8">8. IPC + renderer</a></li>
     <li><a class="sub" href="#s9">9. Triage writer</a></li>
     <li><a class="sub" href="#s10">10. Tests</a></li>
-    <li><a class="section" href="#questions">Open Questions</a></li>
+    <li><a class="section" href="#questions">Resolved Decisions</a></li>
     <li><a class="section" href="#oos">Out of Scope</a></li>
   </ul>
 </aside>
@@ -362,9 +362,9 @@
   </ul>
 
   <h3 id="ctx-deps">External dependencies</h3>
-  <div class="card warn">
-    <div class="card-title">Verify before implementation</div>
-    <p><code>claude</code> CLI must accept <code>--add-dir &lt;path&gt;</code> and <code>--allowedTools "Read,Glob,Grep"</code>. <strong>Confirm exact flag syntax against the installed <code>claude</code> version</strong> before coding — pin verified syntax in the implementation plan. If actual flag is <code>--allowed-tools</code>, the spec is wrong and must be corrected first.</p>
+  <div class="card info">
+    <div class="card-title">Confirmed</div>
+    <p><code>claude</code> CLI (latest) supports <code>--add-dir &lt;path&gt;</code> and <code>--allowedTools "Read,Glob,Grep"</code> — confirmed by user. Use these flag forms.</p>
   </div>
 
   <h2 id="approach">Suggested Approach</h2>
@@ -396,10 +396,10 @@
   <div class="approach-step" id="s3">
     <h3><span class="step">03</span>Issue list — Triage tab + Mine-only toggle</h3>
     <ul>
-      <li><code>issue-list-panel.tsx</code>: extend <code>Tab</code> union with <code>'Triage'</code>. Place it as the <strong>first</strong> tab — triage is the entry point for new work.</li>
+      <li><code>issue-list-panel.tsx</code>: extend <code>Tab</code> union with <code>'Triage'</code>. Place it as the <strong>first</strong> tab visually, but <strong>default selected tab on app open remains <code>Todo</code></strong>.</li>
       <li>Combine results from existing assigned-issues fetch with the new team-triage fetch in <code>use-issues.ts</code>. De-duplicate by issue id (an issue can be both assigned and in triage).</li>
-      <li>Small toggle ("Mine only") visible only when the Triage tab is active. Filters by <code>assigneeId === currentViewerId</code>.</li>
-      <li>Cache <code>currentViewerId</code> in main process after first <code>getCurrentUser()</code> call. Expose via new IPC <code>linear:getViewerId</code>.</li>
+      <li>Small toggle ("Mine only", <strong>default off</strong>) visible only when the Triage tab is active. Filters by <code>assigneeId === currentViewerId</code>.</li>
+      <li><strong>Lazy</strong> viewer-id fetch: call <code>linear:getViewerId</code> on first Triage tab open, cache in main for the session.</li>
     </ul>
   </div>
 
@@ -503,14 +503,14 @@ wrapping the whole output.`;</code></pre>
     </ul>
   </div>
 
-  <h2 id="questions">Open Questions</h2>
+  <h2 id="questions">Resolved Decisions</h2>
   <ul class="checklist">
-    <li><span class="box"></span><span class="q-body"><strong>claude CLI flag syntax</strong> — confirm <code>--add-dir</code> and <code>--allowedTools "Read,Glob,Grep"</code> exist on the version we depend on. If syntax differs (e.g. <code>--allowed-tools</code>), pin corrected form in the implementation plan before coding.</span></li>
-    <li><span class="box"></span><span class="q-body"><strong>Mine-only default</strong> — Triage tab default: toggle off (show full team queue) or on (show only my triage)? <span class="rec">REC: off</span> The value of the tab is the team queue; toggle is an escape hatch.</span></li>
-    <li><span class="box"></span><span class="q-body"><strong>Triage tab placement</strong> — first tab (entry point) or last (cold-storage feel)? <span class="rec">REC: first</span></span></li>
-    <li><span class="box"></span><span class="q-body"><strong>Viewer-id caching strategy</strong> — fetch at startup and cache, or lazy-fetch on first Triage tab open? <span class="rec">REC: lazy</span> Keeps startup fast, matches existing on-demand patterns.</span></li>
-    <li><span class="box"></span><span class="q-body"><strong>Tool-call cap enforcement</strong> — prompt says "~6 tool calls" but CLI doesn't enforce. Acceptable as soft prompt-level constraint, or need a hard limit via <code>--max-turns</code> (if such flag exists)?</span></li>
-    <li><span class="box"></span><span class="q-body"><strong>Triage-brief duplicate prevention</strong> — if user re-generates a brief, overwrite <code>triage-brief.md</code> silently, prompt, or version it? <span class="rec">REC: prompt on overwrite</span> Matches common spec-write behaviour.</span></li>
+    <li><span class="box" style="background:var(--green);border-color:var(--green)"></span><span class="q-body"><strong>claude CLI flag syntax</strong> — confirmed (latest CLI). Use <code>--add-dir</code> and <code>--allowedTools "Read,Glob,Grep"</code>.</span></li>
+    <li><span class="box" style="background:var(--green);border-color:var(--green)"></span><span class="q-body"><strong>Mine-only default</strong> — <strong>off</strong>. Triage tab opens to the full team queue.</span></li>
+    <li><span class="box" style="background:var(--green);border-color:var(--green)"></span><span class="q-body"><strong>Triage tab placement</strong> — <strong>first</strong> in tab order, but default selected tab on app open remains <code>Todo</code>.</span></li>
+    <li><span class="box" style="background:var(--green);border-color:var(--green)"></span><span class="q-body"><strong>Viewer-id caching strategy</strong> — <strong>lazy</strong>. First Triage tab open triggers <code>linear:getViewerId</code>; cache in main for session.</span></li>
+    <li><span class="box" style="background:var(--green);border-color:var(--green)"></span><span class="q-body"><strong>Tool-call cap enforcement</strong> — <strong>soft, prompt-level only</strong>. "~6 tool calls" phrased as a recommendation in the system prompt, not a hard cap.</span></li>
+    <li><span class="box" style="background:var(--green);border-color:var(--green)"></span><span class="q-body"><strong>Triage-brief duplicate prevention</strong> — <strong>prompt on overwrite</strong> when <code>triage-brief.md</code> already exists.</span></li>
   </ul>
 
   <h2 id="oos">Out of Scope (tech-debt candidates)</h2>
