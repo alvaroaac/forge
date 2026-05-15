@@ -9,14 +9,17 @@ import { checkAll } from '../services/auth-checker';
 import type { RawLinearIssue } from '../services/linear-service';
 import { fetchIssueDetail, fetchIssues, fetchTriage } from '../services/linear-service';
 import { readRepoContext } from '../services/repo-reader';
-import { streamSpec } from '../services/spec-generator';
+import { streamClaude, streamSpec } from '../services/spec-generator';
 import { launchSpecReview } from '../services/spec-review-bridge';
 import { reviseSpecWithReview } from '../services/spec-review-revision';
+import { streamTriageBrief } from '../services/triage-generator';
+import { writeTriageBrief } from '../services/triage-writer';
 import { writeSpec } from '../services/spec-writer';
 import { configPath, issuesCachePath } from '../lib/paths';
 import { registerAuthHandlers } from './auth';
 import { registerConfigHandlers } from './config';
 import { registerLinearHandlers } from './linear';
+import { registerTriageGenerateHandler, registerTriageWriteHandler } from './triage';
 import {
   registerSpecGenerateHandler,
   registerSpecGetHandler,
@@ -109,4 +112,17 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
         },
       ),
   });
+  registerTriageGenerateHandler(ipc, {
+    store,
+    fetchTriageList: () => fetchTriage(client as LinearClient),
+    streamTriageBrief: ({ issue, computronRepoPath, model, onChunk }) =>
+      streamTriageBrief({
+        issue,
+        computronRepoPath,
+        model,
+        onChunk,
+        streamClaude,
+      }),
+  });
+  registerTriageWriteHandler(ipc, { store, writeTriageBrief });
 }
