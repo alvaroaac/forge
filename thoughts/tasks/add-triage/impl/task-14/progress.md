@@ -32,7 +32,7 @@ Implement IPC handlers for `linear:fetchTeamTriage` and `linear:getViewerId` wit
 
 ## Fix Commit
 - `ad989b3` (initial implementation)
-- `0955425` (`fix(ipc): cast linearClient before getCurrentUser in adapter`)
+- `cd963cb` (`fix(ipc): cast linearClient before getCurrentUser in adapter`)
 
 ## Tech Debt
 - None intentionally skipped for this task.
