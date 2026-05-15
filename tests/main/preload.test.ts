@@ -1,84 +1,111 @@
-import { describe, it, expect } from 'vitest';
-import type { ForgeApi } from '../../src/shared/forge-api';
-import type {
-  AppConfig,
-  AuthStatus,
-  Issue,
-  Spec,
-  SpecReviewResult,
-  SpecStreamChunk,
-} from '../../src/shared/types';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { IpcChannel } from '../../src/shared/ipc-channels';
 
-describe('ForgeApi shape', () => {
-  const promiseFn =
-    <T>(value: T): (() => Promise<T>) =>
-    async () =>
-      value;
+interface ElectronMock {
+  exposeInMainWorld: (key: string, value: unknown) => void;
+}
 
-  const api: ForgeApi = {
-    auth: {
-      check: promiseFn<AuthStatus>({
-        linear: true,
-        claudeCode: false,
-        codex: false,
-        computron: false,
-      }),
-    },
-    linear: {
-      fetch: promiseFn<Issue[]>([]),
-      fetchIssueDetail: promiseFn<Issue | null>(null),
-      refresh: promiseFn<Issue[]>([]),
-    },
-    spec: {
-      get: promiseFn<Spec | null>(null),
-      generate: promiseFn<{ issueId: string; content: string }>({
-        issueId: 'FUL-1',
-        content: '',
-      }),
-      write: promiseFn<{ issueId: string; content: string }>({
-        issueId: 'FUL-1',
-        content: '',
-      }),
-      launchReview: promiseFn<SpecReviewResult>({
-        content: '# Revised',
-        summary: {
-          verdict: 'approved',
-          reviewerSummary: 'Looks good.',
-          commentCount: 0,
-          appliedChanges: [],
-          unresolvedComments: [],
-        },
-      }),
-      onChunk: (handler) => {
-        handler({
-          issueId: 'FUL-1',
-          delta: '',
-          done: false,
-        } satisfies SpecStreamChunk);
-        return () => undefined;
-      },
-      onDone: (handler) => {
-        handler({ issueId: 'FUL-1' });
-        return () => undefined;
-      },
-      onError: (handler) => {
-        handler({ issueId: 'FUL-1', message: 'failed' });
-        return () => undefined;
-      },
-    },
-    config: {
-      get: promiseFn<AppConfig>({
-        linearTokenPath: '/tmp/linear-token.json',
-        linearTeamKey: 'FUL',
-        repoPath: '/tmp/repo',
-        computronRepoPath: '',
-        claudeModel: 'claude-sonnet-4-0',
-      }),
-      set: promiseFn<void>(undefined),
-    },
+const invoke = vi.fn();
+const on = vi.fn();
+const off = vi.fn();
+
+let exposedApi: unknown;
+
+vi.mock('electron', () => {
+  const api: ElectronMock = {
+    exposeInMainWorld: vi.fn((key, value) => {
+      if (key === 'forge') {
+        exposedApi = value;
+      }
+    }),
   };
 
-  it('has all Phase 1 methods typed', () => {
-    expect(api).toBeDefined();
+  return {
+    contextBridge: api,
+    ipcRenderer: {
+      invoke,
+      on,
+      off,
+    },
+  };
+});
+
+describe('preload API', () => {
+  beforeAll(async () => {
+    exposedApi = null;
+    await import('../../src/main/preload');
+    expect(exposedApi).toBeDefined();
+  });
+
+  beforeEach(() => {
+    invoke.mockClear();
+    on.mockClear();
+    off.mockClear();
+  });
+
+  it('calls linear.fetchTeamTriage through IpcChannel.LinearFetchTeamTriage', async () => {
+    const forge = exposedApi as any;
+    await forge.linear.fetchTeamTriage();
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.LinearFetchTeamTriage);
+  });
+
+  it('calls linear.getViewerId through IpcChannel.LinearGetViewerId', async () => {
+    const forge = exposedApi as any;
+    await forge.linear.getViewerId();
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.LinearGetViewerId);
+  });
+
+  it('calls triage.generate through IpcChannel.TriageGenerate with issueId and optional model', async () => {
+    const forge = exposedApi as any;
+    await forge.triage.generate('FUL-7');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGenerate, { issueId: 'FUL-7', model: undefined });
+    await forge.triage.generate('FUL-7', 'opus');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGenerate, {
+      issueId: 'FUL-7',
+      model: 'opus',
+    });
+  });
+
+  it('calls triage.write through IpcChannel.TriageWrite with overwrite default false', async () => {
+    const forge = exposedApi as any;
+    await forge.triage.write('FUL-7', 'hello');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageWrite, {
+      issueId: 'FUL-7',
+      content: 'hello',
+      overwrite: false,
+    });
+    await forge.triage.write('FUL-7', 'hello', { overwrite: true });
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageWrite, {
+      issueId: 'FUL-7',
+      content: 'hello',
+      overwrite: true,
+    });
+  });
+
+  it('subscribes to triage stream/done/error channels and unsubscribes', () => {
+    const forge = exposedApi as any;
+    const onChunk = vi.fn();
+    const onDone = vi.fn();
+    const onError = vi.fn();
+
+    const unsubscribeChunk = forge.triage.onChunk(onChunk);
+    const unsubscribeDone = forge.triage.onDone(onDone);
+    const unsubscribeError = forge.triage.onError(onError);
+
+    const chunkHandler = on.mock.calls[0][1];
+    const doneHandler = on.mock.calls[1][1];
+    const errorHandler = on.mock.calls[2][1];
+
+    expect(on).toHaveBeenNthCalledWith(1, IpcChannel.TriageStreamChunk, chunkHandler);
+    expect(on).toHaveBeenNthCalledWith(2, IpcChannel.TriageGenerateDone, doneHandler);
+    expect(on).toHaveBeenNthCalledWith(3, IpcChannel.TriageGenerateError, errorHandler);
+
+    unsubscribeChunk();
+    unsubscribeDone();
+    unsubscribeError();
+
+    expect(off).toHaveBeenCalledWith(IpcChannel.TriageStreamChunk, chunkHandler);
+    expect(off).toHaveBeenCalledWith(IpcChannel.TriageGenerateDone, doneHandler);
+    expect(off).toHaveBeenCalledWith(IpcChannel.TriageGenerateError, errorHandler);
   });
 });

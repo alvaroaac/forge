@@ -50,13 +50,26 @@ function setForge(options: {
   window.forge = {
     auth: { check: vi.fn() },
     config: { get: vi.fn(), set: vi.fn() },
-    linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+    linear: {
+      fetch: vi.fn(),
+      fetchIssueDetail: vi.fn(),
+      refresh: vi.fn(),
+      fetchTeamTriage: vi.fn(),
+      getViewerId: vi.fn(),
+    },
     spec: {
       ...options,
       write: vi.fn(),
       launchReview: vi.fn(),
       onDone: options.onDone ?? vi.fn(() => vi.fn()),
       onError: options.onError ?? vi.fn(() => vi.fn()),
+    },
+    triage: {
+      generate: vi.fn(),
+      write: vi.fn(),
+      onChunk: vi.fn(),
+      onDone: vi.fn(),
+      onError: vi.fn(),
     },
   };
 }

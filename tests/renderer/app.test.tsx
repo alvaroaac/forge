@@ -150,7 +150,20 @@ describe('App detail drawer refresh', () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get: vi.fn(), set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail },
+      linear: {
+        fetch: vi.fn(),
+        fetchIssueDetail,
+        refresh: vi.fn(),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
       spec: {
         get: vi.fn(),
         generate: vi.fn(),
@@ -189,7 +202,20 @@ describe('App detail drawer refresh', () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get: vi.fn(), set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail },
+      linear: {
+        fetch: vi.fn(),
+        fetchIssueDetail,
+        refresh: vi.fn(),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
       spec: {
         get: vi.fn(),
         generate: vi.fn(),
@@ -245,6 +271,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -285,6 +320,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -328,6 +372,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -377,6 +430,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -441,6 +503,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -496,6 +567,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
