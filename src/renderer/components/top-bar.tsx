@@ -24,7 +24,17 @@ export function TopBar({ auth, teamKey, lastSync }: TopBarProps) {
     <div className="topbar">
       <div className="topbar-left">
         <span className="brand">
-          <span className="brand-mark" />
+          <svg className="brand-mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <defs>
+              <mask id="brand-tile-f-cut">
+                <rect width="64" height="64" fill="white" />
+                <rect x="14" y="14" width="8" height="36" fill="black" />
+                <rect x="22" y="14" width="28" height="8" fill="black" />
+                <rect x="22" y="28" width="18" height="8" fill="black" />
+              </mask>
+            </defs>
+            <rect width="64" height="64" rx="14" fill="currentColor" mask="url(#brand-tile-f-cut)" />
+          </svg>
           FORGE
         </span>
         <span className="brand-sub mono dim">v0.1 · {teamKey} team</span>

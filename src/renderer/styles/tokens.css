@@ -105,11 +105,10 @@ button { font-family: inherit; }
   color: var(--text-1);
 }
 .brand-mark {
-  width: 14px; height: 14px;
-  background:
-    conic-gradient(from 215deg, var(--accent), oklch(0.78 0.13 240), var(--accent));
-  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+  width: 15px; height: 15px;
+  color: var(--accent);
   filter: drop-shadow(0 0 6px var(--accent-soft));
+  flex: none;
 }
 .brand-sub { font-size: 11px; }
 
