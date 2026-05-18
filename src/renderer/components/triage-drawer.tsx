@@ -1,5 +1,6 @@
 import type { Issue, TriageBrief } from '../../shared/types';
 import { GeneratedDocument } from './generated-document';
+import { IssueDrawerShell } from './issue-drawer-shell';
 
 type TriageDrawerProps = {
   issue: Issue | null;
@@ -114,38 +115,26 @@ export function TriageDrawer({
   );
 
   return (
-    <>
-      <div className="drawer-scrim drawer-scrim-open" onClick={onClose} />
-      <aside className="drawer drawer-open">
-        <div className="drawer-head">
-          <h2>{issue.id}</h2>
-          <h3>{issue.title}</h3>
-          <button
-            className="icon-btn"
-            type="button"
-            onClick={onClose}
-            title="Close"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="drawer-body">
-          <TriageConfigHint canGenerate={canGenerate} />
-          <GeneratedDocument
-            artifactName="Brief"
-            artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
-            content={pickBriefContent(brief, streaming)}
-            isStreaming={isStreaming}
-            errorMessage={errorMessage}
-            emptyTitle={`No brief yet for ${issue.id}.`}
-            activityTitle="Generating brief"
-            activityStatusFallback="Starting brief"
-            actions={actions}
-            emptyActions={generateButton}
-          />
-        </div>
-      </aside>
-    </>
+    <IssueDrawerShell
+      issue={issue}
+      onClose={onClose}
+      closeTitle="Close"
+      closeAriaLabel="Close"
+      renderClosedShell={false}
+    >
+      <TriageConfigHint canGenerate={canGenerate} />
+      <GeneratedDocument
+        artifactName="Brief"
+        artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
+        content={pickBriefContent(brief, streaming)}
+        isStreaming={isStreaming}
+        errorMessage={errorMessage}
+        emptyTitle={`No brief yet for ${issue.id}.`}
+        activityTitle="Generating brief"
+        activityStatusFallback="Starting brief"
+        actions={actions}
+        emptyActions={generateButton}
+      />
+    </IssueDrawerShell>
   );
 }
