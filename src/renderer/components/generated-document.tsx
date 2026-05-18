@@ -40,7 +40,7 @@ type MetaStripProps = Pick<
 type MessageStackProps = Pick<GeneratedDocumentProps, 'errorMessage' | 'statusMessage'>;
 
 type ActionSlotProps = Pick<GeneratedDocumentProps, 'actions'> & {
-  hasContent: boolean;
+  shouldRenderActions: boolean;
 };
 
 type DocumentBodyProps = Pick<
@@ -69,8 +69,8 @@ function priorStatuses(statuses: string[]): string[] {
   return statuses.slice(0, -1);
 }
 
-function GeneratedDocumentActionSlot({ actions, hasContent }: ActionSlotProps) {
-  if (!hasContent || !actions) {
+function GeneratedDocumentActionSlot({ actions, shouldRenderActions }: ActionSlotProps) {
+  if (!shouldRenderActions || !actions) {
     return null;
   }
 
@@ -84,6 +84,8 @@ function GeneratedDocumentMetaStrip({
   actions,
   hasContent,
 }: MetaStripProps) {
+  const shouldRenderActions = hasContent || isStreaming;
+
   return (
     <div className="spec-meta-strip">
       <span className="mono dim">{artifactPath}</span>
@@ -94,7 +96,7 @@ function GeneratedDocumentMetaStrip({
         </span>
       ) : null}
       <span style={{ flex: 1 }} />
-      <GeneratedDocumentActionSlot actions={actions} hasContent={hasContent} />
+      <GeneratedDocumentActionSlot actions={actions} shouldRenderActions={shouldRenderActions} />
     </div>
   );
 }

@@ -79,6 +79,24 @@ describe('SpecTab', () => {
     expect(screen.getByText('thoughts/tasks/FUL-7/initial-spec.md')).toBeTruthy();
   });
 
+  it('keeps the spec file path visible in the empty document surface', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('thoughts/tasks/FUL-7/initial-spec.md')).toBeTruthy();
+  });
+
   it('prefers streaming content over the saved spec content', () => {
     render(
       <SpecTab
@@ -97,6 +115,32 @@ Streaming body`}
 
     expect(screen.getByText('Live')).toBeTruthy();
     expect(screen.getByText('Streaming body')).toBeTruthy();
+    expect(screen.queryByText('Saved')).toBeNull();
+    expect(screen.queryByText('Persisted body')).toBeNull();
+  });
+
+  it('prefers reviewed content over saved and streaming spec content', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={spec}
+        streaming={`## Live
+Streaming body`}
+        reviewedContent={`## Reviewed
+Reviewed body`}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Reviewed')).toBeTruthy();
+    expect(screen.getByText('Reviewed body')).toBeTruthy();
+    expect(screen.queryByText('Live')).toBeNull();
+    expect(screen.queryByText('Streaming body')).toBeNull();
     expect(screen.queryByText('Saved')).toBeNull();
     expect(screen.queryByText('Persisted body')).toBeNull();
   });
@@ -140,6 +184,26 @@ Streaming body`}
     expect(screen.getByText('Generating spec')).toBeTruthy();
     expect(screen.getByText('Claude initialized the repo session')).toBeTruthy();
     expect(screen.getByText('Starting Claude')).toBeTruthy();
+  });
+
+  it('keeps the model picker visible while generation activity is running', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        streamStatus={['Starting Claude']}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByLabelText('Spec generation model')).toBeTruthy();
   });
 
   it('copies the live streaming content while streaming', () => {

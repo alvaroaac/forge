@@ -97,6 +97,23 @@ describe('GeneratedDocument', () => {
     expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull();
   });
 
+  it('renders populated actions while activity is visible', () => {
+    render(
+      <GeneratedDocument
+        artifactPath="thoughts/tasks/FUL-7/initial-spec.md"
+        content=""
+        isStreaming={true}
+        emptyTitle="No document yet."
+        activityTitle="Generating document"
+        activityStatusFallback="Starting generator"
+        actions={<button type="button">Copy</button>}
+      />,
+    );
+
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
+  });
+
   it('renders status and error messages', () => {
     render(
       <GeneratedDocument

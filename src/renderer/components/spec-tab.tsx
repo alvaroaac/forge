@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 
 import type { Issue, Spec, SpecReviewSummary } from '../../shared/types';
 import { cleanSpecMarkdown } from '../../shared/spec-markdown';
-import { splitSections } from '../lib/markdown';
-import { MarkdownSection } from './markdown-section';
+import { GeneratedDocument } from './generated-document';
 import { IconCheck, IconEdit, IconSpark, IconTerminal } from './icons';
 
 const CLAUDE_MODEL_OPTIONS = ['claude-sonnet-4-6', 'sonnet', 'opus'];
+
+const noopContentHandler = () => undefined;
 
 type SpecTabProps = {
   issue: Issue;
@@ -44,37 +45,174 @@ function pickDisplayedContent(
   return pickContent(spec, streaming);
 }
 
+function pickReviewStatus(isReviewPending?: boolean, reviewStatusMessage?: string | null): string | null {
+  return isReviewPending ? 'Review in progress...' : (reviewStatusMessage ?? null);
+}
+
+function pickModelOptions(claudeModel: string): string[] {
+  if (CLAUDE_MODEL_OPTIONS.includes(claudeModel)) {
+    return CLAUDE_MODEL_OPTIONS;
+  }
+
+  return [claudeModel, ...CLAUDE_MODEL_OPTIONS];
+}
+
+function pickContentHandler(handler?: (content: string) => void): (content: string) => void {
+  return handler ?? noopContentHandler;
+}
+
+function pickReviewedContent(reviewedContent?: string | null): string | null {
+  return reviewedContent ?? null;
+}
+
+function pickErrorMessage(
+  errorMessage: string | null,
+  reviewErrorMessage?: string | null,
+): string | null {
+  return reviewErrorMessage ?? errorMessage;
+}
+
+function pickStreamStatus(streamStatus?: string[]): string[] {
+  return streamStatus ?? [];
+}
+
+function pickIsReviewPending(isReviewPending?: boolean): boolean {
+  return isReviewPending ?? false;
+}
+
+function pickReviewSummary(reviewSummary?: SpecReviewSummary | null): SpecReviewSummary | null {
+  return reviewSummary ?? null;
+}
+
+function SpecEmptyTitle({ issueId }: { issueId: string }) {
+  return (
+    <>
+      No spec yet for{' '}
+      <span className="mono" style={{ color: 'var(--text-1)' }}>
+        {issueId}
+      </span>
+      .
+    </>
+  );
+}
+
+function SpecActions({
+  content,
+  isReviewPending,
+  onLaunchReview,
+  onWrite,
+  onCopy,
+}: Required<Pick<SpecTabProps, 'onLaunchReview' | 'onWrite' | 'onCopy'>> &
+  Pick<SpecTabProps, 'isReviewPending'> & {
+  content: string;
+}) {
+  return (
+    <>
+      <button
+        className="btn-ghost"
+        type="button"
+        disabled={isReviewPending}
+        onClick={() => onLaunchReview(content)}
+      >
+        <IconTerminal size={11} stroke={2} /> Launch Review
+      </button>
+      <button className="btn-ghost" type="button" onClick={() => onWrite(content)}>
+        <IconEdit size={11} stroke={2} /> Write to file
+      </button>
+      <button className="btn-ghost" type="button" onClick={() => onCopy(content)}>
+        <IconCheck size={11} stroke={2} /> Copy
+      </button>
+    </>
+  );
+}
+
+function SpecReviewChanges({
+  issueId,
+  reviewSummary,
+}: {
+  issueId: string;
+  reviewSummary: SpecReviewSummary | null;
+}) {
+  const [showReviewChanges, setShowReviewChanges] = useState(false);
+  const reviewChangesId = `review-changes-${issueId}`;
+
+  useEffect(() => {
+    setShowReviewChanges(false);
+  }, [reviewSummary]);
+
+  if (!reviewSummary) {
+    return null;
+  }
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <button
+        aria-controls={reviewChangesId}
+        aria-expanded={showReviewChanges}
+        className="btn-ghost"
+        type="button"
+        onClick={() => setShowReviewChanges((current) => !current)}
+      >
+        Review changes
+      </button>
+      {showReviewChanges ? (
+        <div id={reviewChangesId} style={{ marginTop: 10, fontSize: 12 }}>
+          <div>
+            <strong>Verdict:</strong> {reviewSummary.verdict}
+          </div>
+          <div>
+            <strong>Reviewer summary:</strong> {reviewSummary.reviewerSummary}
+          </div>
+          <div>
+            <strong>Comment count:</strong> {reviewSummary.commentCount}
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <strong>Applied changes:</strong>
+            <ul>
+              {reviewSummary.appliedChanges.map((change) => (
+                <li key={change}>{change}</li>
+              ))}
+            </ul>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <strong>Unresolved comments:</strong>
+            <ul>
+              {reviewSummary.unresolvedComments.map((comment) => (
+                <li key={comment}>{comment}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function SpecTab({
   issue,
   spec,
   streaming,
-  streamStatus = [],
-  reviewedContent = null,
-  reviewSummary = null,
-  isReviewPending = false,
-  reviewStatusMessage = null,
-  reviewErrorMessage = null,
+  streamStatus,
+  reviewedContent,
+  reviewSummary,
+  isReviewPending,
+  reviewStatusMessage,
+  reviewErrorMessage,
   isStreaming,
   errorMessage,
   claudeModel,
   onClaudeModelChange,
   onGenerate,
-  onLaunchReview = () => undefined,
-  onWrite = () => undefined,
+  onLaunchReview,
+  onWrite,
   onCopy,
 }: SpecTabProps) {
-  const [showReviewChanges, setShowReviewChanges] = useState(false);
-  const content = cleanSpecMarkdown(pickDisplayedContent(spec, streaming, reviewedContent));
-  const combinedErrorMessage = reviewErrorMessage ?? errorMessage;
-  const effectiveReviewStatus = isReviewPending ? 'Review in progress...' : reviewStatusMessage;
-  const reviewChangesId = `review-changes-${issue.id}`;
-  const modelOptions = CLAUDE_MODEL_OPTIONS.includes(claudeModel)
-    ? CLAUDE_MODEL_OPTIONS
-    : [claudeModel, ...CLAUDE_MODEL_OPTIONS];
-
-  useEffect(() => {
-    setShowReviewChanges(false);
-  }, [reviewSummary]);
+  const content = cleanSpecMarkdown(pickDisplayedContent(spec, streaming, pickReviewedContent(reviewedContent)));
+  const combinedErrorMessage = pickErrorMessage(errorMessage, reviewErrorMessage);
+  const effectiveReviewStatus = pickReviewStatus(isReviewPending, reviewStatusMessage);
+  const modelOptions = pickModelOptions(claudeModel);
+  const launchReview = pickContentHandler(onLaunchReview);
+  const writeSpec = pickContentHandler(onWrite);
 
   const modelSelect = (
     <label className="model-picker">
@@ -94,141 +232,43 @@ export function SpecTab({
     </label>
   );
 
-  if (!content && !isStreaming) {
-    return (
-      <div className="drawer-empty">
-        {combinedErrorMessage ? (
-          <div className="mono" style={{ marginBottom: 12, color: 'var(--danger)', fontSize: 11 }}>
-            {combinedErrorMessage}
-          </div>
-        ) : null}
-        <div style={{ marginBottom: 16, color: 'var(--text-2)' }}>
-          No spec yet for{' '}
-          <span className="mono" style={{ color: 'var(--text-1)' }}>
-            {issue.id}
-          </span>
-          .
-        </div>
-        <div style={{ marginBottom: 12 }}>{modelSelect}</div>
-        <button className="btn-primary" type="button" onClick={onGenerate}>
-          <IconSpark size={12} stroke={2} /> Generate Spec
-        </button>
-        <div className="mono dim" style={{ marginTop: 14, fontSize: 11 }}>
-          reads AGENTS.md + thoughts/ + Linear issue
-        </div>
-      </div>
-    );
-  }
-
-  const sections = splitSections(content);
-  const currentStatus = streamStatus[streamStatus.length - 1] ?? 'Starting Claude';
-  const priorStatuses = streamStatus.slice(0, -1);
-
   return (
-    <div className="spec-tab">
-      <div className="spec-meta-strip">
-        <span className="mono dim">thoughts/tasks/{issue.id}/initial-spec.md</span>
-        {isStreaming ? <span className="mono dim">· streaming…</span> : null}
-        {combinedErrorMessage ? (
-          <span className="mono" style={{ color: 'var(--danger)' }}>
-            · failed
-          </span>
-        ) : null}
-        <span style={{ flex: 1 }} />
-        {modelSelect}
-        <div className="spec-actions">
-          <button
-            className="btn-ghost"
-            type="button"
-            disabled={isReviewPending}
-            onClick={() => onLaunchReview(content)}
-          >
-            <IconTerminal size={11} stroke={2} /> Launch Review
-          </button>
-          <button className="btn-ghost" type="button" onClick={() => onWrite(content)}>
-            <IconEdit size={11} stroke={2} /> Write to file
-          </button>
-          <button className="btn-ghost" type="button" onClick={() => onCopy(content)}>
-            <IconCheck size={11} stroke={2} /> Copy
-          </button>
-        </div>
-      </div>
-      {combinedErrorMessage ? (
-        <div className="mono" style={{ color: 'var(--danger)', fontSize: 11, marginBottom: 10 }}>
-          {combinedErrorMessage}
-        </div>
-      ) : null}
-      {effectiveReviewStatus ? (
-        <div className="mono dim" style={{ fontSize: 11, marginBottom: 10 }}>
-          {effectiveReviewStatus}
-        </div>
-      ) : null}
-      {!content && isStreaming ? (
-        <div className="spec-activity" role="status" aria-live="polite">
-          <div className="spec-activity-head">
-            <span className="spec-activity-pulse" aria-hidden="true" />
-            <div>
-              <div className="spec-activity-title">Generating spec</div>
-              <div className="mono dim">{currentStatus}</div>
+    <>
+      <GeneratedDocument
+        artifactPath={`thoughts/tasks/${issue.id}/initial-spec.md`}
+        content={content}
+        isStreaming={isStreaming}
+        streamStatus={pickStreamStatus(streamStatus)}
+        errorMessage={combinedErrorMessage}
+        statusMessage={effectiveReviewStatus}
+        emptyTitle={<SpecEmptyTitle issueId={issue.id} />}
+        activityTitle="Generating spec"
+        activityStatusFallback="Starting Claude"
+        actions={
+          <>
+            {modelSelect}
+            <SpecActions
+              content={content}
+              isReviewPending={pickIsReviewPending(isReviewPending)}
+              onLaunchReview={launchReview}
+              onWrite={writeSpec}
+              onCopy={onCopy}
+            />
+          </>
+        }
+        emptyActions={
+          <>
+            <div style={{ marginBottom: 12 }}>{modelSelect}</div>
+            <button className="btn-primary" type="button" onClick={onGenerate}>
+              <IconSpark size={12} stroke={2} /> Generate Spec
+            </button>
+            <div className="mono dim" style={{ marginTop: 14, fontSize: 11 }}>
+              reads AGENTS.md + thoughts/ + Linear issue
             </div>
-          </div>
-          {priorStatuses.length > 0 ? (
-            <ul className="spec-activity-list">
-              {priorStatuses.map((status) => (
-                <li key={status}>{status}</li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      ) : (
-        <div className="spec-scroll">
-          {sections.map((section, index) => (
-            <MarkdownSection key={`${section.h}-${index}`} h={section.h} body={section.body} />
-          ))}
-        </div>
-      )}
-      {reviewSummary ? (
-        <div style={{ marginTop: 12 }}>
-          <button
-            aria-controls={reviewChangesId}
-            aria-expanded={showReviewChanges}
-            className="btn-ghost"
-            type="button"
-            onClick={() => setShowReviewChanges((current) => !current)}
-          >
-            Review changes
-          </button>
-          {showReviewChanges ? (
-            <div id={reviewChangesId} style={{ marginTop: 10, fontSize: 12 }}>
-              <div>
-                <strong>Verdict:</strong> {reviewSummary.verdict}
-              </div>
-              <div>
-                <strong>Reviewer summary:</strong> {reviewSummary.reviewerSummary}
-              </div>
-              <div>
-                <strong>Comment count:</strong> {reviewSummary.commentCount}
-              </div>
-              <div style={{ marginTop: 8 }}>
-                <strong>Applied changes:</strong>
-                <ul>
-                  {reviewSummary.appliedChanges.map((change) => (
-                    <li key={change}>{change}</li>
-                  ))}
-                </ul>
-              </div>
-              <div style={{ marginTop: 8 }}>
-                <strong>Unresolved comments:</strong>
-                <ul>
-                  {reviewSummary.unresolvedComments.map((comment) => (
-                    <li key={comment}>{comment}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+          </>
+        }
+      />
+      <SpecReviewChanges issueId={issue.id} reviewSummary={pickReviewSummary(reviewSummary)} />
+    </>
   );
 }
