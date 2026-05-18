@@ -30,6 +30,33 @@ type EmptyStateProps = {
   actions?: ReactNode;
 };
 
+type MetaStripProps = Pick<
+  GeneratedDocumentProps,
+  'artifactPath' | 'isStreaming' | 'errorMessage' | 'actions'
+> & {
+  hasContent: boolean;
+};
+
+type MessageStackProps = Pick<GeneratedDocumentProps, 'errorMessage' | 'statusMessage'>;
+
+type ActionSlotProps = Pick<GeneratedDocumentProps, 'actions'> & {
+  hasContent: boolean;
+};
+
+type DocumentBodyProps = Pick<
+  GeneratedDocumentProps,
+  | 'content'
+  | 'isStreaming'
+  | 'streamStatus'
+  | 'emptyTitle'
+  | 'emptyDescription'
+  | 'activityTitle'
+  | 'activityStatusFallback'
+  | 'emptyActions'
+> & {
+  hasContent: boolean;
+};
+
 function hasDocumentContent(content: string): boolean {
   return content.trim().length > 0;
 }
@@ -40,6 +67,53 @@ function currentStatus(statuses: string[], fallback: string): string {
 
 function priorStatuses(statuses: string[]): string[] {
   return statuses.slice(0, -1);
+}
+
+function GeneratedDocumentActionSlot({ actions, hasContent }: ActionSlotProps) {
+  if (!hasContent || !actions) {
+    return null;
+  }
+
+  return <div className="spec-actions">{actions}</div>;
+}
+
+function GeneratedDocumentMetaStrip({
+  artifactPath,
+  isStreaming,
+  errorMessage,
+  actions,
+  hasContent,
+}: MetaStripProps) {
+  return (
+    <div className="spec-meta-strip">
+      <span className="mono dim">{artifactPath}</span>
+      {isStreaming ? <span className="mono dim">· streaming…</span> : null}
+      {errorMessage ? (
+        <span className="mono" style={{ color: 'var(--danger)' }}>
+          · failed
+        </span>
+      ) : null}
+      <span style={{ flex: 1 }} />
+      <GeneratedDocumentActionSlot actions={actions} hasContent={hasContent} />
+    </div>
+  );
+}
+
+function GeneratedDocumentMessages({ errorMessage, statusMessage }: MessageStackProps) {
+  return (
+    <>
+      {errorMessage ? (
+        <div className="mono" style={{ color: 'var(--danger)', fontSize: 11, margin: '10px 22px' }}>
+          {errorMessage}
+        </div>
+      ) : null}
+      {statusMessage ? (
+        <div className="mono dim" style={{ fontSize: 11, margin: '10px 22px' }}>
+          {statusMessage}
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 function GeneratedDocumentActivity({ title, currentStatus, priorStatuses }: ActivityProps) {
@@ -89,6 +163,40 @@ function GeneratedDocumentMarkdown({ content }: Pick<GeneratedDocumentProps, 'co
   );
 }
 
+function GeneratedDocumentBody({
+  content,
+  isStreaming,
+  streamStatus = [],
+  emptyTitle,
+  emptyDescription,
+  activityTitle,
+  activityStatusFallback,
+  emptyActions,
+  hasContent,
+}: DocumentBodyProps) {
+  if (hasContent) {
+    return <GeneratedDocumentMarkdown content={content} />;
+  }
+
+  if (isStreaming) {
+    return (
+      <GeneratedDocumentActivity
+        title={activityTitle}
+        currentStatus={currentStatus(streamStatus, activityStatusFallback)}
+        priorStatuses={priorStatuses(streamStatus)}
+      />
+    );
+  }
+
+  return (
+    <GeneratedDocumentEmpty
+      title={emptyTitle}
+      description={emptyDescription}
+      actions={emptyActions}
+    />
+  );
+}
+
 export function GeneratedDocument({
   artifactPath,
   content,
@@ -107,42 +215,25 @@ export function GeneratedDocument({
 
   return (
     <div className="spec-tab generated-document">
-      <div className="spec-meta-strip">
-        <span className="mono dim">{artifactPath}</span>
-        {isStreaming ? <span className="mono dim">· streaming…</span> : null}
-        {errorMessage ? (
-          <span className="mono" style={{ color: 'var(--danger)' }}>
-            · failed
-          </span>
-        ) : null}
-        <span style={{ flex: 1 }} />
-        {hasContent && actions ? <div className="spec-actions">{actions}</div> : null}
-      </div>
-      {errorMessage ? (
-        <div className="mono" style={{ color: 'var(--danger)', fontSize: 11, margin: '10px 22px' }}>
-          {errorMessage}
-        </div>
-      ) : null}
-      {statusMessage ? (
-        <div className="mono dim" style={{ fontSize: 11, margin: '10px 22px' }}>
-          {statusMessage}
-        </div>
-      ) : null}
-      {!hasContent && isStreaming ? (
-        <GeneratedDocumentActivity
-          title={activityTitle}
-          currentStatus={currentStatus(streamStatus, activityStatusFallback)}
-          priorStatuses={priorStatuses(streamStatus)}
-        />
-      ) : null}
-      {!hasContent && !isStreaming ? (
-        <GeneratedDocumentEmpty
-          title={emptyTitle}
-          description={emptyDescription}
-          actions={emptyActions}
-        />
-      ) : null}
-      {hasContent ? <GeneratedDocumentMarkdown content={content} /> : null}
+      <GeneratedDocumentMetaStrip
+        artifactPath={artifactPath}
+        isStreaming={isStreaming}
+        errorMessage={errorMessage}
+        actions={actions}
+        hasContent={hasContent}
+      />
+      <GeneratedDocumentMessages errorMessage={errorMessage} statusMessage={statusMessage} />
+      <GeneratedDocumentBody
+        content={content}
+        isStreaming={isStreaming}
+        streamStatus={streamStatus}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        activityTitle={activityTitle}
+        activityStatusFallback={activityStatusFallback}
+        emptyActions={emptyActions}
+        hasContent={hasContent}
+      />
     </div>
   );
 }
