@@ -99,6 +99,7 @@ describe('useTriageStream', () => {
     await waitFor(() => {
       expect(result.current.brief).toEqual(persisted);
       expect(result.current.isBriefPersisted).toBe(true);
+      expect(result.current.isBriefLoading).toBe(false);
     });
   });
 
@@ -125,6 +126,7 @@ describe('useTriageStream', () => {
       streaming: '',
       streamStatus: [],
       isBriefPersisted: false,
+      isBriefLoading: true,
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -248,6 +250,7 @@ describe('useTriageStream', () => {
       streaming: '',
       streamStatus: [],
       isBriefPersisted: false,
+      isBriefLoading: true,
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),

@@ -274,6 +274,7 @@ function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerCont
     streaming,
     streamStatus,
     isBriefPersisted,
+    isBriefLoading,
     isStreaming,
     errorMessage,
     generate,
@@ -286,6 +287,7 @@ function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerCont
       streaming={streaming}
       streamStatus={streamStatus}
       isBriefPersisted={isBriefPersisted}
+      isBriefLoading={isBriefLoading}
       isStreaming={isStreaming}
       errorMessage={errorMessage}
       onGenerate={() => void generate()}

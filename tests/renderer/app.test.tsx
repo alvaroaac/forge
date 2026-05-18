@@ -41,6 +41,7 @@ const renderState: {
     streaming: string;
     streamStatus: string[];
     isBriefPersisted: boolean;
+    isBriefLoading: boolean;
     brief: TriageBrief | null;
     errorMessage: string | null;
     onGenerate: () => void;
@@ -110,6 +111,7 @@ vi.mock('../../src/renderer/components/triage-drawer', () => ({
     streaming: string;
     streamStatus: string[];
     isBriefPersisted: boolean;
+    isBriefLoading: boolean;
     brief: TriageBrief | null;
     errorMessage: string | null;
     onGenerate: () => void;
@@ -192,6 +194,7 @@ vi.mock('../../src/renderer/hooks/use-triage-stream', () => ({
     streaming: '',
     streamStatus: [],
     isBriefPersisted: renderState.streamTriageBrief !== null,
+    isBriefLoading: false,
     isStreaming: false,
     errorMessage: null,
     generate: renderState.generateTriage,

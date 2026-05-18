@@ -13,6 +13,7 @@ type TriageDrawerProps = {
   streaming: string;
   streamStatus?: string[];
   isBriefPersisted?: boolean;
+  isBriefLoading?: boolean;
   brief: TriageBrief | null;
   errorMessage: string | null;
   onGenerate: () => void;
@@ -140,6 +141,7 @@ export function TriageDrawer({
   streaming,
   streamStatus = [],
   isBriefPersisted = false,
+  isBriefLoading = false,
   brief,
   errorMessage,
   onGenerate,
@@ -150,6 +152,7 @@ export function TriageDrawer({
   }
 
   const content = pickBriefContent(brief, streaming);
+  const isCheckingBrief = isBriefLoading && !content;
   const handleWriteClick = async (): Promise<void> => {
     await writeBriefWithOverwrite(issue.id, pickBriefContent(brief, ''));
   };
@@ -185,14 +188,14 @@ export function TriageDrawer({
         artifactName="Brief"
         artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
         content={content}
-        isStreaming={isStreaming}
-        streamStatus={streamStatus}
+        isStreaming={isStreaming || isCheckingBrief}
+        streamStatus={isCheckingBrief ? ['Checking triage-brief.md'] : streamStatus}
         errorMessage={errorMessage}
         emptyTitle={`No brief yet for ${issue.id}.`}
-        activityTitle="Generating brief"
+        activityTitle={isCheckingBrief ? 'Loading brief' : 'Generating brief'}
         activityStatusFallback="Starting brief"
-        actions={actions}
-        emptyActions={generateButton}
+        actions={isCheckingBrief ? null : actions}
+        emptyActions={isCheckingBrief ? null : generateButton}
       />
     </IssueDrawerShell>
   );

@@ -20,6 +20,7 @@ export function useTriageStream(issueId: string | null) {
   const [streaming, setStreaming] = useState('');
   const [streamStatus, setStreamStatus] = useState<string[]>([]);
   const [isBriefPersisted, setIsBriefPersisted] = useState(false);
+  const [isBriefLoading, setIsBriefLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentIssueIdRef = useRef<string | null>(null);
@@ -41,6 +42,7 @@ export function useTriageStream(issueId: string | null) {
     setStreaming('');
     setStreamStatus([]);
     setIsBriefPersisted(false);
+    setIsBriefLoading(false);
     setIsStreaming(false);
     setErrorMessage(null);
   }, []);
@@ -149,6 +151,7 @@ export function useTriageStream(issueId: string | null) {
     let cancelled = false;
 
     resetStreamState();
+    setIsBriefLoading(true);
 
     void window.forge.triage
       .get(issueId)
@@ -162,6 +165,13 @@ export function useTriageStream(issueId: string | null) {
       })
       .catch(() => {
         // Keep the default null brief when preload rejects.
+      })
+      .finally(() => {
+        if (cancelled || !isCurrentRun(issueId, setupVersion)) {
+          return;
+        }
+
+        setIsBriefLoading(false);
       });
 
     const unsubscribe = window.forge.triage.onChunk((chunk: TriageStreamChunk) => {
@@ -221,5 +231,14 @@ export function useTriageStream(issueId: string | null) {
     [issueId, isCurrentIssue, commitGeneratedBrief, finishStreaming, failStreaming],
   );
 
-  return { brief, streaming, streamStatus, isBriefPersisted, isStreaming, errorMessage, generate };
+  return {
+    brief,
+    streaming,
+    streamStatus,
+    isBriefPersisted,
+    isBriefLoading,
+    isStreaming,
+    errorMessage,
+    generate,
+  };
 }

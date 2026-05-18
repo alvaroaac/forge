@@ -185,6 +185,30 @@ describe('TriageDrawer', () => {
     expect(screen.getByRole('button', { name: 'Generate Brief' }).getAttribute('disabled')).toBe('');
   });
 
+  it('shows loading activity instead of Generate Brief while checking for a saved brief', () => {
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        isBriefLoading={true}
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText('Loading brief')).toBeTruthy();
+    expect(screen.getByText('Checking triage-brief.md')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Generate Brief' })).toBeNull();
+  });
+
   it('renders brief content as markdown instead of raw preformatted text', () => {
     const brief: TriageBrief = {
       issueId: 'FUL-77',
