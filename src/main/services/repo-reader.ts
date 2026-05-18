@@ -7,10 +7,7 @@ export interface RepoContext {
   thoughts: Array<{ name: string; content: string }>;
 }
 
-const SPEC_CONTEXT_THOUGHT_FILES = new Set([
-  'conventions.md',
-  'initial-thoughts.md',
-]);
+const SPEC_CONTEXT_THOUGHT_FILES = new Set(['conventions.md', 'initial-thoughts.md']);
 
 async function readIfExists(path: string): Promise<string> {
   if (!existsSync(path)) return '';

@@ -67,7 +67,10 @@ describe('preload API', () => {
   it('calls triage.generate through IpcChannel.TriageGenerate with issueId and optional model', async () => {
     const forge = getForgeApi();
     await forge.triage.generate('FUL-7');
-    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGenerate, { issueId: 'FUL-7', model: undefined });
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGenerate, {
+      issueId: 'FUL-7',
+      model: undefined,
+    });
     await forge.triage.generate('FUL-7', 'opus');
     expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGenerate, {
       issueId: 'FUL-7',

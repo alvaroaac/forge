@@ -27,7 +27,10 @@ function createFakeChild(): FakeChild {
   return child;
 }
 
-function createFakeSpawn(script: (child: FakeChild) => void): { calls: SpawnCall[]; spawnProcess: SpawnProcess } {
+function createFakeSpawn(script: (child: FakeChild) => void): {
+  calls: SpawnCall[];
+  spawnProcess: SpawnProcess;
+} {
   const calls: SpawnCall[] = [];
   const spawnProcess: SpawnProcess = (command, args, options) => {
     const child = createFakeChild();
@@ -51,19 +54,25 @@ describe('streamSpec', () => {
     let stdinText = '';
     const { calls, spawnProcess } = createFakeSpawn((child) => {
       stdinText = child.stdin.read()?.toString() ?? '';
-      child.stdout.write(jsonLine({
-        type: 'assistant',
-        message: { content: [{ type: 'text', text: '# Spec\n' }] },
-      }));
-      child.stdout.write(jsonLine({
-        type: 'assistant',
-        message: { content: [{ type: 'text', text: '# Spec\nBody' }] },
-      }));
-      child.stdout.write(jsonLine({
-        type: 'result',
-        is_error: false,
-        result: '# Spec\nBody',
-      }));
+      child.stdout.write(
+        jsonLine({
+          type: 'assistant',
+          message: { content: [{ type: 'text', text: '# Spec\n' }] },
+        }),
+      );
+      child.stdout.write(
+        jsonLine({
+          type: 'assistant',
+          message: { content: [{ type: 'text', text: '# Spec\nBody' }] },
+        }),
+      );
+      child.stdout.write(
+        jsonLine({
+          type: 'result',
+          is_error: false,
+          result: '# Spec\nBody',
+        }),
+      );
       child.emit('close', 0);
     });
     const chunks: string[] = [];
@@ -227,16 +236,20 @@ describe('streamClaude', () => {
 
   it('rejects stream-json error results with the Claude result text', async () => {
     const { spawnProcess } = createFakeSpawn((child) => {
-      child.stdout.write(jsonLine({
-        type: 'assistant',
-        error: 'authentication_failed',
-        message: { content: [{ type: 'text', text: 'Not logged in · Please run /login' }] },
-      }));
-      child.stdout.write(jsonLine({
-        type: 'result',
-        is_error: true,
-        result: 'Not logged in · Please run /login',
-      }));
+      child.stdout.write(
+        jsonLine({
+          type: 'assistant',
+          error: 'authentication_failed',
+          message: { content: [{ type: 'text', text: 'Not logged in · Please run /login' }] },
+        }),
+      );
+      child.stdout.write(
+        jsonLine({
+          type: 'result',
+          is_error: true,
+          result: 'Not logged in · Please run /login',
+        }),
+      );
       child.emit('close', 1);
     });
 

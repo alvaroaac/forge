@@ -71,11 +71,10 @@ describe('triage:generate handler', () => {
       },
     });
 
-    const result = await ipc.invoke(
-      IpcChannel.TriageGenerate,
-      event,
-      { issueId: 'FUL-77', model: 'claude-sonnet-4-6' },
-    );
+    const result = await ipc.invoke(IpcChannel.TriageGenerate, event, {
+      issueId: 'FUL-77',
+      model: 'claude-sonnet-4-6',
+    });
 
     expect(result).toEqual({ issueId: 'FUL-77', content: 'part 1 part 2' });
     const chunkSends = event.sent.filter((s) => s.channel === IpcChannel.TriageStreamChunk);
@@ -133,10 +132,14 @@ describe('triage:write handler', () => {
       writeTriageBrief,
     });
 
-    const result = await ipc.invoke(IpcChannel.TriageWrite, {}, {
-      issueId: 'FUL-77',
-      content: '# brief',
-    });
+    const result = await ipc.invoke(
+      IpcChannel.TriageWrite,
+      {},
+      {
+        issueId: 'FUL-77',
+        content: '# brief',
+      },
+    );
 
     expect(writeTriageBrief).toHaveBeenCalledWith({
       repoPath: '/tmp/forge',
@@ -174,11 +177,15 @@ describe('triage:write handler', () => {
       writeTriageBrief,
     });
 
-    await ipc.invoke(IpcChannel.TriageWrite, {}, {
-      issueId: 'FUL-77',
-      content: '# brief',
-      overwrite: true,
-    });
+    await ipc.invoke(
+      IpcChannel.TriageWrite,
+      {},
+      {
+        issueId: 'FUL-77',
+        content: '# brief',
+        overwrite: true,
+      },
+    );
 
     expect(writeTriageBrief).toHaveBeenCalledWith(expect.objectContaining({ mode: 'overwrite' }));
   });

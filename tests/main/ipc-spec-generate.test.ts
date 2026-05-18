@@ -41,9 +41,7 @@ interface StreamSpecInput {
 }
 
 type StreamSpecDouble = (input: StreamSpecInput) => Promise<string>;
-type PreflightClaudeRepoAccessDouble = (input: {
-  repoPath: string;
-}) => Promise<void>;
+type PreflightClaudeRepoAccessDouble = (input: { repoPath: string }) => Promise<void>;
 
 interface SpecDeps {
   store: ConfigStoreDouble;

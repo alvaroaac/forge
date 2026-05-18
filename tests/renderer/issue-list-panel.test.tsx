@@ -137,18 +137,20 @@ function getTabCount(label: RegExp) {
   return Number(tab.querySelector('.tab-count')?.textContent ?? 'NaN');
 }
 
-function renderPanel(overrides: Partial<{
-  issues: Issue[];
-  tab: Parameters<typeof IssueListPanel>[0]['tab'];
-  setTab: (next: Parameters<typeof IssueListPanel>[0]['tab']) => void;
-  onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
-  activeId: string | null;
-  hasSpecFor: (issueId: string) => boolean;
-  onRefresh: () => void;
-  mineOnly: boolean;
-  onMineOnlyChange: (next: boolean) => void;
-  viewerId: string | null;
-}> = {}) {
+function renderPanel(
+  overrides: Partial<{
+    issues: Issue[];
+    tab: Parameters<typeof IssueListPanel>[0]['tab'];
+    setTab: (next: Parameters<typeof IssueListPanel>[0]['tab']) => void;
+    onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
+    activeId: string | null;
+    hasSpecFor: (issueId: string) => boolean;
+    onRefresh: () => void;
+    mineOnly: boolean;
+    onMineOnlyChange: (next: boolean) => void;
+    viewerId: string | null;
+  }> = {},
+) {
   const {
     issues: inputIssues = issues,
     tab = 'Todo',
@@ -353,12 +355,14 @@ describe('IssueListPanel', () => {
   it('renders Triage as first tab and shows status counts for all issues', () => {
     renderPanel({ tab: 'Triage' });
 
-  const tabElements = screen.getAllByRole('button', { name: /Todo|In Progress|In Review|Done|Triage/ });
-  expect(tabElements[0].textContent).toContain('Triage');
-  expect(tabElements[1].textContent).toContain('Todo');
-  expect(tabElements[2].textContent).toContain('In Progress');
-  expect(tabElements[3].textContent).toContain('In Review');
-  expect(tabElements[4].textContent).toContain('Done');
+    const tabElements = screen.getAllByRole('button', {
+      name: /Todo|In Progress|In Review|Done|Triage/,
+    });
+    expect(tabElements[0].textContent).toContain('Triage');
+    expect(tabElements[1].textContent).toContain('Todo');
+    expect(tabElements[2].textContent).toContain('In Progress');
+    expect(tabElements[3].textContent).toContain('In Review');
+    expect(tabElements[4].textContent).toContain('Done');
 
     expect(getTabCount(/^Triage/i)).toBe(2);
     expect(screen.getAllByTestId('issue-card')).toHaveLength(2);

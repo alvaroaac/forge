@@ -34,7 +34,13 @@ export function TopBar({ auth, teamKey, lastSync }: TopBarProps) {
                 <rect x="22" y="28" width="18" height="8" fill="black" />
               </mask>
             </defs>
-            <rect width="64" height="64" rx="14" fill="currentColor" mask="url(#brand-tile-f-cut)" />
+            <rect
+              width="64"
+              height="64"
+              rx="14"
+              fill="currentColor"
+              mask="url(#brand-tile-f-cut)"
+            />
           </svg>
           FORGE
         </span>

@@ -46,36 +46,42 @@ export function TriageDrawer({
     <>
       <div className="drawer-scrim drawer-scrim-open" onClick={onClose} />
       <aside className="drawer drawer-open">
-      <div className="drawer-head">
-        <h2>{issue.id}</h2>
-        <h3>{issue.title}</h3>
-        <button className="icon-btn" type="button" onClick={onClose} title="Close" aria-label="Close">
-          ✕
-        </button>
-      </div>
-      <div className="drawer-body">
-        <button
-          className="btn"
-          type="button"
-          onClick={onGenerate}
-          disabled={!canGenerate || isStreaming}
-        >
-          {isStreaming ? 'Generating...' : 'Generate brief'}
-        </button>
-
-        {!canGenerate ? (
-          <p className="hint">Set computronRepoPath (a valid git repo) to generate a brief.</p>
-        ) : null}
-
-        {errorMessage ? <div className="error">{errorMessage}</div> : null}
-        {hasContent ? <pre>{brief?.content ?? streaming}</pre> : null}
-
-        {brief ? (
-          <button className="btn" type="button" onClick={() => void handleWriteClick()}>
-            Write to file
+        <div className="drawer-head">
+          <h2>{issue.id}</h2>
+          <h3>{issue.title}</h3>
+          <button
+            className="icon-btn"
+            type="button"
+            onClick={onClose}
+            title="Close"
+            aria-label="Close"
+          >
+            ✕
           </button>
-        ) : null}
-      </div>
+        </div>
+        <div className="drawer-body">
+          <button
+            className="btn"
+            type="button"
+            onClick={onGenerate}
+            disabled={!canGenerate || isStreaming}
+          >
+            {isStreaming ? 'Generating...' : 'Generate brief'}
+          </button>
+
+          {!canGenerate ? (
+            <p className="hint">Set computronRepoPath (a valid git repo) to generate a brief.</p>
+          ) : null}
+
+          {errorMessage ? <div className="error">{errorMessage}</div> : null}
+          {hasContent ? <pre>{brief?.content ?? streaming}</pre> : null}
+
+          {brief ? (
+            <button className="btn" type="button" onClick={() => void handleWriteClick()}>
+              Write to file
+            </button>
+          ) : null}
+        </div>
       </aside>
     </>
   );

@@ -42,7 +42,10 @@ const chunks = uniquePngs.map(({ type, bytes }) => {
 });
 const header = Buffer.alloc(8);
 header.write('icns', 0, 4, 'ascii');
-header.writeUInt32BE(chunks.reduce((total, chunk) => total + chunk.length, 8), 4);
+header.writeUInt32BE(
+  chunks.reduce((total, chunk) => total + chunk.length, 8),
+  4,
+);
 
 await writeFile(output, Buffer.concat([header, ...chunks]));
 console.log(`Created ${output}`);

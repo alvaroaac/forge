@@ -58,14 +58,18 @@ describe('registerLinearHandlers', () => {
     });
 
     expect(registrations).toHaveLength(5);
-    expect(registrations.some((entry) => entry.channel === IpcChannel.LinearFetchIssues)).toBe(true);
+    expect(registrations.some((entry) => entry.channel === IpcChannel.LinearFetchIssues)).toBe(
+      true,
+    );
     expect(registrations.some((entry) => entry.channel === IpcChannel.LinearFetchIssueDetail)).toBe(
       true,
     );
     expect(registrations.some((entry) => entry.channel === IpcChannel.LinearFetchTeamTriage)).toBe(
       true,
     );
-    expect(registrations.some((entry) => entry.channel === IpcChannel.LinearGetViewerId)).toBe(true);
+    expect(registrations.some((entry) => entry.channel === IpcChannel.LinearGetViewerId)).toBe(
+      true,
+    );
     expect(registrations.some((entry) => entry.channel === IpcChannel.LinearRefresh)).toBe(true);
     registrations.forEach((entry) => {
       expect(typeof entry.handler).toBe('function');
@@ -84,9 +88,11 @@ describe('registerLinearHandlers', () => {
       read: vi.fn().mockResolvedValue(cacheData),
       write: vi.fn(),
     };
-    const fetchIssues: FetchIssues = vi.fn().mockResolvedValue([
-      { ...baseIssue, id: 'FUL-2', status: 'done', priority: 'high', assigneeId: null },
-    ]);
+    const fetchIssues: FetchIssues = vi
+      .fn()
+      .mockResolvedValue([
+        { ...baseIssue, id: 'FUL-2', status: 'done', priority: 'high', assigneeId: null },
+      ]);
     const fetchIssueDetail: FetchIssueDetail = vi.fn();
     const fetchTriage: FetchTriage = vi.fn();
     const getViewerId: GetViewerId = vi.fn();

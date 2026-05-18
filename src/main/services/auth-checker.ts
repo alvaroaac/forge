@@ -15,7 +15,10 @@ export async function checkCli(command: string, args: readonly string[] = []): P
   }
 }
 
-export async function checkLinearApi(client: LinearAuthClient, tokenPath: string): Promise<boolean> {
+export async function checkLinearApi(
+  client: LinearAuthClient,
+  tokenPath: string,
+): Promise<boolean> {
   try {
     return await client.checkAuth(tokenPath);
   } catch {

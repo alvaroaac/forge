@@ -213,8 +213,18 @@ describe('TriageDrawer', () => {
 
     const writeMock = vi
       .fn()
-      .mockResolvedValueOnce({ issueId: 'FUL-77', path: '/tmp/FUL-77/triage-brief.md', written: false, exists: true })
-      .mockResolvedValueOnce({ issueId: 'FUL-77', path: '/tmp/FUL-77/triage-brief.md', written: true, exists: true });
+      .mockResolvedValueOnce({
+        issueId: 'FUL-77',
+        path: '/tmp/FUL-77/triage-brief.md',
+        written: false,
+        exists: true,
+      })
+      .mockResolvedValueOnce({
+        issueId: 'FUL-77',
+        path: '/tmp/FUL-77/triage-brief.md',
+        written: true,
+        exists: true,
+      });
 
     setTriageApi(writeMock);
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);

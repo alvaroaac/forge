@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { Spec, SpecGenerateDone, SpecGenerateError, SpecStreamChunk } from '../../shared/types';
+import type {
+  Spec,
+  SpecGenerateDone,
+  SpecGenerateError,
+  SpecStreamChunk,
+} from '../../shared/types';
 
 function toGeneratedSpec(issueId: string, content: string): Spec {
   return {
@@ -189,37 +194,40 @@ export function useSpecStream(issueId: string | null) {
     };
   }, [issueId, commitPersistedSpec, handleChunk, handleDone, handleError, resetStreamState]);
 
-  const generate = useCallback(async (model?: string): Promise<void> => {
-    if (!issueId) {
-      return;
-    }
-
-    if (!isCurrentIssue(issueId)) {
-      return;
-    }
-
-    const setupVersion = setupVersionRef.current;
-
-    setStreaming('');
-    setStreamStatus(['Starting Claude']);
-    setIsStreaming(true);
-    setErrorMessage(null);
-
-    try {
-      const result = model
-        ? await window.forge.spec.generate(issueId, model)
-        : await window.forge.spec.generate(issueId);
-      commitGeneratedSpec(issueId, setupVersion, result.content);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (isCurrentIssue(issueId)) {
-        setErrorMessage(message);
-        setIsStreaming(false);
+  const generate = useCallback(
+    async (model?: string): Promise<void> => {
+      if (!issueId) {
+        return;
       }
-    } finally {
-      finishStreaming(issueId, setupVersion);
-    }
-  }, [issueId, commitGeneratedSpec, finishStreaming, isCurrentIssue]);
+
+      if (!isCurrentIssue(issueId)) {
+        return;
+      }
+
+      const setupVersion = setupVersionRef.current;
+
+      setStreaming('');
+      setStreamStatus(['Starting Claude']);
+      setIsStreaming(true);
+      setErrorMessage(null);
+
+      try {
+        const result = model
+          ? await window.forge.spec.generate(issueId, model)
+          : await window.forge.spec.generate(issueId);
+        commitGeneratedSpec(issueId, setupVersion, result.content);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (isCurrentIssue(issueId)) {
+          setErrorMessage(message);
+          setIsStreaming(false);
+        }
+      } finally {
+        finishStreaming(issueId, setupVersion);
+      }
+    },
+    [issueId, commitGeneratedSpec, finishStreaming, isCurrentIssue],
+  );
 
   return { spec, streaming, streamStatus, isStreaming, errorMessage, generate };
 }

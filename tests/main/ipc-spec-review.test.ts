@@ -33,27 +33,32 @@ describe('spec:launch-review IPC', () => {
         calls.set(channel, listener);
       },
     };
-    const launchReview = vi.fn(async (): Promise<SpecReviewResult> => ({
-      content: '# Revised',
-      summary: {
-        verdict: 'approved',
-        reviewerSummary: 'Looks good.',
-        commentCount: 0,
-        appliedChanges: [],
-        unresolvedComments: [],
-      },
-    }));
+    const launchReview = vi.fn(
+      async (): Promise<SpecReviewResult> => ({
+        content: '# Revised',
+        summary: {
+          verdict: 'approved',
+          reviewerSummary: 'Looks good.',
+          commentCount: 0,
+          appliedChanges: [],
+          unresolvedComments: [],
+        },
+      }),
+    );
 
     registerSpecLaunchReviewHandler(ipc as IpcMain, { launchReview });
 
     const handler = calls.get(IpcChannel.SpecLaunchReview);
     expect(handler).toBeDefined();
 
-    const result = (await handler!({}, {
-      issueId: 'FUL-42',
-      content: '# Spec',
-      model: 'claude-sonnet-4-6',
-    })) as SpecReviewResult;
+    const result = (await handler!(
+      {},
+      {
+        issueId: 'FUL-42',
+        content: '# Spec',
+        model: 'claude-sonnet-4-6',
+      },
+    )) as SpecReviewResult;
 
     expect(launchReview).toHaveBeenCalledWith({
       issueId: 'FUL-42',
@@ -85,11 +90,14 @@ describe('spec:launch-review IPC', () => {
     expect(handler).toBeDefined();
 
     await expect(
-      handler!({}, {
-        issueId: 'FUL-42',
-        content: '# Spec',
-        model: 'claude-sonnet-4-6',
-      }),
+      handler!(
+        {},
+        {
+          issueId: 'FUL-42',
+          content: '# Spec',
+          model: 'claude-sonnet-4-6',
+        },
+      ),
     ).rejects.toThrow('bridge failed');
 
     expect(writeSpec).not.toHaveBeenCalled();

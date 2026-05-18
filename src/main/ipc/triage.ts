@@ -101,20 +101,17 @@ export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerate
 }
 
 export function registerTriageWriteHandler(ipc: IpcMain, deps: TriageWriteDeps): void {
-  ipc.handle(
-    IpcChannel.TriageWrite,
-    async (_event, payload: TriageWritePayload) => {
-      assertSafeIssueId(payload.issueId);
+  ipc.handle(IpcChannel.TriageWrite, async (_event, payload: TriageWritePayload) => {
+    assertSafeIssueId(payload.issueId);
 
-      const cfg = await deps.store.get();
-      const result = await deps.writeTriageBrief({
-        repoPath: cfg.repoPath,
-        issueId: payload.issueId,
-        content: payload.content,
-        mode: payload.overwrite ? 'overwrite' : 'create',
-      });
+    const cfg = await deps.store.get();
+    const result = await deps.writeTriageBrief({
+      repoPath: cfg.repoPath,
+      issueId: payload.issueId,
+      content: payload.content,
+      mode: payload.overwrite ? 'overwrite' : 'create',
+    });
 
-      return { issueId: payload.issueId, ...result };
-    },
-  );
+    return { issueId: payload.issueId, ...result };
+  });
 }

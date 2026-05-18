@@ -32,7 +32,11 @@ function pickContent(spec: Spec | null, streaming: string): string {
   return streaming ? streaming : (spec?.content ?? '');
 }
 
-function pickDisplayedContent(spec: Spec | null, streaming: string, reviewedContent: string | null): string {
+function pickDisplayedContent(
+  spec: Spec | null,
+  streaming: string,
+  reviewedContent: string | null,
+): string {
   if (reviewedContent) {
     return reviewedContent;
   }

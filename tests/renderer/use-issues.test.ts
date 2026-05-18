@@ -198,10 +198,12 @@ describe('useIssues', () => {
   it('merges assigned issues with team-triage issues', async () => {
     const fetch = vi.fn().mockResolvedValue([createIssue('CACHE')]);
     const refresh = vi.fn().mockResolvedValue([createIssue('ASSIGNED', 'dev-1')]);
-    const fetchTeamTriage = vi.fn().mockResolvedValue([
-      createIssue('TRIAGE_UNASSIGNED'),
-      createIssue('TRIAGE_ASSIGNED', 'triage-agent'),
-    ]);
+    const fetchTeamTriage = vi
+      .fn()
+      .mockResolvedValue([
+        createIssue('TRIAGE_UNASSIGNED'),
+        createIssue('TRIAGE_ASSIGNED', 'triage-agent'),
+      ]);
     setForge(fetch, refresh, fetchTeamTriage);
 
     const { result } = renderHook(() => useIssues());
@@ -259,9 +261,7 @@ describe('useIssues', () => {
   it('prefers triage data when issue ids overlap', async () => {
     const fetch = vi.fn().mockResolvedValue([createIssue('CACHE')]);
     const refresh = vi.fn().mockResolvedValue([createIssue('DUPLICATE', 'assigned-owner')]);
-    const fetchTeamTriage = vi
-      .fn()
-      .mockResolvedValue([createIssue('DUPLICATE', 'triage-owner')]);
+    const fetchTeamTriage = vi.fn().mockResolvedValue([createIssue('DUPLICATE', 'triage-owner')]);
     setForge(fetch, refresh, fetchTeamTriage);
 
     const { result } = renderHook(() => useIssues());

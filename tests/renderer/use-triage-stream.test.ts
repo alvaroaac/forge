@@ -273,7 +273,9 @@ describe('useTriageStream', () => {
       );
     });
 
-    expect(result.current.brief).toEqual(expect.objectContaining({ issueId: 'FUL-8', content: 'active' }));
+    expect(result.current.brief).toEqual(
+      expect.objectContaining({ issueId: 'FUL-8', content: 'active' }),
+    );
     expect(result.current.streaming).toBe('active');
   });
 
@@ -368,11 +370,15 @@ describe('useTriageStream', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.brief).toEqual(expect.objectContaining({ issueId: 'FUL-7', content: 'fresh' }));
+      expect(result.current.brief).toEqual(
+        expect.objectContaining({ issueId: 'FUL-7', content: 'fresh' }),
+      );
     });
 
     expect(result.current.errorMessage).toBeNull();
     expect(result.current.isStreaming).toBe(false);
-    expect(result.current.brief).toEqual(expect.objectContaining({ issueId: 'FUL-7', content: 'fresh' }));
+    expect(result.current.brief).toEqual(
+      expect.objectContaining({ issueId: 'FUL-7', content: 'fresh' }),
+    );
   });
 });

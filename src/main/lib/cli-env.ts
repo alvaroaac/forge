@@ -54,9 +54,7 @@ export function buildCliPath(basePath = process.env.PATH ?? ''): string {
   ]).join(delimiter);
 }
 
-export function buildCliEnv(
-  baseEnv: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
+export function buildCliEnv(baseEnv: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   return {
     ...baseEnv,
     PATH: buildCliPath(baseEnv.PATH),

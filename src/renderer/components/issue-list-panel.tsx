@@ -63,7 +63,9 @@ export function IssueListPanel({
 }: IssueListPanelProps) {
   const visibleIssues = issues
     .filter((issue) => issue.status === TAB_KEY[tab])
-    .filter((issue) => tab === 'Triage' && mineOnly && viewerId !== null ? issue.assigneeId === viewerId : true);
+    .filter((issue) =>
+      tab === 'Triage' && mineOnly && viewerId !== null ? issue.assigneeId === viewerId : true,
+    );
   const visibleGroups = groupVisible(visibleIssues);
   const issueCounts = counts(issues);
 

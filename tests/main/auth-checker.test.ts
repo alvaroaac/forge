@@ -2,7 +2,12 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { mkdtemp, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { checkAll, checkCli, checkLinearApi, type LinearAuthClient } from '../../src/main/services/auth-checker';
+import {
+  checkAll,
+  checkCli,
+  checkLinearApi,
+  type LinearAuthClient,
+} from '../../src/main/services/auth-checker';
 import { tryExecFile } from '../../src/main/lib/exec';
 
 vi.mock('../../src/main/lib/exec', () => ({

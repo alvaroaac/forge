@@ -1,4 +1,8 @@
-import { spawn, type ChildProcessWithoutNullStreams, type SpawnOptionsWithoutStdio } from 'node:child_process';
+import {
+  spawn,
+  type ChildProcessWithoutNullStreams,
+  type SpawnOptionsWithoutStdio,
+} from 'node:child_process';
 import { buildCliEnv } from '../lib/cli-env';
 
 const CLAUDE_SPEC_TIMEOUT_MS = 180_000;
@@ -46,8 +50,9 @@ function eventSummary(value: unknown): string {
   }
 
   const event = value as Record<string, unknown>;
-  const parts = [event.type, event.subtype, event.status, event.error]
-    .filter((part): part is string => typeof part === 'string' && part.length > 0);
+  const parts = [event.type, event.subtype, event.status, event.error].filter(
+    (part): part is string => typeof part === 'string' && part.length > 0,
+  );
   return parts.join(':') || JSON.stringify(event).slice(0, 200);
 }
 
@@ -130,7 +135,11 @@ function isErrorResult(value: unknown): boolean {
   return event.type === 'result' && event.is_error === true;
 }
 
-function toCliError(code: number | null, stderr: string, debugTrail: readonly string[] = []): Error {
+function toCliError(
+  code: number | null,
+  stderr: string,
+  debugTrail: readonly string[] = [],
+): Error {
   const exitCode = code === null ? 'unknown' : String(code);
   const trimmedStderr = stderr.trim();
   const debug = debugTrail.length > 0 ? ` Last Claude events: ${debugTrail.join(' > ')}` : '';

@@ -44,9 +44,7 @@ type StreamSpecFn = (input: {
   onStatus?: (status: string) => void;
 }) => Promise<string>;
 
-type PreflightClaudeRepoAccessFn = (input: {
-  repoPath: string;
-}) => Promise<void>;
+type PreflightClaudeRepoAccessFn = (input: { repoPath: string }) => Promise<void>;
 
 export interface SpecGenerateDeps {
   store: ConfigStore;
