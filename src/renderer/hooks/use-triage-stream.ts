@@ -18,6 +18,7 @@ function toGeneratedBrief(issueId: string, content: string): TriageBrief {
 export function useTriageStream(issueId: string | null) {
   const [brief, setBrief] = useState<TriageBrief | null>(null);
   const [streaming, setStreaming] = useState('');
+  const [streamStatus, setStreamStatus] = useState<string[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentIssueIdRef = useRef<string | null>(null);
@@ -37,6 +38,7 @@ export function useTriageStream(issueId: string | null) {
   const resetStreamState = useCallback((): void => {
     setBrief(null);
     setStreaming('');
+    setStreamStatus([]);
     setIsStreaming(false);
     setErrorMessage(null);
   }, []);
@@ -87,6 +89,20 @@ export function useTriageStream(issueId: string | null) {
 
       if (chunk.done) {
         setIsStreaming(false);
+        return;
+      }
+
+      if (chunk.status) {
+        const nextStatus = chunk.status;
+        setStreamStatus((current) => {
+          if (current[current.length - 1] === nextStatus) {
+            return current;
+          }
+          return [...current, nextStatus].slice(-5);
+        });
+      }
+
+      if (!chunk.delta) {
         return;
       }
 
@@ -165,6 +181,7 @@ export function useTriageStream(issueId: string | null) {
       const setupVersion = setupVersionRef.current;
 
       setStreaming('');
+      setStreamStatus(['Starting Claude']);
       setIsStreaming(true);
       setErrorMessage(null);
 
@@ -184,5 +201,5 @@ export function useTriageStream(issueId: string | null) {
     [issueId, isCurrentIssue, commitGeneratedBrief, finishStreaming, failStreaming],
   );
 
-  return { brief, streaming, isStreaming, errorMessage, generate };
+  return { brief, streaming, streamStatus, isStreaming, errorMessage, generate };
 }

@@ -105,6 +105,7 @@ describe('useTriageStream', () => {
     expect(result.current).toEqual({
       brief: null,
       streaming: '',
+      streamStatus: [],
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -116,16 +117,31 @@ describe('useTriageStream', () => {
 
     expect(generate).toHaveBeenCalledWith('FUL-7');
     expect(result.current.isStreaming).toBe(true);
+    expect(result.current.streamStatus).toEqual(['Starting Claude']);
+
+    await act(async () => {
+      chunks[0]?.({
+        issueId: 'FUL-7',
+        delta: '',
+        done: false,
+        status: 'Claude initialized the repo session',
+      });
+    });
 
     await act(async () => {
       chunks[0]?.({ issueId: 'FUL-7', delta: 'A', done: false });
     });
 
     await act(async () => {
-      chunks[0]?.({ issueId: 'FUL-7', delta: 'B', done: false });
+      chunks[0]?.({ issueId: 'FUL-7', delta: 'B', done: false, status: 'Claude is drafting the brief' });
     });
 
     expect(result.current.streaming).toBe('AB');
+    expect(result.current.streamStatus).toEqual([
+      'Starting Claude',
+      'Claude initialized the repo session',
+      'Claude is drafting the brief',
+    ]);
 
     await act(async () => {
       doneHandlers[0]?.({ issueId: 'FUL-7' });
@@ -211,6 +227,7 @@ describe('useTriageStream', () => {
     expect(result.current).toEqual({
       brief: null,
       streaming: '',
+      streamStatus: [],
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),

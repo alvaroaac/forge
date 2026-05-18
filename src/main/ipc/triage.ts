@@ -28,6 +28,7 @@ type StreamTriageBrief = (input: {
   computronRepoPath: string;
   model: string;
   onChunk: (delta: string) => void;
+  onStatus?: (status: string) => void;
 }) => Promise<string>;
 
 export interface TriageGenerateDeps {
@@ -64,8 +65,17 @@ function sendTriageChunk(
   issueId: string,
   delta: string,
   done: boolean,
+  status?: string,
 ): void {
-  sender.send(IpcChannel.TriageStreamChunk, { issueId, delta, done });
+  sender.send(IpcChannel.TriageStreamChunk, { issueId, delta, done, status });
+}
+
+function toBriefStatus(status: string): string {
+  if (status === 'Claude is drafting the spec') {
+    return 'Claude is drafting the brief';
+  }
+
+  return status;
 }
 
 export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerateDeps): void {
@@ -86,6 +96,8 @@ export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerate
           computronRepoPath: cfg.computronRepoPath,
           model,
           onChunk: (delta) => sendTriageChunk(event.sender, payload.issueId, delta, false),
+          onStatus: (status) =>
+            sendTriageChunk(event.sender, payload.issueId, '', false, toBriefStatus(status)),
         });
 
         sendTriageChunk(event.sender, payload.issueId, '', true);

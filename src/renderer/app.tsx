@@ -267,13 +267,21 @@ type TriageDrawerContainerProps = {
 };
 
 function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerContainerProps) {
-  const { brief, streaming, isStreaming, errorMessage, generate } = useTriageStream(issue.id);
+  const {
+    brief,
+    streaming,
+    streamStatus,
+    isStreaming,
+    errorMessage,
+    generate,
+  } = useTriageStream(issue.id);
 
   return (
     <TriageDrawer
       issue={issue}
       brief={brief}
       streaming={streaming}
+      streamStatus={streamStatus}
       isStreaming={isStreaming}
       errorMessage={errorMessage}
       onGenerate={() => void generate()}

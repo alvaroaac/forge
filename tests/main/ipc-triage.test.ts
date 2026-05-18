@@ -64,7 +64,9 @@ describe('triage:generate handler', () => {
         set: async () => undefined,
       } as never,
       fetchTriageList: async () => [triageIssue],
-      streamTriageBrief: async ({ onChunk }) => {
+      streamTriageBrief: async ({ onChunk, onStatus }) => {
+        onStatus?.('Claude initialized the repo session');
+        onStatus?.('Claude is drafting the spec');
         onChunk('part 1 ');
         onChunk('part 2');
         return 'part 1 part 2';
@@ -78,8 +80,20 @@ describe('triage:generate handler', () => {
 
     expect(result).toEqual({ issueId: 'FUL-77', content: 'part 1 part 2' });
     const chunkSends = event.sent.filter((s) => s.channel === IpcChannel.TriageStreamChunk);
-    expect(chunkSends).toHaveLength(3);
-    expect(chunkSends[2].payload).toMatchObject({ issueId: 'FUL-77', delta: '', done: true });
+    expect(chunkSends).toHaveLength(5);
+    expect(chunkSends[0].payload).toMatchObject({
+      issueId: 'FUL-77',
+      delta: '',
+      done: false,
+      status: 'Claude initialized the repo session',
+    });
+    expect(chunkSends[1].payload).toMatchObject({
+      issueId: 'FUL-77',
+      delta: '',
+      done: false,
+      status: 'Claude is drafting the brief',
+    });
+    expect(chunkSends[4].payload).toMatchObject({ issueId: 'FUL-77', delta: '', done: true });
     expect(event.sent.some((s) => s.channel === IpcChannel.TriageGenerateDone)).toBe(true);
   });
 

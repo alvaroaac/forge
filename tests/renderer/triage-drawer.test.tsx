@@ -92,6 +92,7 @@ describe('TriageDrawer', () => {
     const generateButton = screen.getByRole('button', { name: 'Generate Brief' });
 
     expect(generateButton.getAttribute('disabled')).toBe('');
+    expect(generateButton.className).toContain('btn-ghost-accent');
     expect(screen.getByText(/computronRepoPath/i)).toBeTruthy();
     expect(screen.getByText('Brief')).toBeTruthy();
     expect(screen.getByText('No brief yet for FUL-77.')).toBeTruthy();
@@ -154,6 +155,7 @@ describe('TriageDrawer', () => {
         canGenerate={true}
         isStreaming={true}
         streaming=""
+        streamStatus={['Starting Claude', 'Reading Computron repo context']}
         brief={null}
         errorMessage={null}
         onGenerate={vi.fn()}
@@ -163,6 +165,8 @@ describe('TriageDrawer', () => {
 
     expect(screen.getByRole('status')).toBeTruthy();
     expect(screen.getByText('Generating brief')).toBeTruthy();
+    expect(screen.getByText('Reading Computron repo context')).toBeTruthy();
+    expect(screen.getByText('Starting Claude')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Generate Brief' }).getAttribute('disabled')).toBe('');
   });
 
@@ -232,6 +236,7 @@ describe('TriageDrawer', () => {
     );
 
     expect(screen.getByRole('button', { name: /write to file/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /write to file/i }).className).toContain('btn-ghost');
   });
 
   it('prompts before overwrite and retries write when triage file already exists', async () => {

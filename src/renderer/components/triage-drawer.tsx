@@ -7,6 +7,7 @@ type TriageDrawerProps = {
   canGenerate: boolean;
   isStreaming: boolean;
   streaming: string;
+  streamStatus?: string[];
   brief: TriageBrief | null;
   errorMessage: string | null;
   onGenerate: () => void;
@@ -45,7 +46,7 @@ async function writeBriefWithOverwrite(issueId: string, content: string): Promis
 function GenerateBriefButton({ canGenerate, isStreaming, onGenerate }: GenerateButtonProps) {
   return (
     <button
-      className="btn"
+      className="btn-ghost btn-ghost-accent"
       type="button"
       onClick={onGenerate}
       disabled={!canGenerate || isStreaming}
@@ -64,7 +65,7 @@ function TriageActions({ brief, canGenerate, isStreaming, onGenerate, onWrite }:
         onGenerate={onGenerate}
       />
       {brief ? (
-        <button className="btn" type="button" onClick={onWrite}>
+        <button className="btn-ghost" type="button" onClick={onWrite}>
           Write to file
         </button>
       ) : null}
@@ -85,6 +86,7 @@ export function TriageDrawer({
   canGenerate,
   isStreaming,
   streaming,
+  streamStatus = [],
   brief,
   errorMessage,
   onGenerate,
@@ -128,6 +130,7 @@ export function TriageDrawer({
         artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
         content={pickBriefContent(brief, streaming)}
         isStreaming={isStreaming}
+        streamStatus={streamStatus}
         errorMessage={errorMessage}
         emptyTitle={`No brief yet for ${issue.id}.`}
         activityTitle="Generating brief"
