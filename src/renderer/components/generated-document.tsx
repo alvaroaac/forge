@@ -4,6 +4,7 @@ import { splitSections } from '../lib/markdown';
 import { MarkdownSection } from './markdown-section';
 
 type GeneratedDocumentProps = {
+  artifactName?: ReactNode;
   artifactPath: string;
   content: string;
   isStreaming: boolean;
@@ -32,7 +33,7 @@ type EmptyStateProps = {
 
 type MetaStripProps = Pick<
   GeneratedDocumentProps,
-  'artifactPath' | 'isStreaming' | 'errorMessage' | 'actions'
+  'artifactName' | 'artifactPath' | 'isStreaming' | 'errorMessage' | 'actions'
 > & {
   hasContent: boolean;
 };
@@ -42,6 +43,8 @@ type MessageStackProps = Pick<GeneratedDocumentProps, 'errorMessage' | 'statusMe
 type ActionSlotProps = Pick<GeneratedDocumentProps, 'actions'> & {
   shouldRenderActions: boolean;
 };
+
+type ArtifactNameProps = Pick<GeneratedDocumentProps, 'artifactName'>;
 
 type DocumentBodyProps = Pick<
   GeneratedDocumentProps,
@@ -77,7 +80,16 @@ function GeneratedDocumentActionSlot({ actions, shouldRenderActions }: ActionSlo
   return <div className="spec-actions">{actions}</div>;
 }
 
+function GeneratedDocumentArtifactName({ artifactName }: ArtifactNameProps) {
+  if (!artifactName) {
+    return null;
+  }
+
+  return <span className="mono">{artifactName}</span>;
+}
+
 function GeneratedDocumentMetaStrip({
+  artifactName,
   artifactPath,
   isStreaming,
   errorMessage,
@@ -88,6 +100,7 @@ function GeneratedDocumentMetaStrip({
 
   return (
     <div className="spec-meta-strip">
+      <GeneratedDocumentArtifactName artifactName={artifactName} />
       <span className="mono dim">{artifactPath}</span>
       {isStreaming ? <span className="mono dim">· streaming…</span> : null}
       {errorMessage ? (
@@ -200,6 +213,7 @@ function GeneratedDocumentBody({
 }
 
 export function GeneratedDocument({
+  artifactName,
   artifactPath,
   content,
   isStreaming,
@@ -218,6 +232,7 @@ export function GeneratedDocument({
   return (
     <div className="spec-tab generated-document">
       <GeneratedDocumentMetaStrip
+        artifactName={artifactName}
         artifactPath={artifactPath}
         isStreaming={isStreaming}
         errorMessage={errorMessage}

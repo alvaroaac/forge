@@ -1,4 +1,5 @@
 import type { Issue, TriageBrief } from '../../shared/types';
+import { GeneratedDocument } from './generated-document';
 
 type TriageDrawerProps = {
   issue: Issue | null;
@@ -10,6 +11,73 @@ type TriageDrawerProps = {
   onGenerate: () => void;
   onClose: () => void;
 };
+
+type GenerateButtonProps = Pick<TriageDrawerProps, 'canGenerate' | 'isStreaming' | 'onGenerate'>;
+
+type TriageActionsProps = GenerateButtonProps & {
+  brief: TriageBrief | null;
+  onWrite: () => void;
+};
+
+function pickBriefContent(brief: TriageBrief | null, streaming: string): string {
+  return brief?.content ?? streaming;
+}
+
+async function writeBriefWithOverwrite(issueId: string, content: string): Promise<void> {
+  const first = await window.forge.triage.write(issueId, content);
+
+  if (first.written) {
+    return;
+  }
+
+  if (!first.exists) {
+    return;
+  }
+
+  if (!window.confirm('Overwrite existing triage-brief.md?')) {
+    return;
+  }
+
+  await window.forge.triage.write(issueId, content, { overwrite: true });
+}
+
+function GenerateBriefButton({ canGenerate, isStreaming, onGenerate }: GenerateButtonProps) {
+  return (
+    <button
+      className="btn"
+      type="button"
+      onClick={onGenerate}
+      disabled={!canGenerate || isStreaming}
+    >
+      Generate Brief
+    </button>
+  );
+}
+
+function TriageActions({ brief, canGenerate, isStreaming, onGenerate, onWrite }: TriageActionsProps) {
+  return (
+    <>
+      <GenerateBriefButton
+        canGenerate={canGenerate}
+        isStreaming={isStreaming}
+        onGenerate={onGenerate}
+      />
+      {brief ? (
+        <button className="btn" type="button" onClick={onWrite}>
+          Write to file
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+function TriageConfigHint({ canGenerate }: Pick<TriageDrawerProps, 'canGenerate'>) {
+  if (canGenerate) {
+    return null;
+  }
+
+  return <p className="hint">Set computronRepoPath (a valid git repo) to generate a brief.</p>;
+}
 
 export function TriageDrawer({
   issue,
@@ -25,22 +93,25 @@ export function TriageDrawer({
     return null;
   }
 
-  const hasContent = brief?.content || streaming;
-
   const handleWriteClick = async (): Promise<void> => {
-    const first = await window.forge.triage.write(issue.id, brief?.content ?? '');
-
-    if (first.written) {
-      return;
-    }
-
-    if (first.exists) {
-      const ok = window.confirm('Overwrite existing triage-brief.md?');
-      if (ok) {
-        await window.forge.triage.write(issue.id, brief?.content ?? '', { overwrite: true });
-      }
-    }
+    await writeBriefWithOverwrite(issue.id, pickBriefContent(brief, ''));
   };
+  const generateButton = (
+    <GenerateBriefButton
+      canGenerate={canGenerate}
+      isStreaming={isStreaming}
+      onGenerate={onGenerate}
+    />
+  );
+  const actions = (
+    <TriageActions
+      brief={brief}
+      canGenerate={canGenerate}
+      isStreaming={isStreaming}
+      onGenerate={onGenerate}
+      onWrite={() => void handleWriteClick()}
+    />
+  );
 
   return (
     <>
@@ -60,27 +131,19 @@ export function TriageDrawer({
           </button>
         </div>
         <div className="drawer-body">
-          <button
-            className="btn"
-            type="button"
-            onClick={onGenerate}
-            disabled={!canGenerate || isStreaming}
-          >
-            {isStreaming ? 'Generating...' : 'Generate brief'}
-          </button>
-
-          {!canGenerate ? (
-            <p className="hint">Set computronRepoPath (a valid git repo) to generate a brief.</p>
-          ) : null}
-
-          {errorMessage ? <div className="error">{errorMessage}</div> : null}
-          {hasContent ? <pre>{brief?.content ?? streaming}</pre> : null}
-
-          {brief ? (
-            <button className="btn" type="button" onClick={() => void handleWriteClick()}>
-              Write to file
-            </button>
-          ) : null}
+          <TriageConfigHint canGenerate={canGenerate} />
+          <GeneratedDocument
+            artifactName="Brief"
+            artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
+            content={pickBriefContent(brief, streaming)}
+            isStreaming={isStreaming}
+            errorMessage={errorMessage}
+            emptyTitle={`No brief yet for ${issue.id}.`}
+            activityTitle="Generating brief"
+            activityStatusFallback="Starting brief"
+            actions={actions}
+            emptyActions={generateButton}
+          />
         </div>
       </aside>
     </>

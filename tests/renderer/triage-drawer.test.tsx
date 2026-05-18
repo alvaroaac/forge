@@ -70,7 +70,7 @@ describe('TriageDrawer', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('disables Generate brief when canGenerate is false', () => {
+  it('opens the drawer shell and disables Generate Brief when canGenerate is false', () => {
     const writeMock = vi.fn();
     setTriageApi(writeMock);
 
@@ -89,10 +89,13 @@ describe('TriageDrawer', () => {
 
     expect(container.querySelector('.drawer-scrim-open')).toBeTruthy();
     expect(container.querySelector('.drawer-open')).toBeTruthy();
-    const generateButton = screen.getByRole('button', { name: /generate brief/i });
+    const generateButton = screen.getByRole('button', { name: 'Generate Brief' });
 
     expect(generateButton.getAttribute('disabled')).toBe('');
     expect(screen.getByText(/computronRepoPath/i)).toBeTruthy();
+    expect(screen.getByText('Brief')).toBeTruthy();
+    expect(screen.getByText('No brief yet for FUL-77.')).toBeTruthy();
+    expect(screen.getByText('thoughts/tasks/FUL-77/triage-brief.md')).toBeTruthy();
   });
 
   it('closes when the drawer scrim is clicked', () => {
@@ -118,7 +121,30 @@ describe('TriageDrawer', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('shows streaming label while generation is active', () => {
+  it('calls onGenerate from the Generate Brief action', () => {
+    const writeMock = vi.fn();
+    const onGenerate = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={null}
+        errorMessage={null}
+        onGenerate={onGenerate}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate Brief' }));
+
+    expect(onGenerate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows brief generation activity before content arrives', () => {
     const writeMock = vi.fn();
     setTriageApi(writeMock);
 
@@ -127,7 +153,7 @@ describe('TriageDrawer', () => {
         issue={issue}
         canGenerate={true}
         isStreaming={true}
-        streaming="## Streaming"
+        streaming=""
         brief={null}
         errorMessage={null}
         onGenerate={vi.fn()}
@@ -135,18 +161,19 @@ describe('TriageDrawer', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: /generating/i })).toBeTruthy();
-    expect(screen.getByText(/Streaming/i)).toBeTruthy();
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText('Generating brief')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Generate Brief' }).getAttribute('disabled')).toBe('');
   });
 
-  it('renders brief and error text when present', () => {
+  it('renders brief content as markdown instead of raw preformatted text', () => {
     const brief: TriageBrief = {
       issueId: 'FUL-77',
-      content: '# Why this issue matters',
+      content: '## Why this issue matters\nUse `GeneratedDocument` for briefs.',
       generatedAt: '2026-05-14T00:00:00.000Z',
     };
 
-    render(
+    const { container } = render(
       <TriageDrawer
         issue={issue}
         canGenerate={true}
@@ -159,7 +186,10 @@ describe('TriageDrawer', () => {
       />,
     );
 
-    expect(screen.getByText(/# Why this issue matters/)).toBeTruthy();
+    expect(container.querySelector('pre')).toBeNull();
+    expect(container.querySelectorAll('.md-section')).toHaveLength(1);
+    expect(screen.getByText('Why this issue matters')).toBeTruthy();
+    expect(container.querySelector('.md-code')?.textContent).toBe('GeneratedDocument');
     expect(screen.getByText('something failed')).toBeTruthy();
   });
 
