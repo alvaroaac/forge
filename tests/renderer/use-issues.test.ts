@@ -219,6 +219,23 @@ describe('useIssues', () => {
     expect(fetchTeamTriage).toHaveBeenCalledTimes(1);
   });
 
+  it('still applies assigned issue refreshes when team triage fetch rejects', async () => {
+    const fetch = vi.fn().mockResolvedValue([createIssue('CACHE')]);
+    const refresh = vi.fn().mockResolvedValue([createIssue('ASSIGNED', 'dev-1')]);
+    const fetchTeamTriage = vi.fn().mockRejectedValue(new Error('triage unavailable'));
+    setForge(fetch, refresh, fetchTeamTriage);
+
+    const { result } = renderHook(() => useIssues());
+
+    await waitFor(() => {
+      expect(result.current.issues).toEqual([
+        expect.objectContaining({ id: 'ASSIGNED', assigneeId: 'dev-1' }),
+      ]);
+    });
+
+    expect(fetchTeamTriage).toHaveBeenCalledTimes(1);
+  });
+
   it('re-fetches both assigned and triage endpoints during refresh', async () => {
     const fetch = vi.fn().mockResolvedValue([createIssue('CACHE')]);
     const refresh = vi.fn().mockResolvedValue([createIssue('ASSIGNED')]);

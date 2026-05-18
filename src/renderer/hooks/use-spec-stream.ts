@@ -219,7 +219,7 @@ export function useSpecStream(issueId: string | null) {
     } finally {
       finishStreaming(issueId, setupVersion);
     }
-  }, [issueId, commitGeneratedSpec, failStreaming, finishStreaming, isCurrentIssue]);
+  }, [issueId, commitGeneratedSpec, finishStreaming, isCurrentIssue]);
 
   return { spec, streaming, streamStatus, isStreaming, errorMessage, generate };
 }

@@ -15,7 +15,7 @@ export interface StreamSpecInput {
   cwd?: string;
 }
 
-export interface StreamClaudeInput extends StreamSpecInput {}
+export type StreamClaudeInput = StreamSpecInput;
 
 type SpawnProcess = (
   command: string,

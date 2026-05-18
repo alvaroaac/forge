@@ -11,10 +11,14 @@ export function useIssues() {
   const refreshIdRef = useRef(0);
 
   const loadAll = useCallback(async (): Promise<Issue[]> => {
-    const [assignedIssues, triageIssues] = await Promise.all([
-      window.forge.linear.refresh(),
-      window.forge.linear.fetchTeamTriage(),
-    ]);
+    const assignedIssues = await window.forge.linear.refresh();
+    let triageIssues: Issue[] = [];
+
+    try {
+      triageIssues = await window.forge.linear.fetchTeamTriage();
+    } catch {
+      // Keep assigned issue refreshes working when the team-triage endpoint is unavailable.
+    }
 
     const merged = new Map<string, Issue>();
     for (const issue of assignedIssues) {
