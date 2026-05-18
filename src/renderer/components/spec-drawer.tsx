@@ -13,6 +13,7 @@ type SpecDrawerProps = {
   spec: Spec | null;
   streaming: string;
   streamStatus?: string[];
+  isSpecPersisted?: boolean;
   reviewedContent?: string | null;
   reviewSummary?: SpecReviewSummary | null;
   isReviewPending?: boolean;
@@ -48,8 +49,8 @@ function getOptionalMessage(message: string | null | undefined): string | null {
   return message ?? null;
 }
 
-function getIsReviewPending(isReviewPending: boolean | undefined): boolean {
-  return isReviewPending === true;
+function getOptionalBoolean(value: boolean | undefined): boolean {
+  return value === true;
 }
 
 function SpecDrawerBody({
@@ -58,6 +59,7 @@ function SpecDrawerBody({
   spec,
   streaming,
   streamStatus,
+  isSpecPersisted,
   reviewedContent,
   reviewSummary,
   isReviewPending,
@@ -86,9 +88,10 @@ function SpecDrawerBody({
       spec={spec}
       streaming={streaming}
       streamStatus={getStreamStatus(streamStatus)}
+      isSpecPersisted={getOptionalBoolean(isSpecPersisted)}
       reviewedContent={getReviewedContent(reviewedContent)}
       reviewSummary={getReviewSummary(reviewSummary)}
-      isReviewPending={getIsReviewPending(isReviewPending)}
+      isReviewPending={getOptionalBoolean(isReviewPending)}
       reviewStatusMessage={getOptionalMessage(reviewStatusMessage)}
       reviewErrorMessage={getOptionalMessage(reviewErrorMessage)}
       isStreaming={isStreaming}
@@ -111,6 +114,7 @@ export function SpecDrawer({
   spec,
   streaming,
   streamStatus,
+  isSpecPersisted,
   reviewedContent,
   reviewSummary,
   isReviewPending,
@@ -142,6 +146,7 @@ export function SpecDrawer({
         spec={spec}
         streaming={streaming}
         streamStatus={streamStatus}
+        isSpecPersisted={isSpecPersisted}
         reviewedContent={reviewedContent}
         reviewSummary={reviewSummary}
         isReviewPending={isReviewPending}

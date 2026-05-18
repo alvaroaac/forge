@@ -62,6 +62,7 @@ function setForge(
       onError: vi.fn(),
     },
     triage: {
+      get: vi.fn(),
       generate: vi.fn(),
       write: vi.fn(),
       onChunk: vi.fn(),

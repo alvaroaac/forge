@@ -45,6 +45,7 @@ const api: ForgeApi = {
     },
   },
   triage: {
+    get: (issueId) => ipcRenderer.invoke(IpcChannel.TriageGet, { issueId }),
     generate: (issueId, model) => ipcRenderer.invoke(IpcChannel.TriageGenerate, { issueId, model }),
     write: (issueId, content, opts) =>
       ipcRenderer.invoke(IpcChannel.TriageWrite, {

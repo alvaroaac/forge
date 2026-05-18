@@ -52,6 +52,7 @@ function setTriageApi(writeMock: ReturnType<typeof vi.fn>) {
       onError: vi.fn(),
     },
     triage: {
+      get: vi.fn(),
       generate: vi.fn(),
       write: writeMock,
       onChunk: vi.fn(),
@@ -344,5 +345,32 @@ describe('TriageDrawer', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(true);
     });
+  });
+
+  it('starts with Saved to file when the brief is already persisted', () => {
+    const brief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '# already saved',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+    const writeMock = vi.fn();
+
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        isBriefPersisted={true}
+        brief={brief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(true);
   });
 });

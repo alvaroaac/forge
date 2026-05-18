@@ -56,6 +56,7 @@ function createLinearApi() {
 
 function createTriageApi() {
   return {
+    get: vi.fn(),
     generate: vi.fn(),
     write: vi.fn(),
     onChunk: vi.fn(),

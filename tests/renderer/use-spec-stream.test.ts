@@ -65,6 +65,7 @@ function setForge(options: {
       onError: options.onError ?? vi.fn(() => vi.fn()),
     },
     triage: {
+      get: vi.fn(),
       generate: vi.fn(),
       write: vi.fn(),
       onChunk: vi.fn(),
@@ -103,6 +104,7 @@ describe('useSpecStream', () => {
       spec: null,
       streaming: '',
       streamStatus: [],
+      isSpecPersisted: false,
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -220,6 +222,7 @@ describe('useSpecStream', () => {
       spec: null,
       streaming: '',
       streamStatus: [],
+      isSpecPersisted: false,
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -236,6 +239,7 @@ describe('useSpecStream', () => {
       spec: null,
       streaming: '',
       streamStatus: [],
+      isSpecPersisted: false,
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -283,6 +287,7 @@ describe('useSpecStream', () => {
       spec: null,
       streaming: '',
       streamStatus: [],
+      isSpecPersisted: false,
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -303,6 +308,7 @@ describe('useSpecStream', () => {
 
     await waitFor(() => {
       expect(result.current.spec).toEqual(createSpec('FUL-8', 'fresh B'));
+      expect(result.current.isSpecPersisted).toBe(true);
     });
 
     expect(unsubscribeB).not.toHaveBeenCalled();
@@ -382,6 +388,7 @@ describe('useSpecStream', () => {
         spec: null,
         streaming: '',
         streamStatus: [],
+        isSpecPersisted: false,
         isStreaming: false,
         errorMessage: null,
         generate: expect.any(Function),

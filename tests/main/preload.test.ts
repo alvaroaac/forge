@@ -78,6 +78,12 @@ describe('preload API', () => {
     });
   });
 
+  it('calls triage.get through IpcChannel.TriageGet with issueId', async () => {
+    const forge = getForgeApi();
+    await forge.triage.get('FUL-7');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGet, { issueId: 'FUL-7' });
+  });
+
   it('calls triage.write through IpcChannel.TriageWrite with overwrite default false', async () => {
     const forge = getForgeApi();
     await forge.triage.write('FUL-7', 'hello');

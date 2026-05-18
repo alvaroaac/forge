@@ -479,6 +479,26 @@ Persisted body`);
     });
   });
 
+  it('starts with Saved to file when the displayed spec is already persisted', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={spec}
+        streaming=""
+        isSpecPersisted={true}
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onWrite={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(true);
+  });
+
   it('resets saved write state when displayed spec content changes', async () => {
     const onWrite = vi.fn().mockResolvedValue(undefined);
 

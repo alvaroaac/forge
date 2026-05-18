@@ -12,6 +12,7 @@ type TriageDrawerProps = {
   isStreaming: boolean;
   streaming: string;
   streamStatus?: string[];
+  isBriefPersisted?: boolean;
   brief: TriageBrief | null;
   errorMessage: string | null;
   onGenerate: () => void;
@@ -23,7 +24,8 @@ type GenerateButtonProps = Pick<TriageDrawerProps, 'canGenerate' | 'isStreaming'
 type TriageActionsProps = GenerateButtonProps & {
   brief: TriageBrief | null;
   content: string;
-  onWrite: () => void;
+  isInitiallySaved: boolean;
+  onWrite: () => Promise<void> | void;
 };
 
 function pickBriefContent(brief: TriageBrief | null, streaming: string): string {
@@ -76,17 +78,20 @@ function pickWriteLabel(writeState: WriteState): string {
 function TriageActions({
   brief,
   content,
+  isInitiallySaved,
   canGenerate,
   isStreaming,
   onGenerate,
   onWrite,
 }: TriageActionsProps) {
-  const [writeState, setWriteState] = useState<WriteState>('idle');
+  const [writeState, setWriteState] = useState<WriteState>(
+    isInitiallySaved ? 'saved' : 'idle',
+  );
   const isWriteDisabled = writeState !== 'idle';
 
   useEffect(() => {
-    setWriteState('idle');
-  }, [content]);
+    setWriteState(isInitiallySaved ? 'saved' : 'idle');
+  }, [content, isInitiallySaved]);
 
   const handleWriteClick = async (): Promise<void> => {
     setWriteState('saving');
@@ -134,6 +139,7 @@ export function TriageDrawer({
   isStreaming,
   streaming,
   streamStatus = [],
+  isBriefPersisted = false,
   brief,
   errorMessage,
   onGenerate,
@@ -158,10 +164,11 @@ export function TriageDrawer({
     <TriageActions
       brief={brief}
       content={content}
+      isInitiallySaved={isBriefPersisted}
       canGenerate={canGenerate}
       isStreaming={isStreaming}
       onGenerate={onGenerate}
-      onWrite={() => void handleWriteClick()}
+      onWrite={handleWriteClick}
     />
   );
 

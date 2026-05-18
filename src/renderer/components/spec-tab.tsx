@@ -15,6 +15,7 @@ type SpecTabProps = {
   spec: Spec | null;
   streaming: string;
   streamStatus?: string[];
+  isSpecPersisted?: boolean;
   reviewedContent?: string | null;
   reviewSummary?: SpecReviewSummary | null;
   isReviewPending?: boolean;
@@ -111,6 +112,7 @@ function SpecEmptyTitle({ issueId }: { issueId: string }) {
 
 function SpecActions({
   content,
+  isInitiallySaved,
   isReviewPending,
   onLaunchReview,
   onWrite,
@@ -118,13 +120,16 @@ function SpecActions({
 }: Required<Pick<SpecTabProps, 'onLaunchReview' | 'onWrite' | 'onCopy'>> &
   Pick<SpecTabProps, 'isReviewPending'> & {
   content: string;
+  isInitiallySaved: boolean;
 }) {
-  const [writeState, setWriteState] = useState<WriteState>('idle');
+  const [writeState, setWriteState] = useState<WriteState>(
+    isInitiallySaved ? 'saved' : 'idle',
+  );
   const isWriteDisabled = writeState !== 'idle';
 
   useEffect(() => {
-    setWriteState('idle');
-  }, [content]);
+    setWriteState(isInitiallySaved ? 'saved' : 'idle');
+  }, [content, isInitiallySaved]);
 
   const handleWriteClick = async (): Promise<void> => {
     setWriteState('saving');
@@ -229,6 +234,7 @@ export function SpecTab({
   spec,
   streaming,
   streamStatus,
+  isSpecPersisted = false,
   reviewedContent,
   reviewSummary,
   isReviewPending,
@@ -244,6 +250,7 @@ export function SpecTab({
   onCopy,
 }: SpecTabProps) {
   const content = cleanSpecMarkdown(pickDisplayedContent(spec, streaming, pickReviewedContent(reviewedContent)));
+  const isDisplayedSpecPersisted = isSpecPersisted && !streaming && !pickReviewedContent(reviewedContent);
   const combinedErrorMessage = pickErrorMessage(errorMessage, reviewErrorMessage);
   const effectiveReviewStatus = pickReviewStatus(isReviewPending, reviewStatusMessage);
   const modelOptions = pickModelOptions(claudeModel);
@@ -285,6 +292,7 @@ export function SpecTab({
             {modelSelect}
             <SpecActions
               content={content}
+              isInitiallySaved={isDisplayedSpecPersisted}
               isReviewPending={pickIsReviewPending(isReviewPending)}
               onLaunchReview={launchReview}
               onWrite={writeSpec}

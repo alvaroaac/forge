@@ -20,6 +20,7 @@ describe('IpcChannel', () => {
     expect(IpcChannel.TriageStreamChunk).toBe('triage:stream-chunk');
     expect(IpcChannel.TriageGenerateDone).toBe('triage:generate-done');
     expect(IpcChannel.TriageGenerateError).toBe('triage:generate-error');
+    expect(IpcChannel.TriageGet).toBe('triage:get');
     expect(IpcChannel.TriageWrite).toBe('triage:write');
     expect(IpcChannel.ConfigGet).toBe('config:get');
     expect(IpcChannel.ConfigSet).toBe('config:set');

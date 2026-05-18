@@ -46,6 +46,7 @@ export function App() {
     spec,
     streaming,
     streamStatus,
+    isSpecPersisted,
     isStreaming,
     errorMessage,
     generate: generateSpec,
@@ -241,6 +242,7 @@ export function App() {
           spec={spec}
           streaming={streaming}
           streamStatus={streamStatus}
+          isSpecPersisted={isSpecPersisted && !reviewedContent}
           reviewedContent={reviewedContent}
           reviewSummary={reviewSummary}
           isReviewPending={isReviewPending}
@@ -271,6 +273,7 @@ function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerCont
     brief,
     streaming,
     streamStatus,
+    isBriefPersisted,
     isStreaming,
     errorMessage,
     generate,
@@ -282,6 +285,7 @@ function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerCont
       brief={brief}
       streaming={streaming}
       streamStatus={streamStatus}
+      isBriefPersisted={isBriefPersisted}
       isStreaming={isStreaming}
       errorMessage={errorMessage}
       onGenerate={() => void generate()}

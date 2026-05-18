@@ -19,6 +19,7 @@ export function useTriageStream(issueId: string | null) {
   const [brief, setBrief] = useState<TriageBrief | null>(null);
   const [streaming, setStreaming] = useState('');
   const [streamStatus, setStreamStatus] = useState<string[]>([]);
+  const [isBriefPersisted, setIsBriefPersisted] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentIssueIdRef = useRef<string | null>(null);
@@ -39,6 +40,7 @@ export function useTriageStream(issueId: string | null) {
     setBrief(null);
     setStreaming('');
     setStreamStatus([]);
+    setIsBriefPersisted(false);
     setIsStreaming(false);
     setErrorMessage(null);
   }, []);
@@ -50,6 +52,7 @@ export function useTriageStream(issueId: string | null) {
       }
 
       setBrief(toGeneratedBrief(targetIssueId, content));
+      setIsBriefPersisted(false);
     },
     [isCurrentRun],
   );
@@ -143,7 +146,23 @@ export function useTriageStream(issueId: string | null) {
       return;
     }
 
+    let cancelled = false;
+
     resetStreamState();
+
+    void window.forge.triage
+      .get(issueId)
+      .then((nextBrief) => {
+        if (cancelled || !isCurrentRun(issueId, setupVersion)) {
+          return;
+        }
+
+        setBrief(nextBrief);
+        setIsBriefPersisted(nextBrief !== null);
+      })
+      .catch(() => {
+        // Keep the default null brief when preload rejects.
+      });
 
     const unsubscribe = window.forge.triage.onChunk((chunk: TriageStreamChunk) => {
       handleChunk(issueId, setupVersion, chunk);
@@ -158,6 +177,7 @@ export function useTriageStream(issueId: string | null) {
     });
 
     return () => {
+      cancelled = true;
       unsubscribe();
       unsubscribeDone();
       unsubscribeError();
@@ -166,7 +186,7 @@ export function useTriageStream(issueId: string | null) {
         currentIssueIdRef.current = null;
       }
     };
-  }, [issueId, handleChunk, handleDone, handleError, resetStreamState]);
+  }, [issueId, handleChunk, handleDone, handleError, isCurrentRun, resetStreamState]);
 
   const generate = useCallback(
     async (model?: string): Promise<void> => {
@@ -201,5 +221,5 @@ export function useTriageStream(issueId: string | null) {
     [issueId, isCurrentIssue, commitGeneratedBrief, finishStreaming, failStreaming],
   );
 
-  return { brief, streaming, streamStatus, isStreaming, errorMessage, generate };
+  return { brief, streaming, streamStatus, isBriefPersisted, isStreaming, errorMessage, generate };
 }

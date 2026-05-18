@@ -20,6 +20,7 @@ export function useSpecStream(issueId: string | null) {
   const [spec, setSpec] = useState<Spec | null>(null);
   const [streaming, setStreaming] = useState('');
   const [streamStatus, setStreamStatus] = useState<string[]>([]);
+  const [isSpecPersisted, setIsSpecPersisted] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentIssueIdRef = useRef<string | null>(null);
@@ -40,6 +41,7 @@ export function useSpecStream(issueId: string | null) {
     setSpec(null);
     setStreaming('');
     setStreamStatus([]);
+    setIsSpecPersisted(false);
     setIsStreaming(false);
     setErrorMessage(null);
   }, []);
@@ -51,6 +53,7 @@ export function useSpecStream(issueId: string | null) {
       }
 
       setSpec(nextSpec);
+      setIsSpecPersisted(nextSpec !== null);
     },
     [isCurrentRun],
   );
@@ -62,6 +65,7 @@ export function useSpecStream(issueId: string | null) {
       }
 
       setSpec(toGeneratedSpec(targetIssueId, content));
+      setIsSpecPersisted(false);
     },
     [isCurrentRun],
   );
@@ -229,5 +233,5 @@ export function useSpecStream(issueId: string | null) {
     [issueId, commitGeneratedSpec, finishStreaming, isCurrentIssue],
   );
 
-  return { spec, streaming, streamStatus, isStreaming, errorMessage, generate };
+  return { spec, streaming, streamStatus, isSpecPersisted, isStreaming, errorMessage, generate };
 }

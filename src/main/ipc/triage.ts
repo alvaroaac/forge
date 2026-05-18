@@ -1,8 +1,10 @@
 import type { IpcMain } from 'electron';
+import { readFile, stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import { IpcChannel } from '../../shared/ipc-channels';
 import { assertSafeIssueId, isSafeIssueId } from '../lib/issue-id';
 import type { ConfigStore } from '../services/config-store';
-import type { Issue, TriageWriteResult } from '../../shared/types';
+import type { Issue, TriageBrief, TriageWriteResult } from '../../shared/types';
 
 type TriageGenerateEventSender = {
   send: (channel: string, payload: unknown) => void;
@@ -37,6 +39,10 @@ export interface TriageGenerateDeps {
   streamTriageBrief: StreamTriageBrief;
 }
 
+export interface TriageGetDeps {
+  store: ConfigStore;
+}
+
 export interface TriageWriteDeps {
   store: ConfigStore;
   writeTriageBrief: (input: {
@@ -45,6 +51,14 @@ export interface TriageWriteDeps {
     content: string;
     mode: 'create' | 'overwrite';
   }) => Promise<Omit<TriageWriteResult, 'issueId'>>;
+}
+
+function triageBriefPath(repoPath: string, issueId: string): string | null {
+  if (!isSafeIssueId(issueId)) {
+    return null;
+  }
+
+  return join(repoPath, 'thoughts', 'tasks', issueId, 'triage-brief.md');
 }
 
 function findTriageIssue(issues: Issue[], issueId: string): Issue {
@@ -106,6 +120,35 @@ export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerate
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         event.sender.send(IpcChannel.TriageGenerateError, { issueId: payload.issueId, message });
+        throw error;
+      }
+    },
+  );
+}
+
+export function registerTriageGetHandler(ipc: IpcMain, deps: TriageGetDeps): void {
+  ipc.handle(
+    IpcChannel.TriageGet,
+    async (_event, payload: { issueId: string }): Promise<TriageBrief | null> => {
+      const cfg = await deps.store.get();
+      const target = triageBriefPath(cfg.repoPath, payload.issueId);
+      if (!target) {
+        return null;
+      }
+
+      try {
+        const fileStat = await stat(target);
+        const content = await readFile(target, 'utf-8');
+        return {
+          issueId: payload.issueId,
+          content,
+          generatedAt: fileStat.mtime.toISOString(),
+        };
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          return null;
+        }
+
         throw error;
       }
     },
