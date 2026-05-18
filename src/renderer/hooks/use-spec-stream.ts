@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { Spec, SpecGenerateDone, SpecGenerateError, SpecStreamChunk } from '../../shared/types';
+import type {
+  Spec,
+  SpecGenerateDone,
+  SpecGenerateError,
+  SpecStreamChunk,
+} from '../../shared/types';
 
 function toGeneratedSpec(issueId: string, content: string): Spec {
   return {
@@ -14,6 +19,7 @@ function toGeneratedSpec(issueId: string, content: string): Spec {
 export function useSpecStream(issueId: string | null) {
   const [spec, setSpec] = useState<Spec | null>(null);
   const [streaming, setStreaming] = useState('');
+  const [streamStatus, setStreamStatus] = useState<string[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentIssueIdRef = useRef<string | null>(null);
@@ -33,6 +39,7 @@ export function useSpecStream(issueId: string | null) {
   const resetStreamState = useCallback((): void => {
     setSpec(null);
     setStreaming('');
+    setStreamStatus([]);
     setIsStreaming(false);
     setErrorMessage(null);
   }, []);
@@ -94,6 +101,20 @@ export function useSpecStream(issueId: string | null) {
 
       if (chunk.done) {
         setIsStreaming(false);
+        return;
+      }
+
+      if (chunk.status) {
+        const nextStatus = chunk.status;
+        setStreamStatus((current) => {
+          if (current[current.length - 1] === nextStatus) {
+            return current;
+          }
+          return [...current, nextStatus].slice(-5);
+        });
+      }
+
+      if (!chunk.delta) {
         return;
       }
 
@@ -173,36 +194,40 @@ export function useSpecStream(issueId: string | null) {
     };
   }, [issueId, commitPersistedSpec, handleChunk, handleDone, handleError, resetStreamState]);
 
-  const generate = useCallback(async (model?: string): Promise<void> => {
-    if (!issueId) {
-      return;
-    }
-
-    if (!isCurrentIssue(issueId)) {
-      return;
-    }
-
-    const setupVersion = setupVersionRef.current;
-
-    setStreaming('');
-    setIsStreaming(true);
-    setErrorMessage(null);
-
-    try {
-      const result = model
-        ? await window.forge.spec.generate(issueId, model)
-        : await window.forge.spec.generate(issueId);
-      commitGeneratedSpec(issueId, setupVersion, result.content);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (isCurrentIssue(issueId)) {
-        setErrorMessage(message);
-        setIsStreaming(false);
+  const generate = useCallback(
+    async (model?: string): Promise<void> => {
+      if (!issueId) {
+        return;
       }
-    } finally {
-      finishStreaming(issueId, setupVersion);
-    }
-  }, [issueId, commitGeneratedSpec, failStreaming, finishStreaming, isCurrentIssue]);
 
-  return { spec, streaming, isStreaming, errorMessage, generate };
+      if (!isCurrentIssue(issueId)) {
+        return;
+      }
+
+      const setupVersion = setupVersionRef.current;
+
+      setStreaming('');
+      setStreamStatus(['Starting Claude']);
+      setIsStreaming(true);
+      setErrorMessage(null);
+
+      try {
+        const result = model
+          ? await window.forge.spec.generate(issueId, model)
+          : await window.forge.spec.generate(issueId);
+        commitGeneratedSpec(issueId, setupVersion, result.content);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (isCurrentIssue(issueId)) {
+          setErrorMessage(message);
+          setIsStreaming(false);
+        }
+      } finally {
+        finishStreaming(issueId, setupVersion);
+      }
+    },
+    [issueId, commitGeneratedSpec, finishStreaming, isCurrentIssue],
+  );
+
+  return { spec, streaming, streamStatus, isStreaming, errorMessage, generate };
 }

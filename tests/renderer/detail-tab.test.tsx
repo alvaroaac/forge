@@ -14,6 +14,7 @@ const baseIssue: Issue = {
   url: '',
   updatedAt: '',
   isBug: false,
+  assigneeId: null,
 };
 
 describe('DetailTab', () => {

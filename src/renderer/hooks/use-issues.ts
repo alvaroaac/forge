@@ -10,12 +10,33 @@ export function useIssues() {
   const isActiveRef = useRef(true);
   const refreshIdRef = useRef(0);
 
+  const loadAll = useCallback(async (): Promise<Issue[]> => {
+    const assignedIssues = await window.forge.linear.refresh();
+    let triageIssues: Issue[] = [];
+
+    try {
+      triageIssues = await window.forge.linear.fetchTeamTriage();
+    } catch {
+      // Keep assigned issue refreshes working when the team-triage endpoint is unavailable.
+    }
+
+    const merged = new Map<string, Issue>();
+    for (const issue of assignedIssues) {
+      merged.set(issue.id, issue);
+    }
+    for (const issue of triageIssues) {
+      merged.set(issue.id, issue);
+    }
+
+    return [...merged.values()];
+  }, []);
+
   const refresh = useCallback(async (): Promise<void> => {
     const refreshId = refreshIdRef.current + 1;
     refreshIdRef.current = refreshId;
 
     try {
-      const nextIssues = await window.forge.linear.refresh();
+      const nextIssues = await loadAll();
 
       if (!isActiveRef.current || refreshId !== refreshIdRef.current) {
         return;
@@ -26,7 +47,7 @@ export function useIssues() {
     } catch {
       // Keep the current issues and sync timestamp when preload rejects.
     }
-  }, []);
+  }, [loadAll]);
 
   useEffect(() => {
     isActiveRef.current = true;

@@ -1,7 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { IpcChannel } from '../shared/ipc-channels';
 import type { ForgeApi } from '../shared/forge-api';
-import type { SpecGenerateDone, SpecGenerateError, SpecStreamChunk } from '../shared/types';
+import type {
+  SpecGenerateDone,
+  SpecGenerateError,
+  SpecStreamChunk,
+  TriageGenerateDone,
+  TriageGenerateError,
+  TriageStreamChunk,
+} from '../shared/types';
 
 function subscribe<T>(channel: string, handler: (payload: T) => void): () => void {
   const listener = (_e: unknown, payload: T) => handler(payload);
@@ -18,6 +25,8 @@ const api: ForgeApi = {
     fetchIssueDetail: (issueId) =>
       ipcRenderer.invoke(IpcChannel.LinearFetchIssueDetail, { issueId }),
     refresh: () => ipcRenderer.invoke(IpcChannel.LinearRefresh),
+    fetchTeamTriage: () => ipcRenderer.invoke(IpcChannel.LinearFetchTeamTriage),
+    getViewerId: () => ipcRenderer.invoke(IpcChannel.LinearGetViewerId),
   },
   spec: {
     get: (issueId) => ipcRenderer.invoke(IpcChannel.SpecGet, { issueId }),
@@ -33,6 +42,20 @@ const api: ForgeApi = {
     },
     onError: (handler) => {
       return subscribe<SpecGenerateError>(IpcChannel.SpecGenerateError, handler);
+    },
+  },
+  triage: {
+    generate: (issueId, model) => ipcRenderer.invoke(IpcChannel.TriageGenerate, { issueId, model }),
+    write: (issueId, content, opts) =>
+      ipcRenderer.invoke(IpcChannel.TriageWrite, {
+        issueId,
+        content,
+        overwrite: opts?.overwrite ?? false,
+      }),
+    onChunk: (handler) => subscribe<TriageStreamChunk>(IpcChannel.TriageStreamChunk, handler),
+    onDone: (handler) => subscribe<TriageGenerateDone>(IpcChannel.TriageGenerateDone, handler),
+    onError: (handler) => {
+      return subscribe<TriageGenerateError>(IpcChannel.TriageGenerateError, handler);
     },
   },
   config: {

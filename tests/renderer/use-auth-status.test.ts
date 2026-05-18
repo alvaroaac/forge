@@ -44,6 +44,26 @@ function createSpecApi() {
   };
 }
 
+function createLinearApi() {
+  return {
+    fetch: vi.fn(),
+    fetchIssueDetail: vi.fn(),
+    refresh: vi.fn(),
+    fetchTeamTriage: vi.fn(),
+    getViewerId: vi.fn(),
+  };
+}
+
+function createTriageApi() {
+  return {
+    generate: vi.fn(),
+    write: vi.fn(),
+    onChunk: vi.fn(),
+    onDone: vi.fn(),
+    onError: vi.fn(),
+  };
+}
+
 describe('useAuthStatus', () => {
   it('starts with all connections false and applies the resolved auth status', async () => {
     const deferred = createDeferred<AuthStatus>();
@@ -52,7 +72,8 @@ describe('useAuthStatus', () => {
     window.forge = {
       auth: { check },
       config: { get: vi.fn(), set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+      linear: createLinearApi(),
+      triage: createTriageApi(),
       spec: createSpecApi(),
     };
 
@@ -62,12 +83,14 @@ describe('useAuthStatus', () => {
       linear: false,
       claudeCode: false,
       codex: false,
+      computron: false,
     });
 
     deferred.resolve({
       linear: true,
       claudeCode: true,
       codex: false,
+      computron: false,
     });
 
     await waitFor(() => {
@@ -75,6 +98,7 @@ describe('useAuthStatus', () => {
         linear: true,
         claudeCode: true,
         codex: false,
+        computron: false,
       });
     });
 
@@ -91,7 +115,8 @@ describe('useAuthStatus', () => {
     window.forge = {
       auth: { check },
       config: { get: vi.fn(), set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+      linear: createLinearApi(),
+      triage: createTriageApi(),
       spec: createSpecApi(),
     };
 
@@ -104,6 +129,7 @@ describe('useAuthStatus', () => {
         linear: false,
         claudeCode: false,
         codex: false,
+        computron: false,
       });
 
       deferred.reject(new Error('auth load failed'));
@@ -114,6 +140,7 @@ describe('useAuthStatus', () => {
         linear: false,
         claudeCode: false,
         codex: false,
+        computron: false,
       });
       expect(unhandledRejection).not.toHaveBeenCalled();
       expect(check).toHaveBeenCalledTimes(1);
@@ -131,7 +158,8 @@ describe('useConfig', () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get, set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+      linear: createLinearApi(),
+      triage: createTriageApi(),
       spec: createSpecApi(),
     };
 
@@ -143,6 +171,7 @@ describe('useConfig', () => {
       linearTokenPath: '/tmp/linear-token',
       linearTeamKey: 'FUL',
       repoPath: '/tmp/repo',
+      computronRepoPath: '',
       claudeModel: 'claude-sonnet-4',
     });
 
@@ -151,6 +180,7 @@ describe('useConfig', () => {
         linearTokenPath: '/tmp/linear-token',
         linearTeamKey: 'FUL',
         repoPath: '/tmp/repo',
+        computronRepoPath: '',
         claudeModel: 'claude-sonnet-4',
       });
     });
@@ -168,7 +198,8 @@ describe('useConfig', () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get, set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail: vi.fn() },
+      linear: createLinearApi(),
+      triage: createTriageApi(),
       spec: createSpecApi(),
     };
 

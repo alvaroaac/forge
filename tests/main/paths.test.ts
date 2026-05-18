@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { homedir } from 'node:os';
 import { expandHome, forgeDir, configPath, issuesCachePath } from '../../src/main/lib/paths';
 

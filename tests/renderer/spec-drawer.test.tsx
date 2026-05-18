@@ -23,6 +23,7 @@ const issue: Issue = {
   url: 'https://linear.app/acme/issue/FUL-7',
   updatedAt: '2026-05-13T12:00:00.000Z',
   isBug: false,
+  assigneeId: null,
 };
 
 const spec: Spec = {

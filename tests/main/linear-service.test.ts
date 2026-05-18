@@ -34,6 +34,7 @@ describe('mapIssue', () => {
       url: 'https://linear.app/x',
       updatedAt: '2026-05-12T00:00:00Z',
       isBug: true,
+      assigneeId: null,
     });
   });
 
@@ -114,6 +115,7 @@ describe('linear-service.fetchIssueDetail', () => {
       url: 'https://linear.app/acme/issue/FUL-9',
       updatedAt: '2026-05-13T00:00:00.000Z',
       isBug: false,
+      assigneeId: null,
     });
   });
 

@@ -572,6 +572,30 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     return data.issues.nodes;
   }
 
+  async function fetchTeamTriage() {
+    const data = await linearRequest(`
+      query($teamKey: String!) {
+        issues(
+          first: 250,
+          filter: {
+            team: { key: { eq: $teamKey } }
+            state: { type: { eq: "triage" } }
+          }
+        ) {
+          nodes {
+            id identifier title description
+            state { name type }
+            priority
+            labels { nodes { name } }
+            url updatedAt
+            assignee { id }
+          }
+        }
+      }
+    `, { teamKey });
+    return data.issues.nodes;
+  }
+
   return {
     getTeamId,
     getStateId,
@@ -592,5 +616,6 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     checkAuth,
     fetchIssueDetail,
     fetchAssignedIssues,
+    fetchTeamTriage,
   };
 }

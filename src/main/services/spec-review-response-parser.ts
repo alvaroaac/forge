@@ -86,7 +86,11 @@ function cleanRevisedSpec(raw: string): string {
 }
 
 export function parseSpecReviewResponse(response: string): SpecReviewResult {
-  const summaryJson = extractTaggedSection(response, FORGE_REVIEW_SUMMARY_TAG, 'forge_review_summary');
+  const summaryJson = extractTaggedSection(
+    response,
+    FORGE_REVIEW_SUMMARY_TAG,
+    'forge_review_summary',
+  );
   const rawSpec = extractTaggedSection(response, FORGE_REVISED_SPEC_TAG, 'forge_revised_spec');
   const content = cleanRevisedSpec(rawSpec);
 

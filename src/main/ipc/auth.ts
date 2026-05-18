@@ -7,6 +7,7 @@ import type { AuthStatus } from '../../shared/types';
 type CheckAllFn = (o: {
   linearTokenPath: string;
   linearClient: LinearAuthClient;
+  computronRepoPath: string;
 }) => Promise<AuthStatus>;
 
 export function registerAuthHandlers(
@@ -17,6 +18,10 @@ export function registerAuthHandlers(
 ): void {
   ipc.handle(IpcChannel.AuthCheck, async () => {
     const cfg = await store.get();
-    return checkAll({ linearTokenPath: cfg.linearTokenPath, linearClient });
+    return checkAll({
+      linearTokenPath: cfg.linearTokenPath,
+      linearClient,
+      computronRepoPath: cfg.computronRepoPath,
+    });
   });
 }

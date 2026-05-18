@@ -1,4 +1,4 @@
-import { describe, it, expectTypeOf } from 'vitest';
+import { describe, it, expect, expectTypeOf } from 'vitest';
 import type {
   Issue,
   Spec,
@@ -6,6 +6,11 @@ import type {
   AuthStatus,
   IssueStatus,
   Priority,
+  TriageBrief,
+  TriageGenerateDone,
+  TriageGenerateError,
+  TriageStreamChunk,
+  TriageWriteResult,
   SpecReviewSummary,
   SpecReviewResult,
 } from '../../src/shared/types';
@@ -18,10 +23,11 @@ describe('shared types', () => {
     expectTypeOf<Issue>().toHaveProperty('priority').toEqualTypeOf<Priority>();
   });
 
-  it('AppConfig has all four config keys', () => {
+  it('AppConfig has all expected config keys', () => {
     expectTypeOf<AppConfig>().toHaveProperty('linearTokenPath').toEqualTypeOf<string>();
     expectTypeOf<AppConfig>().toHaveProperty('linearTeamKey').toEqualTypeOf<string>();
     expectTypeOf<AppConfig>().toHaveProperty('repoPath').toEqualTypeOf<string>();
+    expectTypeOf<AppConfig>().toHaveProperty('computronRepoPath').toEqualTypeOf<string>();
     expectTypeOf<AppConfig>().toHaveProperty('claudeModel').toEqualTypeOf<string>();
   });
 
@@ -30,6 +36,7 @@ describe('shared types', () => {
       linear: boolean;
       claudeCode: boolean;
       codex: boolean;
+      computron: boolean;
     }>();
   });
 
@@ -56,6 +63,49 @@ describe('shared types', () => {
     expectTypeOf<SpecReviewResult>().toEqualTypeOf<{
       content: string;
       summary: SpecReviewSummary;
+    }>();
+  });
+
+  it('allows triage as a valid IssueStatus', () => {
+    const status: IssueStatus = 'triage';
+    expect(status).toBe('triage');
+  });
+
+  it('supports triage stream chunk payload', () => {
+    expectTypeOf<TriageStreamChunk>().toEqualTypeOf<{
+      issueId: string;
+      delta: string;
+      done: boolean;
+    }>();
+  });
+
+  it('supports triage generate-done payload', () => {
+    expectTypeOf<TriageGenerateDone>().toEqualTypeOf<{
+      issueId: string;
+    }>();
+  });
+
+  it('supports triage generate-error payload', () => {
+    expectTypeOf<TriageGenerateError>().toEqualTypeOf<{
+      issueId: string;
+      message: string;
+    }>();
+  });
+
+  it('supports triage brief payload', () => {
+    expectTypeOf<TriageBrief>().toEqualTypeOf<{
+      issueId: string;
+      content: string;
+      generatedAt: string;
+    }>();
+  });
+
+  it('supports triage write-result payload', () => {
+    expectTypeOf<TriageWriteResult>().toEqualTypeOf<{
+      issueId: string;
+      path: string;
+      written: boolean;
+      exists: boolean;
     }>();
   });
 });

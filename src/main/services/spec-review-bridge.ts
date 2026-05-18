@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { cleanSpecMarkdown } from '../../shared/spec-markdown';
 import type { SpecReviewResult } from '../../shared/types';
 import { assertSafeIssueId } from '../lib/issue-id';
+import { buildCliEnv } from '../lib/cli-env';
 
 const PLAN_REVIEW_INPUT_FILENAME = 'review-input.md';
 const PLAN_REVIEW_OUTPUT_FILENAME = 'plan-review-output.md';
@@ -57,16 +58,7 @@ async function removeDir(path: string): Promise<void> {
 }
 
 function planReviewArgs(inputPath: string, outputPath: string): string[] {
-  return [
-    inputPath,
-    '--fresh',
-    '--split-by',
-    'heading',
-    '-o',
-    'file',
-    '--output-file',
-    outputPath,
-  ];
+  return [inputPath, '--fresh', '--split-by', 'heading', '-o', 'file', '--output-file', outputPath];
 }
 
 function toPlanReviewExitError(code: number | null, stderr: string): Error {
@@ -79,10 +71,15 @@ function toPlanReviewExitError(code: number | null, stderr: string): Error {
 }
 
 function runPlanReview(input: RunPlanReviewInput): Promise<void> {
-  const child = input.spawnProcess('plan-review', planReviewArgs(input.inputPath, input.outputPath), {
-    shell: false,
-    stdio: ['ignore', 'ignore', 'pipe'],
-  });
+  const child = input.spawnProcess(
+    'plan-review',
+    planReviewArgs(input.inputPath, input.outputPath),
+    {
+      shell: false,
+      stdio: ['ignore', 'ignore', 'pipe'],
+      env: buildCliEnv(),
+    },
+  );
 
   return new Promise<void>((resolve, reject) => {
     let stderr = '';
@@ -114,7 +111,10 @@ function runPlanReview(input: RunPlanReviewInput): Promise<void> {
   });
 }
 
-async function readReviewOutput(path: string, readText: (path: string) => Promise<string>): Promise<string> {
+async function readReviewOutput(
+  path: string,
+  readText: (path: string) => Promise<string>,
+): Promise<string> {
   try {
     return await readText(path);
   } catch (error) {

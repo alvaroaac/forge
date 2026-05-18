@@ -10,6 +10,7 @@ const auth: AuthStatus = {
   claudeCode: true,
   codex: false,
   linear: true,
+  computron: false,
 };
 
 afterEach(() => {
@@ -28,11 +29,12 @@ describe('RightPanel', () => {
 
     const { getByRole, getAllByRole } = within(connectionsSection as HTMLElement);
     const rows = getAllByRole('listitem');
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(4);
 
     expect(rows[0].textContent).toContain('Claude Code');
     expect(rows[1].textContent).toContain('Codex CLI');
-    expect(rows[2].textContent).toContain('Linear');
+    expect(rows[2].textContent).toContain('Computron');
+    expect(rows[3].textContent).toContain('Linear');
     expect(getByRole('list')).toBeTruthy();
   });
 
@@ -40,7 +42,7 @@ describe('RightPanel', () => {
     render(<RightPanel auth={auth} />);
 
     expect(screen.getAllByLabelText('connected')).toHaveLength(2);
-    expect(screen.getAllByLabelText('disconnected')).toHaveLength(1);
+    expect(screen.getAllByLabelText('disconnected')).toHaveLength(2);
   });
 
   it('renders activity placeholder and no activity rows for phase 1', () => {

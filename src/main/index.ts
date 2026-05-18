@@ -76,10 +76,13 @@ async function start(): Promise<void> {
   });
 }
 
-app.whenReady().then(start).catch((error: unknown) => {
-  console.error('Forge startup failed:', error);
-  app.exit(1);
-});
+app
+  .whenReady()
+  .then(start)
+  .catch((error: unknown) => {
+    console.error('Forge startup failed:', error);
+    app.exit(1);
+  });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

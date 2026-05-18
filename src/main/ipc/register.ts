@@ -7,16 +7,20 @@ import { createConfigStore } from '../services/config-store';
 import { createIssuesCache } from '../services/issues-cache';
 import { checkAll } from '../services/auth-checker';
 import type { RawLinearIssue } from '../services/linear-service';
-import { fetchIssueDetail, fetchIssues } from '../services/linear-service';
+import { fetchIssueDetail, fetchIssues, fetchTriage } from '../services/linear-service';
 import { readRepoContext } from '../services/repo-reader';
-import { streamSpec } from '../services/spec-generator';
+import { streamClaude, streamSpec } from '../services/spec-generator';
 import { launchSpecReview } from '../services/spec-review-bridge';
 import { reviseSpecWithReview } from '../services/spec-review-revision';
+import { streamTriageBrief } from '../services/triage-generator';
+import { writeTriageBrief } from '../services/triage-writer';
 import { writeSpec } from '../services/spec-writer';
+import { checkRepoAccess } from '../services/repo-access-checker';
 import { configPath, issuesCachePath } from '../lib/paths';
 import { registerAuthHandlers } from './auth';
 import { registerConfigHandlers } from './config';
 import { registerLinearHandlers } from './linear';
+import { registerTriageGenerateHandler, registerTriageWriteHandler } from './triage';
 import {
   registerSpecGenerateHandler,
   registerSpecGetHandler,
@@ -29,6 +33,7 @@ interface LinearClient {
   checkAuth(tokenPath?: string): Promise<boolean>;
   fetchAssignedIssues(assigneeId: string): Promise<RawLinearIssue[]>;
   fetchIssueDetail(identifier: string): Promise<RawLinearIssue | null>;
+  fetchTeamTriage(): Promise<RawLinearIssue[]>;
 }
 
 type LinearClientOptions = {
@@ -73,6 +78,9 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
     fetchIssues: (linearClient) => fetchIssues(linearClient as LinearClient),
     fetchIssueDetail: (linearClient, issueId) =>
       fetchIssueDetail(linearClient as LinearClient, issueId),
+    fetchTriage: (linearClient) => fetchTriage(linearClient as LinearClient),
+    getViewerId: (linearClient) =>
+      (linearClient as LinearClient).getCurrentUser().then((me) => me.id),
     client,
   });
   registerSpecGetHandler(ipc, store);
@@ -81,6 +89,7 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
     cache,
     readRepoContext,
     streamSpec,
+    preflightClaudeRepoAccess: ({ repoPath }) => checkRepoAccess(repoPath),
     templateMd,
   });
   registerSpecWriteHandler(ipc, { store, writeSpec });
@@ -105,4 +114,17 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
         },
       ),
   });
+  registerTriageGenerateHandler(ipc, {
+    store,
+    fetchTriageList: () => fetchTriage(client as LinearClient),
+    streamTriageBrief: ({ issue, computronRepoPath, model, onChunk }) =>
+      streamTriageBrief({
+        issue,
+        computronRepoPath,
+        model,
+        onChunk,
+        streamClaude,
+      }),
+  });
+  registerTriageWriteHandler(ipc, { store, writeTriageBrief });
 }

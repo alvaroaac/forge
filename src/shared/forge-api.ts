@@ -3,10 +3,15 @@ import type {
   AuthStatus,
   Issue,
   Spec,
-  SpecReviewResult,
   SpecGenerateDone,
   SpecGenerateError,
   SpecStreamChunk,
+  TriageBrief,
+  TriageGenerateDone,
+  TriageGenerateError,
+  TriageStreamChunk,
+  TriageWriteResult,
+  SpecReviewResult,
 } from './types';
 
 export interface ForgeApi {
@@ -17,6 +22,8 @@ export interface ForgeApi {
     fetch: () => Promise<Issue[]>;
     fetchIssueDetail: (issueId: string) => Promise<Issue | null>;
     refresh: () => Promise<Issue[]>;
+    fetchTeamTriage: () => Promise<Issue[]>;
+    getViewerId: () => Promise<string>;
   };
   spec: {
     get: (issueId: string) => Promise<Spec | null>;
@@ -26,6 +33,17 @@ export interface ForgeApi {
     onChunk: (handler: (chunk: SpecStreamChunk) => void) => () => void;
     onDone: (handler: (payload: SpecGenerateDone) => void) => () => void;
     onError: (handler: (payload: SpecGenerateError) => void) => () => void;
+  };
+  triage: {
+    generate: (issueId: string, model?: string) => Promise<TriageBrief>;
+    write: (
+      issueId: string,
+      content: string,
+      opts?: { overwrite?: boolean },
+    ) => Promise<TriageWriteResult>;
+    onChunk: (handler: (chunk: TriageStreamChunk) => void) => () => void;
+    onDone: (handler: (payload: TriageGenerateDone) => void) => () => void;
+    onError: (handler: (payload: TriageGenerateError) => void) => () => void;
   };
   config: {
     get: () => Promise<AppConfig>;

@@ -6,6 +6,7 @@ const defaultAuthStatus: AuthStatus = {
   linear: false,
   claudeCode: false,
   codex: false,
+  computron: false,
 };
 
 export function useAuthStatus(): AuthStatus {

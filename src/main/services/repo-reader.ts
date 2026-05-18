@@ -7,6 +7,8 @@ export interface RepoContext {
   thoughts: Array<{ name: string; content: string }>;
 }
 
+const SPEC_CONTEXT_THOUGHT_FILES = new Set(['conventions.md', 'initial-thoughts.md']);
+
 async function readIfExists(path: string): Promise<string> {
   if (!existsSync(path)) return '';
   return readFile(path, 'utf-8');
@@ -20,6 +22,7 @@ async function readAgentsContext(repoPath: string): Promise<string> {
 
 async function isMarkdownThoughtFile(thoughtsDir: string, name: string): Promise<boolean> {
   if (!name.endsWith('.md')) return false;
+  if (!SPEC_CONTEXT_THOUGHT_FILES.has(name)) return false;
   const full = join(thoughtsDir, name);
   const stats = await stat(full);
   return stats.isFile();

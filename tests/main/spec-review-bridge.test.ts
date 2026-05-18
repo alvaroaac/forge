@@ -29,9 +29,10 @@ function createFakeChild(): FakeChild {
   return child;
 }
 
-function createFakeSpawn(
-  script: (ctx: { child: FakeChild; call: SpawnCall }) => void,
-): { calls: SpawnCall[]; spawnProcess: SpawnProcess } {
+function createFakeSpawn(script: (ctx: { child: FakeChild; call: SpawnCall }) => void): {
+  calls: SpawnCall[];
+  spawnProcess: SpawnProcess;
+} {
   const calls: SpawnCall[] = [];
 
   const spawnProcess: SpawnProcess = (command, args, options) => {
@@ -74,23 +75,23 @@ describe('launchSpecReview', () => {
     const removeDir = vi.fn(async (path: string): Promise<void> => {
       await rm(path, { recursive: true, force: true });
     });
-    const reviseWithReview = vi.fn(async (): Promise<SpecReviewResult> => ({
-      content: '# Revised spec',
-      summary: {
-        verdict: 'changes_requested',
-        reviewerSummary: 'Tightened scope.',
-        commentCount: 1,
-        appliedChanges: ['Clarified acceptance criteria'],
-        unresolvedComments: [],
-      },
-    }));
+    const reviseWithReview = vi.fn(
+      async (): Promise<SpecReviewResult> => ({
+        content: '# Revised spec',
+        summary: {
+          verdict: 'changes_requested',
+          reviewerSummary: 'Tightened scope.',
+          commentCount: 1,
+          appliedChanges: ['Clarified acceptance criteria'],
+          unresolvedComments: [],
+        },
+      }),
+    );
     const { calls, spawnProcess } = createFakeSpawn(({ child, call }) => {
       const outputPath = call.args[7];
-      void writeFile(
-        outputPath!,
-        '- [ ] Clarify scope in Task Summary',
-        'utf-8',
-      ).then(() => child.emit('close', 0));
+      void writeFile(outputPath!, '- [ ] Clarify scope in Task Summary', 'utf-8').then(() =>
+        child.emit('close', 0),
+      );
     });
 
     const result = await launchSpecReview(
@@ -132,7 +133,13 @@ describe('launchSpecReview', () => {
         '--output-file',
         join(createdReviewDir, 'plan-review-output.md'),
       ],
-      options: { shell: false, stdio: ['ignore', 'ignore', 'pipe'] },
+      options: expect.objectContaining({
+        shell: false,
+        stdio: ['ignore', 'ignore', 'pipe'],
+        env: expect.objectContaining({
+          PATH: expect.stringContaining('/Applications/Codex.app/Contents/Resources'),
+        }),
+      }),
     });
     expect(writtenInputPath).toBe(join(createdReviewDir, 'review-input.md'));
     expect(writtenInputContent).toBe('# Spec: FUL-42\n\n## Task Summary\nBody');
@@ -247,16 +254,18 @@ describe('launchSpecReview', () => {
     const removeDir = vi.fn(async (): Promise<void> => {
       throw new Error('rm failed');
     });
-    const reviseWithReview = vi.fn(async (): Promise<SpecReviewResult> => ({
-      content: '# Revised',
-      summary: {
-        verdict: 'approved',
-        reviewerSummary: 'ok',
-        commentCount: 0,
-        appliedChanges: [],
-        unresolvedComments: [],
-      },
-    }));
+    const reviseWithReview = vi.fn(
+      async (): Promise<SpecReviewResult> => ({
+        content: '# Revised',
+        summary: {
+          verdict: 'approved',
+          reviewerSummary: 'ok',
+          commentCount: 0,
+          appliedChanges: [],
+          unresolvedComments: [],
+        },
+      }),
+    );
     const { spawnProcess } = createFakeSpawn(({ child, call }) => {
       void writeFile(call.args[7]!, 'Looks good', 'utf-8').then(() => child.emit('close', 0));
     });

@@ -6,6 +6,10 @@ interface LinearClientShape {
   fetchAssignedIssues(id: string): Promise<RawLinearIssue[]>;
 }
 
+interface LinearTriageClientShape {
+  fetchTeamTriage(): Promise<RawLinearIssue[]>;
+}
+
 interface LinearDetailClientShape {
   fetchIssueDetail(identifier: string): Promise<RawLinearIssue | null>;
 }
@@ -20,6 +24,7 @@ export interface RawLinearIssue {
   labels: { nodes: Array<{ name: string }> };
   url: string;
   updatedAt: string;
+  assignee?: { id: string } | null;
 }
 
 export async function fetchRaw(client: LinearClientShape): Promise<RawLinearIssue[]> {
@@ -40,11 +45,17 @@ export function mapIssue(raw: RawLinearIssue): Issue {
     url: raw.url,
     updatedAt: raw.updatedAt,
     isBug: isBug({ labels, issueType: null }),
+    assigneeId: raw.assignee?.id ?? null,
   };
 }
 
 export async function fetchIssues(client: LinearClientShape): Promise<Issue[]> {
   const raw = await fetchRaw(client);
+  return raw.map(mapIssue);
+}
+
+export async function fetchTriage(client: LinearTriageClientShape): Promise<Issue[]> {
+  const raw = await client.fetchTeamTriage();
   return raw.map(mapIssue);
 }
 

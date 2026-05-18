@@ -16,6 +16,7 @@ type SpecDrawerProps = {
   onClose: () => void;
   spec: Spec | null;
   streaming: string;
+  streamStatus?: string[];
   reviewedContent?: string | null;
   reviewSummary?: SpecReviewSummary | null;
   isReviewPending?: boolean;
@@ -54,6 +55,7 @@ export function SpecDrawer({
   onClose,
   spec,
   streaming,
+  streamStatus = [],
   reviewedContent = null,
   reviewSummary = null,
   isReviewPending = false,
@@ -122,6 +124,7 @@ export function SpecDrawer({
                   issue={issue}
                   spec={spec}
                   streaming={streaming}
+                  streamStatus={streamStatus}
                   reviewedContent={reviewedContent}
                   reviewSummary={reviewSummary}
                   isReviewPending={isReviewPending}

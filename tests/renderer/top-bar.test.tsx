@@ -8,6 +8,7 @@ const auth: AuthStatus = {
   claudeCode: true,
   codex: false,
   linear: true,
+  computron: false,
 };
 
 describe('TopBar', () => {
@@ -31,13 +32,13 @@ describe('TopBar', () => {
     const names = Array.from(pills).map(
       (pill) => pill.querySelector('.auth-pill-name')?.textContent ?? '',
     );
-    expect(names).toEqual(['Claude Code', 'Codex CLI', 'Linear']);
+    expect(names).toEqual(['Claude Code', 'Codex CLI', 'Computron', 'Linear']);
 
     const connectedDots = screen.getAllByLabelText('connected');
     const disconnectedDots = screen.getAllByLabelText('disconnected');
 
     expect(connectedDots).toHaveLength(2);
-    expect(disconnectedDots).toHaveLength(1);
+    expect(disconnectedDots).toHaveLength(2);
 
     expect(
       pills[0]
@@ -51,6 +52,11 @@ describe('TopBar', () => {
     ).toBe('disconnected');
     expect(
       pills[2]
+        ?.querySelector('[aria-label="connected"], [aria-label="disconnected"]')
+        ?.getAttribute('aria-label'),
+    ).toBe('disconnected');
+    expect(
+      pills[3]
         ?.querySelector('[aria-label="connected"], [aria-label="disconnected"]')
         ?.getAttribute('aria-label'),
     ).toBe('connected');

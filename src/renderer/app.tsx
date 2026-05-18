@@ -3,12 +3,14 @@ import { useEffect, useRef, useState } from 'react';
 import type { Issue, SpecReviewSummary } from '../shared/types';
 import { RightPanel } from './components/right-panel';
 import { SpecDrawer, type DrawerTab } from './components/spec-drawer';
+import { TriageDrawer } from './components/triage-drawer';
 import { TopBar } from './components/top-bar';
 import { IssueListPanel, type Tab } from './components/issue-list-panel';
 import { useAuthStatus } from './hooks/use-auth-status';
 import { useConfig } from './hooks/use-config';
 import { useIssues } from './hooks/use-issues';
 import { useSpecStream } from './hooks/use-spec-stream';
+import { useTriageStream } from './hooks/use-triage-stream';
 
 const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-4-6';
 
@@ -37,8 +39,17 @@ export function App() {
   const [reviewSummary, setReviewSummary] = useState<SpecReviewSummary | null>(null);
   const [isReviewPending, setIsReviewPending] = useState(false);
   const [reviewErrorMessage, setReviewErrorMessage] = useState<string | null>(null);
+  const [mineOnly, setMineOnly] = useState(false);
+  const [viewerId, setViewerId] = useState<string | null>(null);
   const drawerIssueId = drawer?.issue.id ?? null;
-  const { spec, streaming, isStreaming, errorMessage, generate } = useSpecStream(drawerIssueId);
+  const {
+    spec,
+    streaming,
+    streamStatus,
+    isStreaming,
+    errorMessage,
+    generate: generateSpec,
+  } = useSpecStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
   const currentDrawerIssueId = useRef<string | null>(null);
   const activeReviewIssueId = useRef<string | null>(null);
@@ -52,6 +63,17 @@ export function App() {
       setClaudeModel(config.claudeModel);
     }
   }, [config?.claudeModel]);
+
+  useEffect(() => {
+    if (tab !== 'Triage' || viewerId !== null) {
+      return;
+    }
+
+    void (async () => {
+      const nextViewerId = await window.forge.linear.getViewerId();
+      setViewerId(nextViewerId ?? null);
+    })();
+  }, [tab, viewerId]);
 
   useEffect(() => {
     if (!drawerIssueId || !spec) {
@@ -124,7 +146,7 @@ export function App() {
     setReviewedContent(null);
     setReviewSummary(null);
     setReviewErrorMessage(null);
-    void generate(claudeModel);
+    void generateSpec(claudeModel);
   };
 
   const onLaunchReviewSpec = async (content: string) => {
@@ -197,31 +219,66 @@ export function App() {
           activeId={drawerIssueId}
           hasSpecFor={hasSpecFor}
           onRefresh={refresh}
+          mineOnly={mineOnly}
+          onMineOnlyChange={setMineOnly}
+          viewerId={viewerId}
         />
         <RightPanel auth={auth} />
       </div>
 
-      <SpecDrawer
-        issue={drawer?.issue ?? null}
-        tab={drawer?.tab ?? 'spec'}
-        setTab={setDrawerTab}
-        onClose={() => setDrawer(null)}
-        spec={spec}
-        streaming={streaming}
-        reviewedContent={reviewedContent}
-        reviewSummary={reviewSummary}
-        isReviewPending={isReviewPending}
-        reviewStatusMessage={isReviewPending ? 'Review in progress...' : null}
-        reviewErrorMessage={reviewErrorMessage}
-        isStreaming={isStreaming}
-        errorMessage={errorMessage}
-        claudeModel={claudeModel}
-        onClaudeModelChange={onClaudeModelChange}
-        onGenerate={onGenerateSpec}
-        onLaunchReview={onLaunchReviewSpec}
-        onWrite={onWriteSpec}
-        onCopy={onCopy}
-      />
+      {drawer?.issue?.status === 'triage' && drawer.tab === 'spec' ? (
+        <TriageDrawerContainer
+          issue={drawer.issue}
+          canGenerate={auth.computron}
+          onClose={() => setDrawer(null)}
+        />
+      ) : (
+        <SpecDrawer
+          issue={drawer?.issue ?? null}
+          tab={drawer?.tab ?? 'spec'}
+          setTab={setDrawerTab}
+          onClose={() => setDrawer(null)}
+          spec={spec}
+          streaming={streaming}
+          streamStatus={streamStatus}
+          reviewedContent={reviewedContent}
+          reviewSummary={reviewSummary}
+          isReviewPending={isReviewPending}
+          reviewStatusMessage={isReviewPending ? 'Review in progress...' : null}
+          reviewErrorMessage={reviewErrorMessage}
+          isStreaming={isStreaming}
+          errorMessage={errorMessage}
+          claudeModel={claudeModel}
+          onClaudeModelChange={onClaudeModelChange}
+          onGenerate={onGenerateSpec}
+          onLaunchReview={onLaunchReviewSpec}
+          onWrite={onWriteSpec}
+          onCopy={onCopy}
+        />
+      )}
     </div>
+  );
+}
+
+type TriageDrawerContainerProps = {
+  issue: Issue;
+  canGenerate: boolean;
+  onClose: () => void;
+};
+
+function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerContainerProps) {
+  const { brief, streaming, isStreaming, errorMessage, generate } = useTriageStream(issue.id);
+
+  return (
+    <TriageDrawer
+      issue={issue}
+      brief={brief}
+      streaming={streaming}
+      isStreaming={isStreaming}
+      errorMessage={errorMessage}
+      onGenerate={() => void generate()}
+      canGenerate={canGenerate}
+      onClose={onClose}
+    />
   );
 }

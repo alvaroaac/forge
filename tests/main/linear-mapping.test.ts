@@ -33,7 +33,7 @@ describe('mapStatus', () => {
   it('maps Linear state.type to internal IssueStatus', () => {
     expect(mapStatus({ name: 'Todo', type: 'unstarted' })).toBe('todo');
     expect(mapStatus({ name: 'Backlog', type: 'backlog' })).toBe('todo');
-    expect(mapStatus({ name: 'Triage', type: 'triage' })).toBe('todo');
+    expect(mapStatus({ name: 'Triage', type: 'triage' })).toBe('triage');
     expect(mapStatus({ name: 'In Progress', type: 'started' })).toBe('in_progress');
     expect(mapStatus({ name: 'In Review', type: 'review' })).toBe('in_review');
     expect(mapStatus({ name: 'Done', type: 'completed' })).toBe('done');

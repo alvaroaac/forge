@@ -1,7 +1,7 @@
 import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Issue, Spec, SpecReviewSummary } from '../../src/shared/types';
+import type { Issue, Spec, SpecReviewSummary, TriageBrief } from '../../src/shared/types';
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -22,6 +22,7 @@ const renderState: {
   specDrawerProps: {
     spec: Spec | null;
     streaming: string;
+    streamStatus: string[];
     reviewedContent: string | null;
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;
@@ -32,14 +33,30 @@ const renderState: {
     onLaunchReview: (content: string) => void;
     onWrite: (content: string) => void;
   } | null;
+  triageDrawerIssue: Issue | null;
+  triageDrawerProps: {
+    canGenerate: boolean;
+    isStreaming: boolean;
+    streaming: string;
+    brief: TriageBrief | null;
+    errorMessage: string | null;
+    onGenerate: () => void;
+    onClose: () => void;
+  } | null;
   generate: ReturnType<typeof vi.fn>;
+  generateTriage: ReturnType<typeof vi.fn>;
   streamSpec: Spec | null;
+  streamTriageBrief: TriageBrief | null;
 } = {
   issueListPanelProps: null,
   specDrawerIssue: null,
   specDrawerProps: null,
+  triageDrawerIssue: null,
+  triageDrawerProps: null,
   generate: vi.fn(),
+  generateTriage: vi.fn(),
   streamSpec: null,
+  streamTriageBrief: null,
 };
 
 vi.mock('../../src/renderer/components/top-bar', () => ({
@@ -62,6 +79,7 @@ vi.mock('../../src/renderer/components/spec-drawer', () => ({
     issue: Issue | null;
     spec: Spec | null;
     streaming: string;
+    streamStatus: string[];
     reviewedContent: string | null;
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;
@@ -72,14 +90,35 @@ vi.mock('../../src/renderer/components/spec-drawer', () => ({
     onLaunchReview: (content: string) => void;
     onWrite: (content: string) => void;
   }) => {
-    renderState.specDrawerIssue = props.issue;
-    renderState.specDrawerProps = props;
+    if (props.issue) {
+      renderState.specDrawerIssue = props.issue;
+      renderState.specDrawerProps = props;
+    }
     return <div data-testid="spec-drawer" />;
   },
 }));
 
+vi.mock('../../src/renderer/components/triage-drawer', () => ({
+  TriageDrawer: (props: {
+    issue: Issue | null;
+    canGenerate: boolean;
+    isStreaming: boolean;
+    streaming: string;
+    brief: TriageBrief | null;
+    errorMessage: string | null;
+    onGenerate: () => void;
+    onClose: () => void;
+  }) => {
+    if (props.issue) {
+      renderState.triageDrawerIssue = props.issue;
+      renderState.triageDrawerProps = props;
+    }
+    return <div data-testid="triage-drawer" />;
+  },
+}));
+
 vi.mock('../../src/renderer/hooks/use-auth-status', () => ({
-  useAuthStatus: () => ({ linear: true, claudeCode: true, codex: true }),
+  useAuthStatus: () => ({ linear: true, claudeCode: true, codex: true, computron: true }),
 }));
 
 vi.mock('../../src/renderer/hooks/use-config', () => ({
@@ -97,6 +136,7 @@ const issues: Issue[] = [
     url: 'https://linear.app/acme/issue/FUL-1',
     updatedAt: '2026-05-13T00:00:00.000Z',
     isBug: false,
+    assigneeId: null,
   },
   {
     id: 'FUL-2',
@@ -108,6 +148,19 @@ const issues: Issue[] = [
     url: 'https://linear.app/acme/issue/FUL-2',
     updatedAt: '2026-05-13T00:00:00.000Z',
     isBug: false,
+    assigneeId: null,
+  },
+  {
+    id: 'FUL-3',
+    title: 'Triage',
+    description: '',
+    status: 'triage',
+    priority: 'medium',
+    labels: [],
+    url: 'https://linear.app/acme/issue/FUL-3',
+    updatedAt: '2026-05-13T00:00:00.000Z',
+    isBug: false,
+    assigneeId: null,
   },
 ];
 
@@ -125,6 +178,16 @@ vi.mock('../../src/renderer/hooks/use-spec-stream', () => ({
   }),
 }));
 
+vi.mock('../../src/renderer/hooks/use-triage-stream', () => ({
+  useTriageStream: () => ({
+    brief: renderState.streamTriageBrief,
+    streaming: '',
+    isStreaming: false,
+    errorMessage: null,
+    generate: renderState.generateTriage,
+  }),
+}));
+
 import { App } from '../../src/renderer/app';
 
 describe('App detail drawer refresh', () => {
@@ -132,8 +195,12 @@ describe('App detail drawer refresh', () => {
     renderState.issueListPanelProps = null;
     renderState.specDrawerIssue = null;
     renderState.specDrawerProps = null;
+    renderState.triageDrawerIssue = null;
+    renderState.triageDrawerProps = null;
     renderState.generate = vi.fn();
+    renderState.generateTriage = vi.fn();
     renderState.streamSpec = null;
+    renderState.streamTriageBrief = null;
   });
 
   afterEach(() => {
@@ -148,7 +215,20 @@ describe('App detail drawer refresh', () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get: vi.fn(), set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail },
+      linear: {
+        fetch: vi.fn(),
+        fetchIssueDetail,
+        refresh: vi.fn(),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
       spec: {
         get: vi.fn(),
         generate: vi.fn(),
@@ -187,7 +267,20 @@ describe('App detail drawer refresh', () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get: vi.fn(), set: vi.fn() },
-      linear: { fetch: vi.fn(), refresh: vi.fn(), fetchIssueDetail },
+      linear: {
+        fetch: vi.fn(),
+        fetchIssueDetail,
+        refresh: vi.fn(),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
       spec: {
         get: vi.fn(),
         generate: vi.fn(),
@@ -243,6 +336,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -256,6 +358,10 @@ describe('App detail drawer refresh', () => {
     };
 
     render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[0], 'spec');
+    });
 
     expect(renderState.specDrawerProps?.claudeModel).toBe('sonnet');
 
@@ -283,6 +389,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -326,6 +441,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -355,7 +479,9 @@ describe('App detail drawer refresh', () => {
     });
 
     await waitFor(() => {
-      expect(renderState.specDrawerProps?.reviewedContent).toBe('# Revised spec\n\n## Task Summary\nUpdated');
+      expect(renderState.specDrawerProps?.reviewedContent).toBe(
+        '# Revised spec\n\n## Task Summary\nUpdated',
+      );
       expect(renderState.specDrawerProps?.reviewSummary?.verdict).toBe('approved');
     });
   });
@@ -373,6 +499,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -437,6 +572,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -482,7 +626,9 @@ describe('App detail drawer refresh', () => {
         unresolvedComments: ['Need final sign-off'],
       },
     });
-    const specWrite = vi.fn().mockResolvedValue({ issueId: 'FUL-1', content: '# Revised spec only' });
+    const specWrite = vi
+      .fn()
+      .mockResolvedValue({ issueId: 'FUL-1', content: '# Revised spec only' });
     window.forge = {
       auth: { check: vi.fn() },
       config: { get: vi.fn(), set: vi.fn() },
@@ -490,6 +636,15 @@ describe('App detail drawer refresh', () => {
         fetch: vi.fn(),
         refresh: vi.fn(),
         fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
       },
       spec: {
         get: vi.fn(),
@@ -531,5 +686,97 @@ describe('App detail drawer refresh', () => {
       'FUL-1',
       expect.stringContaining('Please tighten wording'),
     );
+  });
+
+  it('renders TriageDrawer for triage issues opened on the spec action', async () => {
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[2], 'spec');
+    });
+
+    expect(renderState.triageDrawerIssue).toEqual(issues[2]);
+    expect(renderState.triageDrawerProps).toMatchObject({
+      canGenerate: true,
+      isStreaming: false,
+      streaming: '',
+      brief: null,
+      errorMessage: null,
+    });
+    expect(renderState.specDrawerIssue).toBeNull();
+    expect(renderState.specDrawerProps).toBeNull();
+  });
+
+  it('renders SpecDrawer detail view for triage issues opened on detail', async () => {
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+      },
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[2], 'detail');
+    });
+
+    expect(renderState.specDrawerIssue).toEqual(issues[2]);
+    expect(renderState.specDrawerProps).toMatchObject({
+      streaming: '',
+      reviewedContent: null,
+      reviewSummary: null,
+    });
+    expect(renderState.triageDrawerIssue).toBeNull();
+    expect(renderState.triageDrawerProps).toBeNull();
   });
 });

@@ -12,6 +12,7 @@ const issue: Issue = {
   url: 'u',
   updatedAt: '',
   isBug: true,
+  assigneeId: null,
 };
 
 describe('buildSpecPrompt', () => {
@@ -22,6 +23,7 @@ describe('buildSpecPrompt', () => {
       templateMd: 'TEMPLATE',
     });
     expect(p.system).toMatch(/senior engineer/i);
+    expect(p.system).toContain('Read, Glob, and Grep');
     expect(p.user).toContain('AM');
     expect(p.user).toContain('conventions.md');
     expect(p.user).toContain('C');

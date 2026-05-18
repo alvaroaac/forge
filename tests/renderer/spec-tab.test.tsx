@@ -14,6 +14,7 @@ const issue: Issue = {
   url: '',
   updatedAt: '',
   isBug: false,
+  assigneeId: null,
 };
 
 const spec: Spec = {
@@ -117,6 +118,28 @@ Streaming body`}
     );
 
     expect(screen.getByText(/streaming…/i)).toBeTruthy();
+  });
+
+  it('shows generation activity before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        streamStatus={['Starting Claude', 'Claude initialized the repo session']}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText('Generating spec')).toBeTruthy();
+    expect(screen.getByText('Claude initialized the repo session')).toBeTruthy();
+    expect(screen.getByText('Starting Claude')).toBeTruthy();
   });
 
   it('copies the live streaming content while streaming', () => {
@@ -238,7 +261,9 @@ Persisted body`);
       />,
     );
 
-    expect(screen.getByRole('button', { name: /Launch Review/i }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: /Launch Review/i }).hasAttribute('disabled')).toBe(
+      true,
+    );
   });
 
   it('renders pending status text while review is running', () => {
@@ -277,16 +302,16 @@ Persisted body`);
     );
 
     expect(screen.getByRole('button', { name: /Review changes/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded')).toBe(
-      'false',
-    );
+    expect(
+      screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded'),
+    ).toBe('false');
     expect(screen.queryByText(reviewSummary.reviewerSummary)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Review changes/i }));
 
-    expect(screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded')).toBe(
-      'true',
-    );
+    expect(
+      screen.getByRole('button', { name: /Review changes/i }).getAttribute('aria-expanded'),
+    ).toBe('true');
     expect(screen.getByText(reviewSummary.reviewerSummary)).toBeTruthy();
   });
 
