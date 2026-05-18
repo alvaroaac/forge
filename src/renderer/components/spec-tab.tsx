@@ -8,6 +8,7 @@ import { IconCheck, IconEdit, IconSpark, IconTerminal } from './icons';
 const CLAUDE_MODEL_OPTIONS = ['claude-sonnet-4-6', 'sonnet', 'opus'];
 
 const noopContentHandler = () => undefined;
+type WriteState = 'idle' | 'saving' | 'saved';
 
 type SpecTabProps = {
   issue: Issue;
@@ -25,7 +26,7 @@ type SpecTabProps = {
   onClaudeModelChange: (model: string) => void;
   onGenerate: () => void;
   onLaunchReview?: (content: string) => void;
-  onWrite?: (content: string) => void;
+  onWrite?: (content: string) => Promise<void> | void;
   onCopy: (content: string) => void;
 };
 
@@ -59,6 +60,18 @@ function pickModelOptions(claudeModel: string): string[] {
 
 function pickContentHandler(handler?: (content: string) => void): (content: string) => void {
   return handler ?? noopContentHandler;
+}
+
+function pickWriteLabel(writeState: WriteState): string {
+  if (writeState === 'saving') {
+    return 'Writing...';
+  }
+
+  if (writeState === 'saved') {
+    return 'Saved to file';
+  }
+
+  return 'Write to file';
 }
 
 function pickReviewedContent(reviewedContent?: string | null): string | null {
@@ -106,6 +119,24 @@ function SpecActions({
   Pick<SpecTabProps, 'isReviewPending'> & {
   content: string;
 }) {
+  const [writeState, setWriteState] = useState<WriteState>('idle');
+  const isWriteDisabled = writeState !== 'idle';
+
+  useEffect(() => {
+    setWriteState('idle');
+  }, [content]);
+
+  const handleWriteClick = async (): Promise<void> => {
+    setWriteState('saving');
+
+    try {
+      await onWrite(content);
+      setWriteState('saved');
+    } catch {
+      setWriteState('idle');
+    }
+  };
+
   return (
     <>
       <button
@@ -116,8 +147,13 @@ function SpecActions({
       >
         <IconTerminal size={11} stroke={2} /> Launch Review
       </button>
-      <button className="btn-ghost" type="button" onClick={() => onWrite(content)}>
-        <IconEdit size={11} stroke={2} /> Write to file
+      <button
+        className="btn-ghost"
+        type="button"
+        disabled={isWriteDisabled}
+        onClick={() => void handleWriteClick()}
+      >
+        <IconEdit size={11} stroke={2} /> {pickWriteLabel(writeState)}
       </button>
       <button className="btn-ghost" type="button" onClick={() => onCopy(content)}>
         <IconCheck size={11} stroke={2} /> Copy

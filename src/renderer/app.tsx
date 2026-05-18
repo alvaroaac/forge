@@ -189,13 +189,13 @@ export function App() {
     }
   };
 
-  const onWriteSpec = (content: string) => {
+  const onWriteSpec = async (content: string): Promise<void> => {
     if (!drawerIssueId) {
       return;
     }
 
     specIds.current.add(drawerIssueId);
-    void window.forge.spec.write(drawerIssueId, content);
+    await window.forge.spec.write(drawerIssueId, content);
   };
 
   const setDrawerTab = (nextTab: DrawerTab) => {

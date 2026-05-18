@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { SpecTab } from '../../src/renderer/components/spec-tab';
 import type { Issue, Spec, SpecReviewSummary } from '../../src/shared/types';
@@ -32,6 +32,20 @@ const reviewSummary: SpecReviewSummary = {
   appliedChanges: ['Adjusted scope wording', 'Updated acceptance checks'],
   unresolvedComments: ['Need final owner call on migration timing'],
 };
+
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+};
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+
+  return { promise, resolve };
+}
 
 describe('SpecTab', () => {
   afterEach(() => {
@@ -433,6 +447,78 @@ Persisted body`);
     fireEvent.click(screen.getByRole('button', { name: /Write to file/i }));
 
     expect(onWrite).toHaveBeenCalledWith('# Spec: FUL-7\n\n## Task Summary\nBody');
+  });
+
+  it('shows write progress then disables after saving', async () => {
+    const writeDone = createDeferred<void>();
+    const onWrite = vi.fn(() => writeDone.promise);
+
+    render(
+      <SpecTab
+        issue={issue}
+        spec={spec}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onWrite={onWrite}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Write to file/i }));
+
+    expect(screen.getByRole('button', { name: /Writing.../i }).hasAttribute('disabled')).toBe(true);
+
+    writeDone.resolve(undefined);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(true);
+    });
+  });
+
+  it('resets saved write state when displayed spec content changes', async () => {
+    const onWrite = vi.fn().mockResolvedValue(undefined);
+
+    const { rerender } = render(
+      <SpecTab
+        issue={issue}
+        spec={spec}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onWrite={onWrite}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Write to file/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Saved to file/i })).toBeTruthy();
+    });
+
+    rerender(
+      <SpecTab
+        issue={issue}
+        spec={{ ...spec, content: '## Updated\nNew body' }}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onWrite={onWrite}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Write to file/i }).hasAttribute('disabled')).toBe(false);
   });
 
   it('shows the generation error while the spec is still empty', () => {

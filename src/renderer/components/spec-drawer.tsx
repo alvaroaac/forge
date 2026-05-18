@@ -24,7 +24,7 @@ type SpecDrawerProps = {
   onClaudeModelChange: (model: string) => void;
   onGenerate: () => void;
   onLaunchReview?: (content: string) => void;
-  onWrite?: (content: string) => void;
+  onWrite?: (content: string) => Promise<void> | void;
   onCopy: (content: string) => void;
 };
 

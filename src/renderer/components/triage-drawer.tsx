@@ -1,6 +1,10 @@
+import { useEffect, useState } from 'react';
+
 import type { Issue, TriageBrief } from '../../shared/types';
 import { GeneratedDocument } from './generated-document';
 import { IssueDrawerShell } from './issue-drawer-shell';
+
+type WriteState = 'idle' | 'saving' | 'saved';
 
 type TriageDrawerProps = {
   issue: Issue | null;
@@ -18,6 +22,7 @@ type GenerateButtonProps = Pick<TriageDrawerProps, 'canGenerate' | 'isStreaming'
 
 type TriageActionsProps = GenerateButtonProps & {
   brief: TriageBrief | null;
+  content: string;
   onWrite: () => void;
 };
 
@@ -56,7 +61,44 @@ function GenerateBriefButton({ canGenerate, isStreaming, onGenerate }: GenerateB
   );
 }
 
-function TriageActions({ brief, canGenerate, isStreaming, onGenerate, onWrite }: TriageActionsProps) {
+function pickWriteLabel(writeState: WriteState): string {
+  if (writeState === 'saving') {
+    return 'Writing...';
+  }
+
+  if (writeState === 'saved') {
+    return 'Saved to file';
+  }
+
+  return 'Write to file';
+}
+
+function TriageActions({
+  brief,
+  content,
+  canGenerate,
+  isStreaming,
+  onGenerate,
+  onWrite,
+}: TriageActionsProps) {
+  const [writeState, setWriteState] = useState<WriteState>('idle');
+  const isWriteDisabled = writeState !== 'idle';
+
+  useEffect(() => {
+    setWriteState('idle');
+  }, [content]);
+
+  const handleWriteClick = async (): Promise<void> => {
+    setWriteState('saving');
+
+    try {
+      await onWrite();
+      setWriteState('saved');
+    } catch {
+      setWriteState('idle');
+    }
+  };
+
   return (
     <>
       <GenerateBriefButton
@@ -65,8 +107,13 @@ function TriageActions({ brief, canGenerate, isStreaming, onGenerate, onWrite }:
         onGenerate={onGenerate}
       />
       {brief ? (
-        <button className="btn-ghost" type="button" onClick={onWrite}>
-          Write to file
+        <button
+          className="btn-ghost"
+          type="button"
+          disabled={isWriteDisabled}
+          onClick={() => void handleWriteClick()}
+        >
+          {pickWriteLabel(writeState)}
         </button>
       ) : null}
     </>
@@ -96,6 +143,7 @@ export function TriageDrawer({
     return null;
   }
 
+  const content = pickBriefContent(brief, streaming);
   const handleWriteClick = async (): Promise<void> => {
     await writeBriefWithOverwrite(issue.id, pickBriefContent(brief, ''));
   };
@@ -109,6 +157,7 @@ export function TriageDrawer({
   const actions = (
     <TriageActions
       brief={brief}
+      content={content}
       canGenerate={canGenerate}
       isStreaming={isStreaming}
       onGenerate={onGenerate}
@@ -128,7 +177,7 @@ export function TriageDrawer({
       <GeneratedDocument
         artifactName="Brief"
         artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
-        content={pickBriefContent(brief, streaming)}
+        content={content}
         isStreaming={isStreaming}
         streamStatus={streamStatus}
         errorMessage={errorMessage}

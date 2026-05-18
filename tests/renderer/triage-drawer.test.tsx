@@ -17,6 +17,20 @@ const issue: Issue = {
   assigneeId: 'user-1',
 };
 
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+};
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+
+  return { promise, resolve };
+}
+
 function setTriageApi(writeMock: ReturnType<typeof vi.fn>) {
   window.forge = {
     auth: { check: vi.fn() },
@@ -284,6 +298,51 @@ describe('TriageDrawer', () => {
       expect(writeMock).toHaveBeenCalledTimes(2);
       expect(writeMock).toHaveBeenNthCalledWith(1, 'FUL-77', '# done');
       expect(writeMock).toHaveBeenNthCalledWith(2, 'FUL-77', '# done', { overwrite: true });
+    });
+  });
+
+  it('shows write progress then disables after saving a brief', async () => {
+    const brief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '# done',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+    const writeDone = createDeferred<{
+      issueId: string;
+      path: string;
+      written: boolean;
+      exists: boolean;
+    }>();
+    const writeMock = vi.fn(() => writeDone.promise);
+
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={brief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /write to file/i }));
+
+    expect(screen.getByRole('button', { name: /Writing.../i }).hasAttribute('disabled')).toBe(true);
+
+    writeDone.resolve({
+      issueId: 'FUL-77',
+      path: '/tmp/FUL-77/triage-brief.md',
+      written: true,
+      exists: false,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(true);
     });
   });
 });
