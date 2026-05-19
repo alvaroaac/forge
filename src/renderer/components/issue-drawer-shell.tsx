@@ -148,10 +148,7 @@ export function IssueDrawerShell({
 
   return (
     <>
-      <div
-        className={getOpenClass('drawer-scrim', 'drawer-scrim-open', open)}
-        onClick={onClose}
-      />
+      <div className={getOpenClass('drawer-scrim', 'drawer-scrim-open', open)} onClick={onClose} />
       <aside className={getOpenClass('drawer', 'drawer-open', open)}>
         {issue ? (
           <>

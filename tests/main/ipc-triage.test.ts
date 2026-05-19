@@ -99,7 +99,9 @@ describe('triage:get handler', () => {
     });
 
     await expect(ipc.invoke(IpcChannel.TriageGet, {}, { issueId: 'FUL-77' })).resolves.toBeNull();
-    await expect(ipc.invoke(IpcChannel.TriageGet, {}, { issueId: '../FUL-77' })).resolves.toBeNull();
+    await expect(
+      ipc.invoke(IpcChannel.TriageGet, {}, { issueId: '../FUL-77' }),
+    ).resolves.toBeNull();
   });
 });
 

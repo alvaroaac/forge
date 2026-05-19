@@ -475,7 +475,9 @@ Persisted body`);
     writeDone.resolve(undefined);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(true);
+      expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(
+        true,
+      );
     });
   });
 
@@ -496,7 +498,9 @@ Persisted body`);
       />,
     );
 
-    expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(
+      true,
+    );
   });
 
   it('resets saved write state when displayed spec content changes', async () => {
@@ -538,7 +542,9 @@ Persisted body`);
       />,
     );
 
-    expect(screen.getByRole('button', { name: /Write to file/i }).hasAttribute('disabled')).toBe(false);
+    expect(screen.getByRole('button', { name: /Write to file/i }).hasAttribute('disabled')).toBe(
+      false,
+    );
   });
 
   it('shows the generation error while the spec is still empty', () => {

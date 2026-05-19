@@ -237,7 +237,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -245,7 +245,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         launchReview: vi.fn(),
         onChunk: vi.fn(),
@@ -290,7 +290,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -298,7 +298,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         launchReview: vi.fn(),
         onChunk: vi.fn(),
@@ -356,7 +356,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -364,7 +364,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         launchReview: vi.fn(),
         onChunk: vi.fn(),
@@ -410,7 +410,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -418,7 +418,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: specWrite,
         launchReview: vi.fn(),
         onChunk: vi.fn(),
@@ -463,7 +463,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -471,7 +471,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         launchReview,
         onChunk: vi.fn(),
@@ -522,7 +522,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -530,7 +530,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         launchReview,
         onChunk: vi.fn(),
@@ -596,7 +596,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -604,7 +604,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         launchReview,
         onChunk: vi.fn(),
@@ -661,7 +661,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -669,7 +669,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: specWrite,
         launchReview,
         onChunk: vi.fn(),
@@ -722,7 +722,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -730,7 +730,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         launchReview: vi.fn(),
         onChunk: vi.fn(),
@@ -770,7 +770,7 @@ describe('App detail drawer refresh', () => {
       },
       triage: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
         onDone: vi.fn(),
@@ -778,7 +778,7 @@ describe('App detail drawer refresh', () => {
       },
       spec: {
         get: vi.fn(),
-      generate: vi.fn(),
+        generate: vi.fn(),
         write: vi.fn(),
         launchReview: vi.fn(),
         onChunk: vi.fn(),

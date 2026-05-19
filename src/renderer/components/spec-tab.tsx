@@ -47,7 +47,10 @@ function pickDisplayedContent(
   return pickContent(spec, streaming);
 }
 
-function pickReviewStatus(isReviewPending?: boolean, reviewStatusMessage?: string | null): string | null {
+function pickReviewStatus(
+  isReviewPending?: boolean,
+  reviewStatusMessage?: string | null,
+): string | null {
   return isReviewPending ? 'Review in progress...' : (reviewStatusMessage ?? null);
 }
 
@@ -119,12 +122,10 @@ function SpecActions({
   onCopy,
 }: Required<Pick<SpecTabProps, 'onLaunchReview' | 'onWrite' | 'onCopy'>> &
   Pick<SpecTabProps, 'isReviewPending'> & {
-  content: string;
-  isInitiallySaved: boolean;
-}) {
-  const [writeState, setWriteState] = useState<WriteState>(
-    isInitiallySaved ? 'saved' : 'idle',
-  );
+    content: string;
+    isInitiallySaved: boolean;
+  }) {
+  const [writeState, setWriteState] = useState<WriteState>(isInitiallySaved ? 'saved' : 'idle');
   const isWriteDisabled = writeState !== 'idle';
 
   useEffect(() => {
@@ -249,8 +250,11 @@ export function SpecTab({
   onWrite,
   onCopy,
 }: SpecTabProps) {
-  const content = cleanSpecMarkdown(pickDisplayedContent(spec, streaming, pickReviewedContent(reviewedContent)));
-  const isDisplayedSpecPersisted = isSpecPersisted && !streaming && !pickReviewedContent(reviewedContent);
+  const content = cleanSpecMarkdown(
+    pickDisplayedContent(spec, streaming, pickReviewedContent(reviewedContent)),
+  );
+  const isDisplayedSpecPersisted =
+    isSpecPersisted && !streaming && !pickReviewedContent(reviewedContent);
   const combinedErrorMessage = pickErrorMessage(errorMessage, reviewErrorMessage);
   const effectiveReviewStatus = pickReviewStatus(isReviewPending, reviewStatusMessage);
   const modelOptions = pickModelOptions(claudeModel);

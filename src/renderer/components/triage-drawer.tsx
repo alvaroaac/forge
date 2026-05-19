@@ -30,7 +30,7 @@ type TriageActionsProps = GenerateButtonProps & {
 };
 
 function pickBriefContent(brief: TriageBrief | null, streaming: string): string {
-  return brief?.content ?? streaming;
+  return streaming ? streaming : (brief?.content ?? '');
 }
 
 async function writeBriefWithOverwrite(issueId: string, content: string): Promise<void> {
@@ -85,9 +85,7 @@ function TriageActions({
   onGenerate,
   onWrite,
 }: TriageActionsProps) {
-  const [writeState, setWriteState] = useState<WriteState>(
-    isInitiallySaved ? 'saved' : 'idle',
-  );
+  const [writeState, setWriteState] = useState<WriteState>(isInitiallySaved ? 'saved' : 'idle');
   const isWriteDisabled = writeState !== 'idle';
 
   useEffect(() => {

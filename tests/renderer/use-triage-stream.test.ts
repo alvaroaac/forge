@@ -154,7 +154,12 @@ describe('useTriageStream', () => {
     });
 
     await act(async () => {
-      chunks[0]?.({ issueId: 'FUL-7', delta: 'B', done: false, status: 'Claude is drafting the brief' });
+      chunks[0]?.({
+        issueId: 'FUL-7',
+        delta: 'B',
+        done: false,
+        status: 'Claude is drafting the brief',
+      });
     });
 
     expect(result.current.streaming).toBe('AB');

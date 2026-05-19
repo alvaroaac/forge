@@ -136,7 +136,12 @@ export function SpecDrawer({
       closeTitle="Close (Esc)"
       closeOnEscape={true}
       tabs={[
-        { key: 'detail', label: 'Detail', isActive: tab === 'detail', onClick: () => setTab('detail') },
+        {
+          key: 'detail',
+          label: 'Detail',
+          isActive: tab === 'detail',
+          onClick: () => setTab('detail'),
+        },
         { key: 'spec', label: 'Spec', isActive: tab === 'spec', onClick: () => setTab('spec') },
       ]}
     >

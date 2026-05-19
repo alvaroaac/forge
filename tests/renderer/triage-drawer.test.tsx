@@ -182,7 +182,38 @@ describe('TriageDrawer', () => {
     expect(screen.getByText('Generating brief')).toBeTruthy();
     expect(screen.getByText('Reading Computron repo context')).toBeTruthy();
     expect(screen.getByText('Starting Claude')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Generate Brief' }).getAttribute('disabled')).toBe('');
+    expect(screen.getByRole('button', { name: 'Generate Brief' }).getAttribute('disabled')).toBe(
+      '',
+    );
+  });
+
+  it('shows streaming content instead of a saved brief while regenerating', () => {
+    const savedBrief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '## Saved brief\nOld context.',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={true}
+        streaming={'## New brief\n\nFresh streamed context.'}
+        streamStatus={['Starting Claude']}
+        brief={savedBrief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('New brief')).toBeTruthy();
+    expect(screen.getByText('Fresh streamed context.')).toBeTruthy();
+    expect(screen.queryByText('Saved brief')).toBeNull();
+    expect(screen.queryByText('Old context.')).toBeNull();
   });
 
   it('shows loading activity instead of Generate Brief while checking for a saved brief', () => {
@@ -367,7 +398,9 @@ describe('TriageDrawer', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(true);
+      expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(
+        true,
+      );
     });
   });
 
@@ -395,6 +428,8 @@ describe('TriageDrawer', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(
+      true,
+    );
   });
 });
