@@ -26,29 +26,30 @@ type TriageActionsProps = GenerateButtonProps & {
   brief: TriageBrief | null;
   content: string;
   isInitiallySaved: boolean;
-  onWrite: () => Promise<void> | void;
+  onWrite: () => Promise<boolean> | boolean;
 };
 
 function pickBriefContent(brief: TriageBrief | null, streaming: string): string {
   return streaming ? streaming : (brief?.content ?? '');
 }
 
-async function writeBriefWithOverwrite(issueId: string, content: string): Promise<void> {
+async function writeBriefWithOverwrite(issueId: string, content: string): Promise<boolean> {
   const first = await window.forge.triage.write(issueId, content);
 
   if (first.written) {
-    return;
+    return true;
   }
 
   if (!first.exists) {
-    return;
+    return false;
   }
 
   if (!window.confirm('Overwrite existing triage-brief.md?')) {
-    return;
+    return false;
   }
 
-  await window.forge.triage.write(issueId, content, { overwrite: true });
+  const second = await window.forge.triage.write(issueId, content, { overwrite: true });
+  return second.written;
 }
 
 function GenerateBriefButton({ canGenerate, isStreaming, onGenerate }: GenerateButtonProps) {
@@ -96,8 +97,8 @@ function TriageActions({
     setWriteState('saving');
 
     try {
-      await onWrite();
-      setWriteState('saved');
+      const didWrite = await onWrite();
+      setWriteState(didWrite ? 'saved' : 'idle');
     } catch {
       setWriteState('idle');
     }
@@ -151,8 +152,8 @@ export function TriageDrawer({
 
   const content = pickBriefContent(brief, streaming);
   const isCheckingBrief = isBriefLoading && !content;
-  const handleWriteClick = async (): Promise<void> => {
-    await writeBriefWithOverwrite(issue.id, pickBriefContent(brief, ''));
+  const handleWriteClick = async (): Promise<boolean> => {
+    return writeBriefWithOverwrite(issue.id, content);
   };
   const generateButton = (
     <GenerateBriefButton

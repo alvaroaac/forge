@@ -216,6 +216,45 @@ describe('TriageDrawer', () => {
     expect(screen.queryByText('Old context.')).toBeNull();
   });
 
+  it('writes the displayed streaming brief while regenerating over a saved brief', async () => {
+    const savedBrief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '## Saved brief\nOld context.',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+    const writeMock = vi.fn().mockResolvedValue({
+      issueId: 'FUL-77',
+      path: '/tmp/FUL-77/triage-brief.md',
+      written: true,
+      exists: false,
+    });
+
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={true}
+        streaming={'## New brief\n\nFresh streamed context.'}
+        streamStatus={['Starting Claude']}
+        brief={savedBrief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /write to file/i }));
+
+    await waitFor(() => {
+      expect(writeMock).toHaveBeenCalledWith(
+        'FUL-77',
+        '## New brief\n\nFresh streamed context.',
+      );
+    });
+  });
+
   it('shows loading activity instead of Generate Brief while checking for a saved brief', () => {
     const writeMock = vi.fn();
     setTriageApi(writeMock);
@@ -355,6 +394,45 @@ describe('TriageDrawer', () => {
       expect(writeMock).toHaveBeenNthCalledWith(1, 'FUL-77', '# done');
       expect(writeMock).toHaveBeenNthCalledWith(2, 'FUL-77', '# done', { overwrite: true });
     });
+  });
+
+  it('returns to Write to file when overwrite is cancelled', async () => {
+    const brief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '# done',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+
+    const writeMock = vi.fn().mockResolvedValueOnce({
+      issueId: 'FUL-77',
+      path: '/tmp/FUL-77/triage-brief.md',
+      written: false,
+      exists: true,
+    });
+
+    setTriageApi(writeMock);
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={brief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /write to file/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Write to file/i })).toBeTruthy();
+    });
+    expect(screen.queryByRole('button', { name: /Saved to file/i })).toBeNull();
+    expect(writeMock).toHaveBeenCalledTimes(1);
   });
 
   it('shows write progress then disables after saving a brief', async () => {
