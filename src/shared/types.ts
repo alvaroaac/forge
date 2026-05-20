@@ -62,6 +62,7 @@ export interface TriageStreamChunk {
   issueId: string;
   delta: string;
   done: boolean;
+  status?: string;
 }
 
 export interface TriageGenerateDone {

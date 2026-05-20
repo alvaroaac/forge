@@ -20,7 +20,11 @@ import { configPath, issuesCachePath } from '../lib/paths';
 import { registerAuthHandlers } from './auth';
 import { registerConfigHandlers } from './config';
 import { registerLinearHandlers } from './linear';
-import { registerTriageGenerateHandler, registerTriageWriteHandler } from './triage';
+import {
+  registerTriageGenerateHandler,
+  registerTriageGetHandler,
+  registerTriageWriteHandler,
+} from './triage';
 import {
   registerSpecGenerateHandler,
   registerSpecGetHandler,
@@ -117,14 +121,16 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
   registerTriageGenerateHandler(ipc, {
     store,
     fetchTriageList: () => fetchTriage(client as LinearClient),
-    streamTriageBrief: ({ issue, computronRepoPath, model, onChunk }) =>
+    streamTriageBrief: ({ issue, computronRepoPath, model, onChunk, onStatus }) =>
       streamTriageBrief({
         issue,
         computronRepoPath,
         model,
         onChunk,
+        onStatus,
         streamClaude,
       }),
   });
+  registerTriageGetHandler(ipc, { store });
   registerTriageWriteHandler(ipc, { store, writeTriageBrief });
 }

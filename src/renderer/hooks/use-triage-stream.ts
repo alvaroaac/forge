@@ -18,6 +18,9 @@ function toGeneratedBrief(issueId: string, content: string): TriageBrief {
 export function useTriageStream(issueId: string | null) {
   const [brief, setBrief] = useState<TriageBrief | null>(null);
   const [streaming, setStreaming] = useState('');
+  const [streamStatus, setStreamStatus] = useState<string[]>([]);
+  const [isBriefPersisted, setIsBriefPersisted] = useState(false);
+  const [isBriefLoading, setIsBriefLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const currentIssueIdRef = useRef<string | null>(null);
@@ -37,6 +40,9 @@ export function useTriageStream(issueId: string | null) {
   const resetStreamState = useCallback((): void => {
     setBrief(null);
     setStreaming('');
+    setStreamStatus([]);
+    setIsBriefPersisted(false);
+    setIsBriefLoading(false);
     setIsStreaming(false);
     setErrorMessage(null);
   }, []);
@@ -48,6 +54,7 @@ export function useTriageStream(issueId: string | null) {
       }
 
       setBrief(toGeneratedBrief(targetIssueId, content));
+      setIsBriefPersisted(false);
     },
     [isCurrentRun],
   );
@@ -90,6 +97,20 @@ export function useTriageStream(issueId: string | null) {
         return;
       }
 
+      if (chunk.status) {
+        const nextStatus = chunk.status;
+        setStreamStatus((current) => {
+          if (current[current.length - 1] === nextStatus) {
+            return current;
+          }
+          return [...current, nextStatus].slice(-5);
+        });
+      }
+
+      if (!chunk.delta) {
+        return;
+      }
+
       setStreaming((current) => current + chunk.delta);
     },
     [isCurrentRun],
@@ -127,7 +148,31 @@ export function useTriageStream(issueId: string | null) {
       return;
     }
 
+    let cancelled = false;
+
     resetStreamState();
+    setIsBriefLoading(true);
+
+    void window.forge.triage
+      .get(issueId)
+      .then((nextBrief) => {
+        if (cancelled || !isCurrentRun(issueId, setupVersion)) {
+          return;
+        }
+
+        setBrief(nextBrief);
+        setIsBriefPersisted(nextBrief !== null);
+      })
+      .catch(() => {
+        // Keep the default null brief when preload rejects.
+      })
+      .finally(() => {
+        if (cancelled || !isCurrentRun(issueId, setupVersion)) {
+          return;
+        }
+
+        setIsBriefLoading(false);
+      });
 
     const unsubscribe = window.forge.triage.onChunk((chunk: TriageStreamChunk) => {
       handleChunk(issueId, setupVersion, chunk);
@@ -142,6 +187,7 @@ export function useTriageStream(issueId: string | null) {
     });
 
     return () => {
+      cancelled = true;
       unsubscribe();
       unsubscribeDone();
       unsubscribeError();
@@ -150,7 +196,7 @@ export function useTriageStream(issueId: string | null) {
         currentIssueIdRef.current = null;
       }
     };
-  }, [issueId, handleChunk, handleDone, handleError, resetStreamState]);
+  }, [issueId, handleChunk, handleDone, handleError, isCurrentRun, resetStreamState]);
 
   const generate = useCallback(
     async (model?: string): Promise<void> => {
@@ -165,6 +211,7 @@ export function useTriageStream(issueId: string | null) {
       const setupVersion = setupVersionRef.current;
 
       setStreaming('');
+      setStreamStatus(['Starting Claude']);
       setIsStreaming(true);
       setErrorMessage(null);
 
@@ -184,5 +231,14 @@ export function useTriageStream(issueId: string | null) {
     [issueId, isCurrentIssue, commitGeneratedBrief, finishStreaming, failStreaming],
   );
 
-  return { brief, streaming, isStreaming, errorMessage, generate };
+  return {
+    brief,
+    streaming,
+    streamStatus,
+    isBriefPersisted,
+    isBriefLoading,
+    isStreaming,
+    errorMessage,
+    generate,
+  };
 }

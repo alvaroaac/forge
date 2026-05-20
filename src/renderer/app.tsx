@@ -46,6 +46,7 @@ export function App() {
     spec,
     streaming,
     streamStatus,
+    isSpecPersisted,
     isStreaming,
     errorMessage,
     generate: generateSpec,
@@ -189,13 +190,13 @@ export function App() {
     }
   };
 
-  const onWriteSpec = (content: string) => {
+  const onWriteSpec = async (content: string): Promise<void> => {
     if (!drawerIssueId) {
       return;
     }
 
     specIds.current.add(drawerIssueId);
-    void window.forge.spec.write(drawerIssueId, content);
+    await window.forge.spec.write(drawerIssueId, content);
   };
 
   const setDrawerTab = (nextTab: DrawerTab) => {
@@ -241,6 +242,7 @@ export function App() {
           spec={spec}
           streaming={streaming}
           streamStatus={streamStatus}
+          isSpecPersisted={isSpecPersisted && !reviewedContent}
           reviewedContent={reviewedContent}
           reviewSummary={reviewSummary}
           isReviewPending={isReviewPending}
@@ -267,13 +269,25 @@ type TriageDrawerContainerProps = {
 };
 
 function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerContainerProps) {
-  const { brief, streaming, isStreaming, errorMessage, generate } = useTriageStream(issue.id);
+  const {
+    brief,
+    streaming,
+    streamStatus,
+    isBriefPersisted,
+    isBriefLoading,
+    isStreaming,
+    errorMessage,
+    generate,
+  } = useTriageStream(issue.id);
 
   return (
     <TriageDrawer
       issue={issue}
       brief={brief}
       streaming={streaming}
+      streamStatus={streamStatus}
+      isBriefPersisted={isBriefPersisted}
+      isBriefLoading={isBriefLoading}
       isStreaming={isStreaming}
       errorMessage={errorMessage}
       onGenerate={() => void generate()}

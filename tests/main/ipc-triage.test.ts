@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
+import { mkdtempSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   registerTriageGenerateHandler,
+  registerTriageGetHandler,
   registerTriageWriteHandler,
 } from '../../src/main/ipc/triage';
 import { IpcChannel } from '../../src/shared/ipc-channels';
@@ -47,6 +51,60 @@ const triageIssue: Issue = {
   assigneeId: null,
 };
 
+describe('triage:get handler', () => {
+  it('returns a persisted triage brief when triage-brief.md exists', async () => {
+    const repoPath = mkdtempSync(join(tmpdir(), 'triage-get-'));
+    const taskDir = join(repoPath, 'thoughts', 'tasks', 'FUL-77');
+    mkdirSync(taskDir, { recursive: true });
+    const filePath = join(taskDir, 'triage-brief.md');
+    writeFileSync(filePath, '# saved brief', 'utf-8');
+    const expectedGeneratedAt = statSync(filePath).mtime.toISOString();
+    const ipc = fakeIpc();
+
+    registerTriageGetHandler(ipc as never, {
+      store: {
+        get: async () => ({
+          linearTokenPath: '',
+          linearTeamKey: 'FUL',
+          repoPath,
+          computronRepoPath: '',
+          claudeModel: '',
+        }),
+        set: async () => undefined,
+      } as never,
+    });
+
+    await expect(ipc.invoke(IpcChannel.TriageGet, {}, { issueId: 'FUL-77' })).resolves.toEqual({
+      issueId: 'FUL-77',
+      content: '# saved brief',
+      generatedAt: expectedGeneratedAt,
+    });
+  });
+
+  it('returns null when triage-brief.md is missing or issue id is unsafe', async () => {
+    const repoPath = mkdtempSync(join(tmpdir(), 'triage-get-'));
+    const ipc = fakeIpc();
+
+    registerTriageGetHandler(ipc as never, {
+      store: {
+        get: async () => ({
+          linearTokenPath: '',
+          linearTeamKey: 'FUL',
+          repoPath,
+          computronRepoPath: '',
+          claudeModel: '',
+        }),
+        set: async () => undefined,
+      } as never,
+    });
+
+    await expect(ipc.invoke(IpcChannel.TriageGet, {}, { issueId: 'FUL-77' })).resolves.toBeNull();
+    await expect(
+      ipc.invoke(IpcChannel.TriageGet, {}, { issueId: '../FUL-77' }),
+    ).resolves.toBeNull();
+  });
+});
+
 describe('triage:generate handler', () => {
   it('streams chunks then a done event and returns the full content', async () => {
     const ipc = fakeIpc();
@@ -64,7 +122,9 @@ describe('triage:generate handler', () => {
         set: async () => undefined,
       } as never,
       fetchTriageList: async () => [triageIssue],
-      streamTriageBrief: async ({ onChunk }) => {
+      streamTriageBrief: async ({ onChunk, onStatus }) => {
+        onStatus?.('Claude initialized the repo session');
+        onStatus?.('Claude is drafting the spec');
         onChunk('part 1 ');
         onChunk('part 2');
         return 'part 1 part 2';
@@ -78,8 +138,20 @@ describe('triage:generate handler', () => {
 
     expect(result).toEqual({ issueId: 'FUL-77', content: 'part 1 part 2' });
     const chunkSends = event.sent.filter((s) => s.channel === IpcChannel.TriageStreamChunk);
-    expect(chunkSends).toHaveLength(3);
-    expect(chunkSends[2].payload).toMatchObject({ issueId: 'FUL-77', delta: '', done: true });
+    expect(chunkSends).toHaveLength(5);
+    expect(chunkSends[0].payload).toMatchObject({
+      issueId: 'FUL-77',
+      delta: '',
+      done: false,
+      status: 'Claude initialized the repo session',
+    });
+    expect(chunkSends[1].payload).toMatchObject({
+      issueId: 'FUL-77',
+      delta: '',
+      done: false,
+      status: 'Claude is drafting the brief',
+    });
+    expect(chunkSends[4].payload).toMatchObject({ issueId: 'FUL-77', delta: '', done: true });
     expect(event.sent.some((s) => s.channel === IpcChannel.TriageGenerateDone)).toBe(true);
   });
 

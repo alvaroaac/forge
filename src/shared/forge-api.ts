@@ -35,6 +35,7 @@ export interface ForgeApi {
     onError: (handler: (payload: SpecGenerateError) => void) => () => void;
   };
   triage: {
+    get: (issueId: string) => Promise<TriageBrief | null>;
     generate: (issueId: string, model?: string) => Promise<TriageBrief>;
     write: (
       issueId: string,

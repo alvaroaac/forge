@@ -76,6 +76,7 @@ describe('shared types', () => {
       issueId: string;
       delta: string;
       done: boolean;
+      status?: string;
     }>();
   });
 

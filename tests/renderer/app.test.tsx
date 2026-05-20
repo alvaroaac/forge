@@ -23,6 +23,7 @@ const renderState: {
     spec: Spec | null;
     streaming: string;
     streamStatus: string[];
+    isSpecPersisted: boolean;
     reviewedContent: string | null;
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;
@@ -31,13 +32,16 @@ const renderState: {
     onClaudeModelChange: (model: string) => void;
     onGenerate: () => void;
     onLaunchReview: (content: string) => void;
-    onWrite: (content: string) => void;
+    onWrite: (content: string) => Promise<void> | void;
   } | null;
   triageDrawerIssue: Issue | null;
   triageDrawerProps: {
     canGenerate: boolean;
     isStreaming: boolean;
     streaming: string;
+    streamStatus: string[];
+    isBriefPersisted: boolean;
+    isBriefLoading: boolean;
     brief: TriageBrief | null;
     errorMessage: string | null;
     onGenerate: () => void;
@@ -80,6 +84,7 @@ vi.mock('../../src/renderer/components/spec-drawer', () => ({
     spec: Spec | null;
     streaming: string;
     streamStatus: string[];
+    isSpecPersisted: boolean;
     reviewedContent: string | null;
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;
@@ -88,7 +93,7 @@ vi.mock('../../src/renderer/components/spec-drawer', () => ({
     onClaudeModelChange: (model: string) => void;
     onGenerate: () => void;
     onLaunchReview: (content: string) => void;
-    onWrite: (content: string) => void;
+    onWrite: (content: string) => Promise<void> | void;
   }) => {
     if (props.issue) {
       renderState.specDrawerIssue = props.issue;
@@ -104,6 +109,9 @@ vi.mock('../../src/renderer/components/triage-drawer', () => ({
     canGenerate: boolean;
     isStreaming: boolean;
     streaming: string;
+    streamStatus: string[];
+    isBriefPersisted: boolean;
+    isBriefLoading: boolean;
     brief: TriageBrief | null;
     errorMessage: string | null;
     onGenerate: () => void;
@@ -172,6 +180,8 @@ vi.mock('../../src/renderer/hooks/use-spec-stream', () => ({
   useSpecStream: () => ({
     spec: renderState.streamSpec,
     streaming: '',
+    streamStatus: [],
+    isSpecPersisted: renderState.streamSpec !== null,
     isStreaming: false,
     errorMessage: null,
     generate: renderState.generate,
@@ -182,6 +192,9 @@ vi.mock('../../src/renderer/hooks/use-triage-stream', () => ({
   useTriageStream: () => ({
     brief: renderState.streamTriageBrief,
     streaming: '',
+    streamStatus: [],
+    isBriefPersisted: renderState.streamTriageBrief !== null,
+    isBriefLoading: false,
     isStreaming: false,
     errorMessage: null,
     generate: renderState.generateTriage,
@@ -223,6 +236,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
@@ -275,6 +289,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
@@ -340,6 +355,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
@@ -393,6 +409,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
@@ -445,6 +462,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
@@ -503,6 +521,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
@@ -576,6 +595,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
@@ -640,6 +660,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
@@ -700,6 +721,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),
@@ -747,6 +769,7 @@ describe('App detail drawer refresh', () => {
         getViewerId: vi.fn(),
       },
       triage: {
+        get: vi.fn(),
         generate: vi.fn(),
         write: vi.fn(),
         onChunk: vi.fn(),

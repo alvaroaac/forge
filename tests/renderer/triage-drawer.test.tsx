@@ -17,6 +17,20 @@ const issue: Issue = {
   assigneeId: 'user-1',
 };
 
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+};
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+
+  return { promise, resolve };
+}
+
 function setTriageApi(writeMock: ReturnType<typeof vi.fn>) {
   window.forge = {
     auth: { check: vi.fn() },
@@ -38,6 +52,7 @@ function setTriageApi(writeMock: ReturnType<typeof vi.fn>) {
       onError: vi.fn(),
     },
     triage: {
+      get: vi.fn(),
       generate: vi.fn(),
       write: writeMock,
       onChunk: vi.fn(),
@@ -70,7 +85,7 @@ describe('TriageDrawer', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('disables Generate brief when canGenerate is false', () => {
+  it('opens the drawer shell and disables Generate Brief when canGenerate is false', () => {
     const writeMock = vi.fn();
     setTriageApi(writeMock);
 
@@ -89,10 +104,14 @@ describe('TriageDrawer', () => {
 
     expect(container.querySelector('.drawer-scrim-open')).toBeTruthy();
     expect(container.querySelector('.drawer-open')).toBeTruthy();
-    const generateButton = screen.getByRole('button', { name: /generate brief/i });
+    const generateButton = screen.getByRole('button', { name: 'Generate Brief' });
 
     expect(generateButton.getAttribute('disabled')).toBe('');
+    expect(generateButton.className).toContain('btn-ghost-accent');
     expect(screen.getByText(/computronRepoPath/i)).toBeTruthy();
+    expect(screen.getByText('Brief')).toBeTruthy();
+    expect(screen.getByText('No brief yet for FUL-77.')).toBeTruthy();
+    expect(screen.getByText('thoughts/tasks/FUL-77/triage-brief.md')).toBeTruthy();
   });
 
   it('closes when the drawer scrim is clicked', () => {
@@ -118,7 +137,30 @@ describe('TriageDrawer', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('shows streaming label while generation is active', () => {
+  it('calls onGenerate from the Generate Brief action', () => {
+    const writeMock = vi.fn();
+    const onGenerate = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={null}
+        errorMessage={null}
+        onGenerate={onGenerate}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate Brief' }));
+
+    expect(onGenerate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows brief generation activity before content arrives', () => {
     const writeMock = vi.fn();
     setTriageApi(writeMock);
 
@@ -127,7 +169,8 @@ describe('TriageDrawer', () => {
         issue={issue}
         canGenerate={true}
         isStreaming={true}
-        streaming="## Streaming"
+        streaming=""
+        streamStatus={['Starting Claude', 'Reading Computron repo context']}
         brief={null}
         errorMessage={null}
         onGenerate={vi.fn()}
@@ -135,18 +178,115 @@ describe('TriageDrawer', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: /generating/i })).toBeTruthy();
-    expect(screen.getByText(/Streaming/i)).toBeTruthy();
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText('Generating brief')).toBeTruthy();
+    expect(screen.getByText('Reading Computron repo context')).toBeTruthy();
+    expect(screen.getByText('Starting Claude')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Generate Brief' }).getAttribute('disabled')).toBe(
+      '',
+    );
   });
 
-  it('renders brief and error text when present', () => {
+  it('shows streaming content instead of a saved brief while regenerating', () => {
+    const savedBrief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '## Saved brief\nOld context.',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={true}
+        streaming={'## New brief\n\nFresh streamed context.'}
+        streamStatus={['Starting Claude']}
+        brief={savedBrief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('New brief')).toBeTruthy();
+    expect(screen.getByText('Fresh streamed context.')).toBeTruthy();
+    expect(screen.queryByText('Saved brief')).toBeNull();
+    expect(screen.queryByText('Old context.')).toBeNull();
+  });
+
+  it('writes the displayed streaming brief while regenerating over a saved brief', async () => {
+    const savedBrief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '## Saved brief\nOld context.',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+    const writeMock = vi.fn().mockResolvedValue({
+      issueId: 'FUL-77',
+      path: '/tmp/FUL-77/triage-brief.md',
+      written: true,
+      exists: false,
+    });
+
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={true}
+        streaming={'## New brief\n\nFresh streamed context.'}
+        streamStatus={['Starting Claude']}
+        brief={savedBrief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /write to file/i }));
+
+    await waitFor(() => {
+      expect(writeMock).toHaveBeenCalledWith(
+        'FUL-77',
+        '## New brief\n\nFresh streamed context.',
+      );
+    });
+  });
+
+  it('shows loading activity instead of Generate Brief while checking for a saved brief', () => {
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        isBriefLoading={true}
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText('Loading brief')).toBeTruthy();
+    expect(screen.getByText('Checking triage-brief.md')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Generate Brief' })).toBeNull();
+  });
+
+  it('renders brief content as markdown instead of raw preformatted text', () => {
     const brief: TriageBrief = {
       issueId: 'FUL-77',
-      content: '# Why this issue matters',
+      content: '## Why this issue matters\nUse `GeneratedDocument` for briefs.',
       generatedAt: '2026-05-14T00:00:00.000Z',
     };
 
-    render(
+    const { container } = render(
       <TriageDrawer
         issue={issue}
         canGenerate={true}
@@ -159,7 +299,10 @@ describe('TriageDrawer', () => {
       />,
     );
 
-    expect(screen.getByText(/# Why this issue matters/)).toBeTruthy();
+    expect(container.querySelector('pre')).toBeNull();
+    expect(container.querySelectorAll('.md-section')).toHaveLength(1);
+    expect(screen.getByText('Why this issue matters')).toBeTruthy();
+    expect(container.querySelector('.md-code')?.textContent).toBe('GeneratedDocument');
     expect(screen.getByText('something failed')).toBeTruthy();
   });
 
@@ -202,6 +345,7 @@ describe('TriageDrawer', () => {
     );
 
     expect(screen.getByRole('button', { name: /write to file/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /write to file/i }).className).toContain('btn-ghost');
   });
 
   it('prompts before overwrite and retries write when triage file already exists', async () => {
@@ -250,5 +394,120 @@ describe('TriageDrawer', () => {
       expect(writeMock).toHaveBeenNthCalledWith(1, 'FUL-77', '# done');
       expect(writeMock).toHaveBeenNthCalledWith(2, 'FUL-77', '# done', { overwrite: true });
     });
+  });
+
+  it('returns to Write to file when overwrite is cancelled', async () => {
+    const brief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '# done',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+
+    const writeMock = vi.fn().mockResolvedValueOnce({
+      issueId: 'FUL-77',
+      path: '/tmp/FUL-77/triage-brief.md',
+      written: false,
+      exists: true,
+    });
+
+    setTriageApi(writeMock);
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={brief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /write to file/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Write to file/i })).toBeTruthy();
+    });
+    expect(screen.queryByRole('button', { name: /Saved to file/i })).toBeNull();
+    expect(writeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows write progress then disables after saving a brief', async () => {
+    const brief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '# done',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+    const writeDone = createDeferred<{
+      issueId: string;
+      path: string;
+      written: boolean;
+      exists: boolean;
+    }>();
+    const writeMock = vi.fn(() => writeDone.promise);
+
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={brief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /write to file/i }));
+
+    expect(screen.getByRole('button', { name: /Writing.../i }).hasAttribute('disabled')).toBe(true);
+
+    writeDone.resolve({
+      issueId: 'FUL-77',
+      path: '/tmp/FUL-77/triage-brief.md',
+      written: true,
+      exists: false,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(
+        true,
+      );
+    });
+  });
+
+  it('starts with Saved to file when the brief is already persisted', () => {
+    const brief: TriageBrief = {
+      issueId: 'FUL-77',
+      content: '# already saved',
+      generatedAt: '2026-05-14T00:00:00.000Z',
+    };
+    const writeMock = vi.fn();
+
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        isBriefPersisted={true}
+        brief={brief}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Saved to file/i }).hasAttribute('disabled')).toBe(
+      true,
+    );
   });
 });

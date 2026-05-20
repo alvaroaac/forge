@@ -19,12 +19,14 @@ describe('streamTriageBrief', () => {
   it('calls streamClaude with --add-dir <computronRepoPath> and Read/Glob/Grep tools', async () => {
     const stream = vi.fn().mockResolvedValue('# brief');
     const chunks: string[] = [];
+    const onStatus = vi.fn();
 
     const out = await streamTriageBrief({
       issue,
       computronRepoPath: '/tmp/computron',
       model: 'claude-sonnet-4-6',
       onChunk: (c) => chunks.push(c),
+      onStatus,
       streamClaude: stream,
     });
 
@@ -39,6 +41,7 @@ describe('streamTriageBrief', () => {
       'Read,Glob,Grep',
     ]);
     expect(arg.cwd).toBe('/tmp/computron');
+    expect(arg.onStatus).toBe(onStatus);
     expect(typeof arg.system).toBe('string');
     expect(arg.user).toContain('FUL-77');
   });

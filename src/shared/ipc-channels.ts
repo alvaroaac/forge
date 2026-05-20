@@ -16,6 +16,7 @@ export const IpcChannel = {
   TriageStreamChunk: 'triage:stream-chunk',
   TriageGenerateDone: 'triage:generate-done',
   TriageGenerateError: 'triage:generate-error',
+  TriageGet: 'triage:get',
   TriageWrite: 'triage:write',
   ConfigGet: 'config:get',
   ConfigSet: 'config:set',

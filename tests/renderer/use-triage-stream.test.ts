@@ -39,6 +39,7 @@ function createBrief(issueId: string, content: string): TriageBrief {
 }
 
 function setForge(options: {
+  get?: (issueId: string) => Promise<TriageBrief | null>;
   generate: (issueId: string, model?: string) => Promise<TriageBrief>;
   onChunk: (handler: ChunkHandler) => () => void;
   onDone?: (handler: DoneHandler) => () => void;
@@ -64,6 +65,7 @@ function setForge(options: {
       onError: vi.fn(),
     },
     triage: {
+      get: options.get ?? vi.fn().mockResolvedValue(null),
       generate: options.generate,
       write: vi.fn(),
       onChunk: options.onChunk,
@@ -84,6 +86,23 @@ afterEach(() => {
 });
 
 describe('useTriageStream', () => {
+  it('loads a persisted triage brief for the active issue', async () => {
+    const persisted = createBrief('FUL-7', '# saved brief');
+    const get = vi.fn().mockResolvedValue(persisted);
+    const generate = vi.fn().mockResolvedValue(createBrief('FUL-7', '# generated'));
+    const onChunk = vi.fn(() => vi.fn());
+
+    setForge({ get, generate, onChunk });
+
+    const { result } = renderHook(() => useTriageStream('FUL-7'));
+
+    await waitFor(() => {
+      expect(result.current.brief).toEqual(persisted);
+      expect(result.current.isBriefPersisted).toBe(true);
+      expect(result.current.isBriefLoading).toBe(false);
+    });
+  });
+
   it('accumulates deltas and marks streaming complete on done', async () => {
     const generation = createDeferred<TriageBrief>();
     const generate = vi.fn(() => generation.promise);
@@ -105,6 +124,9 @@ describe('useTriageStream', () => {
     expect(result.current).toEqual({
       brief: null,
       streaming: '',
+      streamStatus: [],
+      isBriefPersisted: false,
+      isBriefLoading: true,
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),
@@ -116,16 +138,36 @@ describe('useTriageStream', () => {
 
     expect(generate).toHaveBeenCalledWith('FUL-7');
     expect(result.current.isStreaming).toBe(true);
+    expect(result.current.streamStatus).toEqual(['Starting Claude']);
+
+    await act(async () => {
+      chunks[0]?.({
+        issueId: 'FUL-7',
+        delta: '',
+        done: false,
+        status: 'Claude initialized the repo session',
+      });
+    });
 
     await act(async () => {
       chunks[0]?.({ issueId: 'FUL-7', delta: 'A', done: false });
     });
 
     await act(async () => {
-      chunks[0]?.({ issueId: 'FUL-7', delta: 'B', done: false });
+      chunks[0]?.({
+        issueId: 'FUL-7',
+        delta: 'B',
+        done: false,
+        status: 'Claude is drafting the brief',
+      });
     });
 
     expect(result.current.streaming).toBe('AB');
+    expect(result.current.streamStatus).toEqual([
+      'Starting Claude',
+      'Claude initialized the repo session',
+      'Claude is drafting the brief',
+    ]);
 
     await act(async () => {
       doneHandlers[0]?.({ issueId: 'FUL-7' });
@@ -211,6 +253,9 @@ describe('useTriageStream', () => {
     expect(result.current).toEqual({
       brief: null,
       streaming: '',
+      streamStatus: [],
+      isBriefPersisted: false,
+      isBriefLoading: true,
       isStreaming: false,
       errorMessage: null,
       generate: expect.any(Function),

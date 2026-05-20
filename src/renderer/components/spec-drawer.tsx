@@ -1,10 +1,6 @@
-import { useEffect } from 'react';
-
 import type { Issue, Spec, SpecReviewSummary } from '../../shared/types';
 import { DetailTab } from './detail-tab';
-import { IconClose, IconExternal } from './icons';
-import { LabelBadge } from './label-badge';
-import { PriorityChip } from './priority-chip';
+import { IssueDrawerShell } from './issue-drawer-shell';
 import { SpecTab } from './spec-tab';
 
 export type DrawerTab = 'detail' | 'spec';
@@ -17,6 +13,7 @@ type SpecDrawerProps = {
   spec: Spec | null;
   streaming: string;
   streamStatus?: string[];
+  isSpecPersisted?: boolean;
   reviewedContent?: string | null;
   reviewSummary?: SpecReviewSummary | null;
   isReviewPending?: boolean;
@@ -28,24 +25,85 @@ type SpecDrawerProps = {
   onClaudeModelChange: (model: string) => void;
   onGenerate: () => void;
   onLaunchReview?: (content: string) => void;
-  onWrite?: (content: string) => void;
+  onWrite?: (content: string) => Promise<void> | void;
   onCopy: (content: string) => void;
 };
 
-function useEscClose(onClose: () => void): void {
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
+type SpecDrawerBodyProps = Omit<SpecDrawerProps, 'setTab' | 'onClose'>;
 
-    window.addEventListener('keydown', onKeyDown);
+function getStreamStatus(streamStatus: string[] | undefined): string[] {
+  return streamStatus ?? [];
+}
 
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [onClose]);
+function getReviewedContent(reviewedContent: string | null | undefined): string | null {
+  return reviewedContent ?? null;
+}
+
+function getReviewSummary(
+  reviewSummary: SpecReviewSummary | null | undefined,
+): SpecReviewSummary | null {
+  return reviewSummary ?? null;
+}
+
+function getOptionalMessage(message: string | null | undefined): string | null {
+  return message ?? null;
+}
+
+function getOptionalBoolean(value: boolean | undefined): boolean {
+  return value === true;
+}
+
+function SpecDrawerBody({
+  issue,
+  tab,
+  spec,
+  streaming,
+  streamStatus,
+  isSpecPersisted,
+  reviewedContent,
+  reviewSummary,
+  isReviewPending,
+  reviewStatusMessage,
+  reviewErrorMessage,
+  isStreaming,
+  errorMessage,
+  claudeModel,
+  onClaudeModelChange,
+  onGenerate,
+  onLaunchReview,
+  onWrite,
+  onCopy,
+}: SpecDrawerBodyProps) {
+  if (!issue) {
+    return null;
+  }
+
+  if (tab === 'detail') {
+    return <DetailTab issue={issue} />;
+  }
+
+  return (
+    <SpecTab
+      issue={issue}
+      spec={spec}
+      streaming={streaming}
+      streamStatus={getStreamStatus(streamStatus)}
+      isSpecPersisted={getOptionalBoolean(isSpecPersisted)}
+      reviewedContent={getReviewedContent(reviewedContent)}
+      reviewSummary={getReviewSummary(reviewSummary)}
+      isReviewPending={getOptionalBoolean(isReviewPending)}
+      reviewStatusMessage={getOptionalMessage(reviewStatusMessage)}
+      reviewErrorMessage={getOptionalMessage(reviewErrorMessage)}
+      isStreaming={isStreaming}
+      errorMessage={errorMessage}
+      claudeModel={claudeModel}
+      onClaudeModelChange={onClaudeModelChange}
+      onGenerate={onGenerate}
+      onLaunchReview={onLaunchReview}
+      onWrite={onWrite}
+      onCopy={onCopy}
+    />
+  );
 }
 
 export function SpecDrawer({
@@ -55,12 +113,13 @@ export function SpecDrawer({
   onClose,
   spec,
   streaming,
-  streamStatus = [],
-  reviewedContent = null,
-  reviewSummary = null,
-  isReviewPending = false,
-  reviewStatusMessage = null,
-  reviewErrorMessage = null,
+  streamStatus,
+  isSpecPersisted,
+  reviewedContent,
+  reviewSummary,
+  isReviewPending,
+  reviewStatusMessage,
+  reviewErrorMessage,
   isStreaming,
   errorMessage,
   claudeModel,
@@ -70,80 +129,43 @@ export function SpecDrawer({
   onWrite,
   onCopy,
 }: SpecDrawerProps) {
-  useEscClose(onClose);
-
-  const open = issue !== null;
-
   return (
-    <>
-      <div className={`drawer-scrim ${open ? 'drawer-scrim-open' : ''}`} onClick={onClose} />
-      <aside className={`drawer ${open ? 'drawer-open' : ''}`}>
-        {issue ? (
-          <>
-            <div className="drawer-head">
-              <div className="drawer-head-row1">
-                <span className="mono drawer-id">{issue.id}</span>
-                <span className="drawer-title">{issue.title}</span>
-                <button className="icon-btn" type="button" onClick={onClose} title="Close (Esc)">
-                  <IconClose size={14} />
-                </button>
-              </div>
-              <div className="drawer-head-row2">
-                <PriorityChip priority={issue.priority} />
-                {issue.labels.map((label) => (
-                  <LabelBadge key={label} label={label} />
-                ))}
-                <span style={{ flex: 1 }} />
-                <a className="btn-ghost" href={issue.url} target="_blank" rel="noreferrer">
-                  Linear <IconExternal size={10} stroke={2} />
-                </a>
-              </div>
-              <div className="drawer-tabs">
-                <button
-                  className={`drawer-tab ${tab === 'detail' ? 'drawer-tab-active' : ''}`}
-                  type="button"
-                  onClick={() => setTab('detail')}
-                >
-                  Detail
-                </button>
-                <button
-                  className={`drawer-tab ${tab === 'spec' ? 'drawer-tab-active' : ''}`}
-                  type="button"
-                  onClick={() => setTab('spec')}
-                >
-                  Spec
-                </button>
-              </div>
-            </div>
-
-            <div className="drawer-body">
-              {tab === 'detail' ? (
-                <DetailTab issue={issue} />
-              ) : (
-                <SpecTab
-                  issue={issue}
-                  spec={spec}
-                  streaming={streaming}
-                  streamStatus={streamStatus}
-                  reviewedContent={reviewedContent}
-                  reviewSummary={reviewSummary}
-                  isReviewPending={isReviewPending}
-                  reviewStatusMessage={reviewStatusMessage}
-                  reviewErrorMessage={reviewErrorMessage}
-                  isStreaming={isStreaming}
-                  errorMessage={errorMessage}
-                  claudeModel={claudeModel}
-                  onClaudeModelChange={onClaudeModelChange}
-                  onGenerate={onGenerate}
-                  onLaunchReview={onLaunchReview}
-                  onWrite={onWrite}
-                  onCopy={onCopy}
-                />
-              )}
-            </div>
-          </>
-        ) : null}
-      </aside>
-    </>
+    <IssueDrawerShell
+      issue={issue}
+      onClose={onClose}
+      closeTitle="Close (Esc)"
+      closeOnEscape={true}
+      tabs={[
+        {
+          key: 'detail',
+          label: 'Detail',
+          isActive: tab === 'detail',
+          onClick: () => setTab('detail'),
+        },
+        { key: 'spec', label: 'Spec', isActive: tab === 'spec', onClick: () => setTab('spec') },
+      ]}
+    >
+      <SpecDrawerBody
+        issue={issue}
+        tab={tab}
+        spec={spec}
+        streaming={streaming}
+        streamStatus={streamStatus}
+        isSpecPersisted={isSpecPersisted}
+        reviewedContent={reviewedContent}
+        reviewSummary={reviewSummary}
+        isReviewPending={isReviewPending}
+        reviewStatusMessage={reviewStatusMessage}
+        reviewErrorMessage={reviewErrorMessage}
+        isStreaming={isStreaming}
+        errorMessage={errorMessage}
+        claudeModel={claudeModel}
+        onClaudeModelChange={onClaudeModelChange}
+        onGenerate={onGenerate}
+        onLaunchReview={onLaunchReview}
+        onWrite={onWrite}
+        onCopy={onCopy}
+      />
+    </IssueDrawerShell>
   );
 }
