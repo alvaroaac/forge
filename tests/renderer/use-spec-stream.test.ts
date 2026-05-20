@@ -149,6 +149,7 @@ describe('useSpecStream', () => {
         generatedAt: expect.any(String),
         approved: false,
       });
+      expect(result.current.streaming).toBe('');
     });
   });
 

@@ -5,7 +5,7 @@ import {
 } from 'node:child_process';
 import { buildCliEnv } from '../lib/cli-env';
 
-const CLAUDE_SPEC_TIMEOUT_MS = 180_000;
+const CLAUDE_SPEC_TIMEOUT_MS = 300_000;
 
 export interface StreamSpecInput {
   model: string;
@@ -206,6 +206,11 @@ export async function streamClaude(input: StreamClaudeInput): Promise<string> {
       input.onChunk(text);
     };
 
+    const emitDistinctText = (text: string): void => {
+      const separator = full && !full.endsWith('\n\n') ? '\n\n' : '';
+      emitText(`${separator}${text}`);
+    };
+
     const applyAssistantText = (text: string): void => {
       if (!text || text === lastAssistantText) {
         return;
@@ -214,7 +219,7 @@ export async function streamClaude(input: StreamClaudeInput): Promise<string> {
       if (text.startsWith(lastAssistantText)) {
         emitText(text.slice(lastAssistantText.length));
       } else {
-        emitText(text);
+        emitDistinctText(text);
       }
       lastAssistantText = text;
     };

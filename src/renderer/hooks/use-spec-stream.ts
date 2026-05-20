@@ -65,6 +65,7 @@ export function useSpecStream(issueId: string | null) {
       }
 
       setSpec(toGeneratedSpec(targetIssueId, content));
+      setStreaming('');
       setIsSpecPersisted(false);
     },
     [isCurrentRun],

@@ -154,10 +154,40 @@ describe('streamSpec', () => {
     });
 
     const expectation = expect(result).rejects.toThrow(
-      'Claude CLI timed out after 180s. Received 59 stdout chars. Stderr tail: still thinking Last Claude events: system:status:requesting',
+      'Claude CLI timed out after 300s. Received 59 stdout chars. Stderr tail: still thinking Last Claude events: system:status:requesting',
     );
-    await vi.advanceTimersByTimeAsync(180_000);
+    await vi.advanceTimersByTimeAsync(300_000);
     await expectation;
+  });
+
+  it('separates distinct assistant text events with a blank line', async () => {
+    const { spawnProcess } = createFakeSpawn((child) => {
+      child.stdout.write(
+        jsonLine({
+          type: 'assistant',
+          message: { content: [{ type: 'text', text: 'First update.' }] },
+        }),
+      );
+      child.stdout.write(
+        jsonLine({
+          type: 'assistant',
+          message: { content: [{ type: 'text', text: 'Second update.' }] },
+        }),
+      );
+      child.emit('close', 0);
+    });
+    const chunks: string[] = [];
+
+    const full = await streamSpec({
+      model: 'claude-sonnet-4-6',
+      system: 'sys',
+      user: 'user',
+      onChunk: (chunk) => chunks.push(chunk),
+      spawnProcess,
+    });
+
+    expect(chunks).toEqual(['First update.', '\n\nSecond update.']);
+    expect(full).toBe('First update.\n\nSecond update.');
   });
 
   it('passes through repo tool args when provided', async () => {
