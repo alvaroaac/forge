@@ -7,6 +7,7 @@ import { assertSafeIssueId, isSafeIssueId } from '../lib/issue-id';
 import type { ConfigStore } from '../services/config-store';
 import type { IssuesCache } from '../services/issues-cache';
 import type { RepoContext } from '../services/repo-reader';
+import type { LinearComment } from '../services/comment-fetcher';
 import { buildSpecPrompt } from '../services/spec-prompt';
 import type { Issue, Spec, SpecReviewResult } from '../../shared/types';
 
@@ -40,11 +41,18 @@ type StreamSpecFn = (input: {
   user: string;
   extraArgs?: readonly string[];
   cwd?: string;
+  curatedComments?: string;
   onChunk: (delta: string) => void;
   onStatus?: (status: string) => void;
 }) => Promise<string>;
 
 type PreflightClaudeRepoAccessFn = (input: { repoPath: string }) => Promise<void>;
+type FetchAndFilterCommentsFn = (issueUuid: string) => Promise<LinearComment[]>;
+type TriageCommentsFn = (input: {
+  issueTitle: string;
+  issueDescription: string;
+  comments: LinearComment[];
+}) => Promise<string>;
 
 export interface SpecGenerateDeps {
   store: ConfigStore;
@@ -53,6 +61,8 @@ export interface SpecGenerateDeps {
   streamSpec: StreamSpecFn;
   preflightClaudeRepoAccess?: PreflightClaudeRepoAccessFn;
   templateMd: string;
+  fetchAndFilterComments: FetchAndFilterCommentsFn;
+  triageComments: TriageCommentsFn;
 }
 
 export interface SpecWriteDeps {
@@ -98,6 +108,41 @@ function sendSpecChunk(
   status?: string,
 ): void {
   sender.send(IpcChannel.SpecStreamChunk, { issueId, delta, done, status });
+}
+
+function sendSpecPhase(
+  sender: SpecGenerateEventSender,
+  payload: { issueId: string; phase: 'triaging' | 'generating'; commentCount?: number },
+): void {
+  sender.send(IpcChannel.SpecPhase, payload);
+}
+
+async function curateSpecComments(
+  deps: Pick<SpecGenerateDeps, 'fetchAndFilterComments' | 'triageComments'>,
+  sender: SpecGenerateEventSender,
+  issue: Issue,
+): Promise<string> {
+  const comments = await deps.fetchAndFilterComments(issue.uuid);
+  if (comments.length === 0) {
+    return '';
+  }
+
+  sendSpecPhase(sender, {
+    issueId: issue.id,
+    phase: 'triaging',
+    commentCount: comments.length,
+  });
+
+  try {
+    return await deps.triageComments({
+      issueTitle: issue.title,
+      issueDescription: issue.description,
+      comments,
+    });
+  } catch (err) {
+    console.warn('[spec] comment triage failed, proceeding without curated comments:', err);
+    return '';
+  }
 }
 
 function specRepoPath(cfg: { repoPath: string; computronRepoPath?: string }): string {
@@ -149,6 +194,8 @@ export function registerSpecGenerateHandler(ipc: IpcMain, deps: SpecGenerateDeps
         const model = pickSpecModel(payload, cfg.claudeModel);
         const context = await deps.readRepoContext(targetRepoPath);
         const prompt = buildSpecPrompt({ issue, context, templateMd: deps.templateMd });
+        const curated = await curateSpecComments(deps, event.sender, issue);
+        sendSpecPhase(event.sender, { issueId: payload.issueId, phase: 'generating' });
         if (cfg.computronRepoPath && deps.preflightClaudeRepoAccess) {
           await deps.preflightClaudeRepoAccess({ repoPath: cfg.computronRepoPath });
         }
@@ -159,6 +206,7 @@ export function registerSpecGenerateHandler(ipc: IpcMain, deps: SpecGenerateDeps
             user: prompt.user,
             extraArgs: specExtraArgs(targetRepoPath),
             cwd: targetRepoPath || undefined,
+            curatedComments: curated,
             onChunk: (delta) => sendSpecChunk(event.sender, payload.issueId, delta, false),
             onStatus: (status) => sendSpecChunk(event.sender, payload.issueId, '', false, status),
           }),

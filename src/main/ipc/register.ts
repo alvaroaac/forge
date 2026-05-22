@@ -13,6 +13,9 @@ import { streamClaude, streamSpec } from '../services/spec-generator';
 import { launchSpecReview } from '../services/spec-review-bridge';
 import { reviseSpecWithReview } from '../services/spec-review-revision';
 import { streamTriageBrief } from '../services/triage-generator';
+import { fetchAndFilterComments } from '../services/comment-fetcher';
+import type { CommentsClient, RawLinearComment } from '../services/comment-fetcher';
+import { triageComments } from '../services/comment-triager';
 import { writeTriageBrief } from '../services/triage-writer';
 import { writeSpec } from '../services/spec-writer';
 import { checkRepoAccess } from '../services/repo-access-checker';
@@ -38,6 +41,7 @@ interface LinearClient {
   fetchAssignedIssues(assigneeId: string): Promise<RawLinearIssue[]>;
   fetchIssueDetail(identifier: string): Promise<RawLinearIssue | null>;
   fetchTeamTriage(): Promise<RawLinearIssue[]>;
+  fetchIssueComments(issueId: string): Promise<RawLinearComment[]>;
 }
 
 type LinearClientOptions = {
@@ -95,6 +99,10 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
     streamSpec,
     preflightClaudeRepoAccess: ({ repoPath }) => checkRepoAccess(repoPath),
     templateMd,
+    fetchAndFilterComments: (issueUuid) =>
+      fetchAndFilterComments(client as CommentsClient, issueUuid),
+    triageComments: ({ issueTitle, issueDescription, comments }) =>
+      triageComments({ issueTitle, issueDescription, comments, streamClaude }),
   });
   registerSpecWriteHandler(ipc, { store, writeSpec });
   registerSpecLaunchReviewHandler(ipc, {
