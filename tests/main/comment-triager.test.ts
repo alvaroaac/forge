@@ -90,3 +90,60 @@ describe('triageComments — Claude invocation', () => {
     expect(out).toBe(canned);
   });
 });
+
+describe('COMMENT_TRIAGER_SYSTEM_PROMPT — per-rule coverage', () => {
+  it('Rule 1: defines what makes a comment RELEVANT', () => {
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('RELEVANT');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('technical detail');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('reproduction info');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('decisions');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('clarifications');
+  });
+
+  it('Rule 2: defines what makes a comment SKIPPED', () => {
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('SKIPPED');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('+1');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('scheduling');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('off-topic');
+  });
+
+  it("Rule 3: skips a whole thread that concludes with won't-do / rejected / decided against", () => {
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain("won't do this");
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('rejected');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('decided against this');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('skip the whole thread');
+  });
+
+  it('Rule 4: handles long Slack threads with the four sub-behaviours', () => {
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('50+ messages');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('2000+ words');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('Summarize the on-topic portion');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('Strip per-message timestamps');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('Collapse consecutive messages from the same author');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('Preserve substantive technical content verbatim');
+  });
+
+  it('Rule 5: enumerates exactly the allowed reason vocabulary', () => {
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('`bot`');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain("`won't-do`");
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('`noise`');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('`filler`');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('`off-topic`');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).not.toContain('`spam`');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).not.toContain('`duplicate`');
+  });
+
+  it('Rule 6: defines the empty-relevant output shape', () => {
+    // The constant contains the escaped four-char sequence "\n" (backslash-n)
+    // because it's the literal text instructing the LLM what to emit.
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('## Relevant Comments\\n_(none)_');
+  });
+
+  it('Rule 7: forbids preamble / postscript / wrapping code fences', () => {
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('Return only the two sections');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('No preamble');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('no postscript');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('no code');
+    expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('fences wrapping the whole output');
+  });
+});

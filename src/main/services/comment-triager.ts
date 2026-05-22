@@ -35,8 +35,8 @@ Rules:
    that change how the engineer would approach the ticket.
 2. A comment is SKIPPED if it is administrative chatter, "+1" reactions,
    scheduling, off-topic, or noise.
-3. If a thread (multiple comments) concludes with an explicit "won't do
-   this" / "rejected" / "we decided against this", skip the whole thread
+3. If a thread (multiple comments) concludes with an explicit "won't do this"
+   / "rejected" / "we decided against this", skip the whole thread
    with one combined summary line in Skipped Comments.
 4. If a comment contains a pasted Slack thread or similar long
    conversation (rule of thumb: 50+ messages or 2000+ words), do NOT paste
