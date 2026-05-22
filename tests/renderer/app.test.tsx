@@ -48,6 +48,8 @@ const renderState: {
     isStreaming: boolean;
     streaming: string;
     streamStatus: string[];
+    phase?: GenerationPhase;
+    commentCount?: number;
     isBriefPersisted: boolean;
     isBriefLoading: boolean;
     brief: TriageBrief | null;
@@ -61,6 +63,8 @@ const renderState: {
   specPhase: GenerationPhase;
   specCommentCount?: number;
   streamTriageBrief: TriageBrief | null;
+  triagePhase: GenerationPhase;
+  triageCommentCount?: number;
 } = {
   issueListPanelProps: null,
   specDrawerIssue: null,
@@ -73,6 +77,8 @@ const renderState: {
   specPhase: 'idle',
   specCommentCount: undefined,
   streamTriageBrief: null,
+  triagePhase: 'idle',
+  triageCommentCount: undefined,
 };
 
 vi.mock('../../src/renderer/components/top-bar', () => ({
@@ -124,6 +130,8 @@ vi.mock('../../src/renderer/components/triage-drawer', () => ({
     isStreaming: boolean;
     streaming: string;
     streamStatus: string[];
+    phase?: GenerationPhase;
+    commentCount?: number;
     isBriefPersisted: boolean;
     isBriefLoading: boolean;
     brief: TriageBrief | null;
@@ -216,6 +224,8 @@ vi.mock('../../src/renderer/hooks/use-triage-stream', () => ({
     isBriefLoading: false,
     isStreaming: false,
     errorMessage: null,
+    phase: renderState.triagePhase,
+    commentCount: renderState.triageCommentCount,
     generate: renderState.generateTriage,
   }),
 }));
@@ -235,6 +245,8 @@ describe('App detail drawer refresh', () => {
     renderState.specPhase = 'idle';
     renderState.specCommentCount = undefined;
     renderState.streamTriageBrief = null;
+    renderState.triagePhase = 'idle';
+    renderState.triageCommentCount = undefined;
   });
 
   afterEach(() => {
@@ -840,6 +852,52 @@ describe('App detail drawer refresh', () => {
     });
     expect(renderState.specDrawerIssue).toBeNull();
     expect(renderState.specDrawerProps).toBeNull();
+  });
+
+  it('forwards triage stream phase metadata into the triage drawer', async () => {
+    renderState.triagePhase = 'triaging';
+    renderState.triageCommentCount = 5;
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[2], 'spec');
+    });
+
+    expect(renderState.triageDrawerProps).toMatchObject({
+      phase: 'triaging',
+      commentCount: 5,
+    });
   });
 
   it('renders SpecDrawer detail view for triage issues opened on detail', async () => {

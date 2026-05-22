@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { Issue, TriageBrief } from '../../shared/types';
+import type { GenerationPhase, Issue, TriageBrief } from '../../shared/types';
 import { GeneratedDocument } from './generated-document';
 import { IssueDrawerShell } from './issue-drawer-shell';
 
@@ -12,6 +12,8 @@ type TriageDrawerProps = {
   isStreaming: boolean;
   streaming: string;
   streamStatus?: string[];
+  phase?: GenerationPhase;
+  commentCount?: number;
   isBriefPersisted?: boolean;
   isBriefLoading?: boolean;
   brief: TriageBrief | null;
@@ -31,6 +33,37 @@ type TriageActionsProps = GenerateButtonProps & {
 
 function pickBriefContent(brief: TriageBrief | null, streaming: string): string {
   return streaming ? streaming : (brief?.content ?? '');
+}
+
+function pickStreamStatus(streamStatus?: string[]): string[] {
+  return streamStatus ?? [];
+}
+
+function pickPhaseStatus(phase?: GenerationPhase, commentCount?: number): string | null {
+  if (phase === 'triaging') {
+    return `Triaging ${commentCount ?? '…'} comment(s)…`;
+  }
+
+  if (phase === 'generating') {
+    return 'Generating brief…';
+  }
+
+  return null;
+}
+
+function pickActivityStatus(
+  streamStatus?: string[],
+  phase?: GenerationPhase,
+  commentCount?: number,
+): string[] {
+  const statuses = pickStreamStatus(streamStatus);
+  const phaseStatus = pickPhaseStatus(phase, commentCount);
+
+  if (!phaseStatus) {
+    return statuses;
+  }
+
+  return [...statuses, phaseStatus];
 }
 
 async function writeBriefWithOverwrite(issueId: string, content: string): Promise<boolean> {
@@ -139,6 +172,8 @@ export function TriageDrawer({
   isStreaming,
   streaming,
   streamStatus = [],
+  phase,
+  commentCount,
   isBriefPersisted = false,
   isBriefLoading = false,
   brief,
@@ -188,7 +223,11 @@ export function TriageDrawer({
         artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
         content={content}
         isStreaming={isStreaming || isCheckingBrief}
-        streamStatus={isCheckingBrief ? ['Checking triage-brief.md'] : streamStatus}
+        streamStatus={
+          isCheckingBrief
+            ? ['Checking triage-brief.md']
+            : pickActivityStatus(streamStatus, phase, commentCount)
+        }
         errorMessage={errorMessage}
         emptyTitle={`No brief yet for ${issue.id}.`}
         activityTitle={isCheckingBrief ? 'Loading brief' : 'Generating brief'}

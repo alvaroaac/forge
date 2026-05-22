@@ -190,6 +190,93 @@ describe('TriageDrawer', () => {
     );
   });
 
+  it('shows triaging comment activity before brief content arrives', () => {
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={true}
+        streaming=""
+        phase="triaging"
+        commentCount={3}
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Triaging 3 comment(s)…')).toBeTruthy();
+  });
+
+  it('shows an unknown comment count while triaging before brief content arrives', () => {
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={true}
+        streaming=""
+        phase="triaging"
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Triaging … comment(s)…')).toBeTruthy();
+  });
+
+  it('shows generating activity before brief content arrives', () => {
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={true}
+        streaming=""
+        phase="generating"
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Generating brief…')).toBeTruthy();
+  });
+
+  it('hides phase activity after brief content arrives', () => {
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={true}
+        streaming={'## Live brief\n\nStreaming body'}
+        phase="triaging"
+        commentCount={3}
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Triaging 3 comment(s)…')).toBeNull();
+    expect(screen.getByText('Live brief')).toBeTruthy();
+  });
+
   it('shows streaming content instead of a saved brief while regenerating', () => {
     const savedBrief: TriageBrief = {
       issueId: 'FUL-77',

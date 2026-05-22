@@ -281,6 +281,8 @@ function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerCont
     isBriefLoading,
     isStreaming,
     errorMessage,
+    phase,
+    commentCount,
     generate,
   } = useTriageStream(issue.id);
 
@@ -290,6 +292,8 @@ function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerCont
       brief={brief}
       streaming={streaming}
       streamStatus={streamStatus}
+      phase={phase}
+      commentCount={commentCount}
       isBriefPersisted={isBriefPersisted}
       isBriefLoading={isBriefLoading}
       isStreaming={isStreaming}
