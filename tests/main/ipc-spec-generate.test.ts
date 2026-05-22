@@ -637,6 +637,54 @@ describe('spec:generate', () => {
 
     expect(fetchAndFilterComments).toHaveBeenCalledWith(issue.uuid);
   });
+
+  it('skips comment fetch and still generates when a stale cached issue has no UUID', async () => {
+    const issue: Issue = {
+      id: 'FUL-77',
+      title: 'Build UI',
+      description: 'Add streaming spec preview.',
+      ...issueTemplate,
+      uuid: undefined as unknown as string,
+    };
+    const cache: IssuesCacheDouble = {
+      read: vi.fn().mockResolvedValue([issue]),
+      write: vi.fn(),
+    };
+    const readRepoContext = vi.fn().mockResolvedValue({ agentsMd: '', thoughts: [] });
+    const fetchAndFilterComments = vi.fn().mockResolvedValue([sampleComment]);
+    const triageComments = vi.fn().mockResolvedValue('CURATED');
+    const sent: Array<{ channel: IpcChannelName; payload: SentPayload }> = [];
+    const streamSpec = vi.fn(async ({ curatedComments }: StreamSpecInput): Promise<string> => {
+      expect(curatedComments).toBe('');
+      return 'generated';
+    });
+    const handler = createHandler({
+      store: createStore(dir),
+      cache,
+      readRepoContext,
+      streamSpec,
+      templateMd: '',
+      fetchAndFilterComments,
+      triageComments,
+    });
+    const event = {
+      sender: {
+        send: (channel: IpcChannelName, payload: SentPayload) => {
+          sent.push({ channel, payload });
+        },
+      },
+    };
+
+    const result = await handler(event, { issueId: issue.id });
+
+    expect(fetchAndFilterComments).not.toHaveBeenCalled();
+    expect(triageComments).not.toHaveBeenCalled();
+    expect(sent.filter((s) => s.channel === IpcChannel.SpecGenerateError)).toHaveLength(0);
+    expect(sent.filter((s) => s.channel === IpcChannel.SpecPhase)).toEqual([
+      { channel: IpcChannel.SpecPhase, payload: { issueId: 'FUL-77', phase: 'generating' } },
+    ]);
+    expect(result).toMatchObject({ issueId: 'FUL-77', content: 'generated' });
+  });
 });
 
 describe('spec:write', () => {

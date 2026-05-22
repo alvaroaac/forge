@@ -115,6 +115,10 @@ async function curateTriageComments(
   sender: TriageGenerateEventSender,
   issue: Issue,
 ): Promise<string> {
+  if (!issue.uuid) {
+    return '';
+  }
+
   const comments = await deps.fetchAndFilterComments(issue.uuid);
   if (comments.length === 0) {
     return '';

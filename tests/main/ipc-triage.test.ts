@@ -307,6 +307,36 @@ describe('triage:generate handler - comment-context pipeline', () => {
 
     expect(fetchSpy).toHaveBeenCalledWith(triageIssue.uuid);
   });
+
+  it('skips comment fetch and still generates when a stale cached issue has no UUID', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+    const fetchSpy = vi.fn().mockResolvedValue([sampleComment]);
+    const triage = vi.fn().mockResolvedValue('CURATED');
+    const staleIssue: Issue = { ...triageIssue, uuid: undefined as unknown as string };
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: { get: async () => baseTriageCfg, set: async () => undefined } as never,
+      fetchTriageList: async () => [staleIssue],
+      fetchAndFilterComments: fetchSpy,
+      triageComments: triage,
+      streamTriageBrief: async ({ curatedComments, onChunk }) => {
+        expect(curatedComments).toBe('');
+        onChunk('generated');
+        return 'generated';
+      },
+    });
+
+    const result = await ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: staleIssue.id });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(triage).not.toHaveBeenCalled();
+    expect(event.sent.filter((s) => s.channel === IpcChannel.TriageGenerateError)).toHaveLength(0);
+    expect(event.sent.filter((s) => s.channel === IpcChannel.TriagePhase)).toEqual([
+      { channel: IpcChannel.TriagePhase, payload: { issueId: 'FUL-77', phase: 'generating' } },
+    ]);
+    expect(result).toMatchObject({ issueId: 'FUL-77', content: 'generated' });
+  });
 });
 
 describe('triage:write handler', () => {
