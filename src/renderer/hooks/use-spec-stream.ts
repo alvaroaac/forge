@@ -256,22 +256,24 @@ export function useSpecStream(issueId: string | null) {
       setIsStreaming(true);
       setErrorMessage(null);
 
+      let generationFailed = false;
+
       try {
         const result = model
           ? await window.forge.spec.generate(issueId, model)
           : await window.forge.spec.generate(issueId);
         commitGeneratedSpec(issueId, setupVersion, result.content);
       } catch (error) {
+        generationFailed = true;
         const message = error instanceof Error ? error.message : String(error);
-        if (isCurrentIssue(issueId)) {
-          setErrorMessage(message);
-          setIsStreaming(false);
-        }
+        failStreaming(issueId, setupVersion, message);
       } finally {
-        finishStreaming(issueId, setupVersion);
+        if (!generationFailed) {
+          finishStreaming(issueId, setupVersion);
+        }
       }
     },
-    [issueId, commitGeneratedSpec, finishStreaming, isCurrentIssue],
+    [issueId, commitGeneratedSpec, failStreaming, finishStreaming, isCurrentIssue],
   );
 
   return {

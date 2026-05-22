@@ -34,3 +34,9 @@
 ## Tech Debt
 
 - None logged.
+
+## QA Fix - 2026-05-22
+
+- Fixed the rejected `generate()` path so caught spec generation failures set `errorMessage` and stop streaming without forcing `phase` to `done`.
+- Added regression coverage proving a rejected spec generation promise leaves the current phase unchanged (`generating`) while setting `errorMessage` and `isStreaming: false`.
+- Verification: `npm test -- tests/renderer/use-spec-stream.test.ts tests/renderer/use-triage-stream.test.ts` passed, 33 tests.

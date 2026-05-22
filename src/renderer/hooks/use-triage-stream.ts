@@ -246,6 +246,8 @@ export function useTriageStream(issueId: string | null) {
       setIsStreaming(true);
       setErrorMessage(null);
 
+      let generationFailed = false;
+
       try {
         const result = model
           ? await window.forge.triage.generate(issueId, model)
@@ -253,10 +255,13 @@ export function useTriageStream(issueId: string | null) {
 
         commitGeneratedBrief(issueId, setupVersion, result.content);
       } catch (error) {
+        generationFailed = true;
         const message = error instanceof Error ? error.message : String(error);
         failStreaming(issueId, setupVersion, message);
       } finally {
-        finishStreaming(issueId, setupVersion);
+        if (!generationFailed) {
+          finishStreaming(issueId, setupVersion);
+        }
       }
     },
     [issueId, isCurrentIssue, commitGeneratedBrief, finishStreaming, failStreaming],

@@ -497,6 +497,36 @@ describe('useSpecStream', () => {
     });
   });
 
+  it('does not transition to done when spec generation rejects', async () => {
+    const get = vi.fn().mockResolvedValue(null);
+    const generateDeferred = createDeferred<{ issueId: string; content: string }>();
+    const generate = vi.fn(() => generateDeferred.promise);
+    const onChunk = vi.fn(() => vi.fn());
+    const phases = createPhaseRegistry();
+
+    setForge({ get, generate, onChunk, onPhase: phases.onPhase });
+
+    const { result } = renderHook(() => useSpecStream('FUL-7'));
+
+    await act(async () => {
+      void result.current.generate();
+    });
+
+    act(() => {
+      phases.emit({ issueId: 'FUL-7', phase: 'generating' });
+    });
+
+    generateDeferred.reject(new Error('generate failed'));
+
+    await waitFor(() => {
+      expect(result.current.errorMessage).toBe('generate failed');
+    });
+
+    expect(result.current.isStreaming).toBe(false);
+    expect(result.current.phase).toBe('generating');
+    expect(result.current.phase).not.toBe('done');
+  });
+
   it('survives the StrictMode setup-cleanup-setup cycle without leaking subscriptions', async () => {
     const get = vi.fn().mockResolvedValue(null);
     const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-7', content: '' });

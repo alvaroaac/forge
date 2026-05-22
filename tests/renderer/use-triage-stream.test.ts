@@ -460,6 +460,35 @@ describe('useTriageStream', () => {
     );
   });
 
+  it('does not transition to done when triage generation rejects', async () => {
+    const generateDeferred = createDeferred<TriageBrief>();
+    const generate = vi.fn(() => generateDeferred.promise);
+    const onChunk = vi.fn(() => vi.fn());
+    const phase = createHandlerRegistry<TriagePhaseEvent>();
+
+    setForge({ generate, onChunk, onPhase: phase.subscribe });
+
+    const { result } = renderHook(() => useTriageStream('FUL-7'));
+
+    await act(async () => {
+      void result.current.generate();
+    });
+
+    act(() => {
+      phase.emit({ issueId: 'FUL-7', phase: 'generating' });
+    });
+
+    generateDeferred.reject(new Error('generate failed'));
+
+    await waitFor(() => {
+      expect(result.current.errorMessage).toBe('generate failed');
+    });
+
+    expect(result.current.isStreaming).toBe(false);
+    expect(result.current.phase).toBe('generating');
+    expect(result.current.phase).not.toBe('done');
+  });
+
   describe('phase state', () => {
     it('starts at idle before any phase event', () => {
       const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
