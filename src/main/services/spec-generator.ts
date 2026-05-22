@@ -11,6 +11,7 @@ export interface StreamSpecInput {
   model: string;
   system: string;
   user: string;
+  curatedComments?: string;
   onChunk: (delta: string) => void;
   onStatus?: (status: string) => void;
   spawnProcess?: SpawnProcess;
@@ -126,6 +127,13 @@ function resultText(value: unknown): string | null {
   return event.result;
 }
 
+function buildUserPayload(user: string, curatedComments?: string): string {
+  if (!curatedComments) {
+    return user;
+  }
+  return `## Comment context\n\n${curatedComments}\n\n---\n\n${user}`;
+}
+
 function isErrorResult(value: unknown): boolean {
   if (!value || typeof value !== 'object') {
     return false;
@@ -178,7 +186,7 @@ export async function streamClaude(input: StreamClaudeInput): Promise<string> {
     env: buildCliEnv(),
     cwd: input.cwd,
   });
-  claude.stdin.end(input.user);
+  claude.stdin.end(buildUserPayload(input.user, input.curatedComments));
 
   return new Promise<string>((resolve, reject) => {
     let full = '';

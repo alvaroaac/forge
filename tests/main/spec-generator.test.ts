@@ -294,3 +294,62 @@ describe('streamClaude', () => {
     ).rejects.toThrow('Not logged in · Please run /login');
   });
 });
+
+describe('streamSpec — curatedComments prepend', () => {
+  it('prepends a "## Comment context" block above the user body when curatedComments is non-empty', async () => {
+    let stdinText = '';
+    const { spawnProcess } = createFakeSpawn((child) => {
+      stdinText = child.stdin.read()?.toString() ?? '';
+      child.stdout.write(jsonLine({ type: 'result', is_error: false, result: 'ok' }));
+      child.emit('close', 0);
+    });
+
+    await streamSpec({
+      model: 'claude-sonnet-4-6',
+      system: 'sys',
+      user: 'ISSUE BODY HERE',
+      curatedComments: '## Relevant Comments\n\n### Alice — 2026-05-01\nhi',
+      onChunk: () => undefined,
+      spawnProcess,
+    });
+
+    expect(stdinText.startsWith('## Comment context\n\n')).toBe(true);
+    expect(stdinText).toContain('## Relevant Comments');
+    expect(stdinText.endsWith('\n\n---\n\nISSUE BODY HERE')).toBe(true);
+  });
+
+  it('passes the user body unchanged when curatedComments is undefined', async () => {
+    let stdinText = '';
+    const { spawnProcess } = createFakeSpawn((child) => {
+      stdinText = child.stdin.read()?.toString() ?? '';
+      child.stdout.write(jsonLine({ type: 'result', is_error: false, result: 'ok' }));
+      child.emit('close', 0);
+    });
+    await streamSpec({
+      model: 'claude-sonnet-4-6',
+      system: 'sys',
+      user: 'ISSUE BODY HERE',
+      onChunk: () => undefined,
+      spawnProcess,
+    });
+    expect(stdinText).toBe('ISSUE BODY HERE');
+  });
+
+  it('passes the user body unchanged when curatedComments is the empty string', async () => {
+    let stdinText = '';
+    const { spawnProcess } = createFakeSpawn((child) => {
+      stdinText = child.stdin.read()?.toString() ?? '';
+      child.stdout.write(jsonLine({ type: 'result', is_error: false, result: 'ok' }));
+      child.emit('close', 0);
+    });
+    await streamSpec({
+      model: 'claude-sonnet-4-6',
+      system: 'sys',
+      user: 'ISSUE BODY HERE',
+      curatedComments: '',
+      onChunk: () => undefined,
+      spawnProcess,
+    });
+    expect(stdinText).toBe('ISSUE BODY HERE');
+  });
+});
