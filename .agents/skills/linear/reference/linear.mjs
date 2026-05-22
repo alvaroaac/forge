@@ -602,10 +602,20 @@ export function createLinearClient({ teamKey, titlePrefix }) {
    * @param {string} issueId  Linear issue id (UUID, not identifier)
    */
   async function fetchIssueComments(issueId) {
-    const data = await linearRequest(`
-      query($issueId: String!) {
+    const comments = [];
+    let after = null;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+      const afterArgument = after ? ', after: $after' : '';
+      const afterVariable = after ? ', $after: String' : '';
+      const variables = after ? { issueId, after } : { issueId };
+
+      const data = await linearRequest(`
+      query($issueId: String!${afterVariable}) {
         issue(id: $issueId) {
-          comments(first: 250) {
+          comments(first: 250${afterArgument}) {
+            pageInfo { hasNextPage endCursor }
             nodes {
               id
               body
@@ -616,8 +626,15 @@ export function createLinearClient({ teamKey, titlePrefix }) {
           }
         }
       }
-    `, { issueId });
-    return data.issue?.comments?.nodes ?? [];
+    `, variables);
+
+      const page = data.issue?.comments;
+      comments.push(...(page?.nodes ?? []));
+      hasNextPage = page?.pageInfo?.hasNextPage ?? false;
+      after = page?.pageInfo?.endCursor ?? null;
+    }
+
+    return comments;
   }
 
   return {

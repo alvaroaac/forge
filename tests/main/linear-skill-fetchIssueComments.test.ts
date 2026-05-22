@@ -36,6 +36,7 @@ describe('linear client — fetchIssueComments', () => {
         data: {
           issue: {
             comments: {
+              pageInfo: { hasNextPage: false, endCursor: null },
               nodes: [
                 {
                   id: 'c-1',
@@ -87,6 +88,67 @@ describe('linear client — fetchIssueComments', () => {
     const botActorBlock = body.query.match(/botActor \{[^}]*\}/)?.[0] ?? '';
     expect(botActorBlock).not.toMatch(/name/);
     expect(botActorBlock).not.toMatch(/type/);
+  });
+
+  it('fetches all pages of issue comments', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            issue: {
+              comments: {
+                pageInfo: { hasNextPage: true, endCursor: 'cursor-1' },
+                nodes: [
+                  {
+                    id: 'c-1',
+                    body: 'first page',
+                    createdAt: '2026-05-01T00:00:00.000Z',
+                    user: { id: 'u-1', name: 'Alice' },
+                    botActor: null,
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            issue: {
+              comments: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [
+                  {
+                    id: 'c-2',
+                    body: 'second page',
+                    createdAt: '2026-05-02T00:00:00.000Z',
+                    user: { id: 'u-2', name: 'Bea' },
+                    botActor: null,
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      });
+
+    const { createLinearClient } = await getLinearSkillModule();
+    const client = createLinearClient({ teamKey: 'FUL', titlePrefix: '' });
+    const comments = await client.fetchIssueComments('uuid-issue-1');
+
+    expect(comments.map((comment) => comment.id)).toEqual(['c-1', 'c-2']);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const firstBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const secondBody = JSON.parse(fetchMock.mock.calls[1][1].body);
+    expect(firstBody.variables).toEqual({ issueId: 'uuid-issue-1' });
+    expect(secondBody.variables).toEqual({ issueId: 'uuid-issue-1', after: 'cursor-1' });
+    expect(firstBody.query).toMatch(/comments\(first: 250\)/);
+    expect(secondBody.query).toMatch(/comments\(first: 250, after: \$after\)/);
+    expect(firstBody.query).toMatch(/botActor \{\s*id\s*\}/);
   });
 
   it('returns [] when Linear has no issue', async () => {
