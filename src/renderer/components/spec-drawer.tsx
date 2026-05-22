@@ -1,4 +1,4 @@
-import type { Issue, Spec, SpecReviewSummary } from '../../shared/types';
+import type { GenerationPhase, Issue, Spec, SpecReviewSummary } from '../../shared/types';
 import { DetailTab } from './detail-tab';
 import { IssueDrawerShell } from './issue-drawer-shell';
 import { SpecTab } from './spec-tab';
@@ -13,6 +13,8 @@ type SpecDrawerProps = {
   spec: Spec | null;
   streaming: string;
   streamStatus?: string[];
+  phase?: GenerationPhase;
+  commentCount?: number;
   isSpecPersisted?: boolean;
   reviewedContent?: string | null;
   reviewSummary?: SpecReviewSummary | null;
@@ -59,6 +61,8 @@ function SpecDrawerBody({
   spec,
   streaming,
   streamStatus,
+  phase,
+  commentCount,
   isSpecPersisted,
   reviewedContent,
   reviewSummary,
@@ -88,6 +92,8 @@ function SpecDrawerBody({
       spec={spec}
       streaming={streaming}
       streamStatus={getStreamStatus(streamStatus)}
+      phase={phase}
+      commentCount={commentCount}
       isSpecPersisted={getOptionalBoolean(isSpecPersisted)}
       reviewedContent={getReviewedContent(reviewedContent)}
       reviewSummary={getReviewSummary(reviewSummary)}
@@ -114,6 +120,8 @@ export function SpecDrawer({
   spec,
   streaming,
   streamStatus,
+  phase,
+  commentCount,
   isSpecPersisted,
   reviewedContent,
   reviewSummary,
@@ -151,6 +159,8 @@ export function SpecDrawer({
         spec={spec}
         streaming={streaming}
         streamStatus={streamStatus}
+        phase={phase}
+        commentCount={commentCount}
         isSpecPersisted={isSpecPersisted}
         reviewedContent={reviewedContent}
         reviewSummary={reviewSummary}

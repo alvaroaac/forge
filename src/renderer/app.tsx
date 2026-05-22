@@ -49,6 +49,8 @@ export function App() {
     isSpecPersisted,
     isStreaming,
     errorMessage,
+    phase: specPhase,
+    commentCount: specCommentCount,
     generate: generateSpec,
   } = useSpecStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
@@ -242,6 +244,8 @@ export function App() {
           spec={spec}
           streaming={streaming}
           streamStatus={streamStatus}
+          phase={specPhase}
+          commentCount={specCommentCount}
           isSpecPersisted={isSpecPersisted && !reviewedContent}
           reviewedContent={reviewedContent}
           reviewSummary={reviewSummary}

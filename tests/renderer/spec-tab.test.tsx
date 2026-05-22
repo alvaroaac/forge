@@ -201,6 +201,87 @@ Streaming body`}
     expect(screen.getByText('Starting Claude')).toBeTruthy();
   });
 
+  it('shows triaging comment activity before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        streamStatus={['Starting Claude']}
+        phase="triaging"
+        commentCount={3}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Triaging 3 comment(s)…')).toBeTruthy();
+  });
+
+  it('shows an unknown comment count while triaging before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        phase="triaging"
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Triaging … comment(s)…')).toBeTruthy();
+  });
+
+  it('shows generating activity before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        phase="generating"
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Generating spec…')).toBeTruthy();
+  });
+
+  it('hides phase activity after markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming={`## Live
+Streaming body`}
+        phase="triaging"
+        commentCount={3}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Triaging 3 comment(s)…')).toBeNull();
+    expect(screen.getByText('Live')).toBeTruthy();
+  });
+
   it('keeps the model picker visible while generation activity is running', () => {
     render(
       <SpecTab

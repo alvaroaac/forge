@@ -1,7 +1,13 @@
 import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Issue, Spec, SpecReviewSummary, TriageBrief } from '../../src/shared/types';
+import type {
+  GenerationPhase,
+  Issue,
+  Spec,
+  SpecReviewSummary,
+  TriageBrief,
+} from '../../src/shared/types';
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -28,6 +34,8 @@ const renderState: {
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;
     reviewErrorMessage: string | null;
+    phase?: GenerationPhase;
+    commentCount?: number;
     claudeModel: string;
     onClaudeModelChange: (model: string) => void;
     onGenerate: () => void;
@@ -50,6 +58,8 @@ const renderState: {
   generate: ReturnType<typeof vi.fn>;
   generateTriage: ReturnType<typeof vi.fn>;
   streamSpec: Spec | null;
+  specPhase: GenerationPhase;
+  specCommentCount?: number;
   streamTriageBrief: TriageBrief | null;
 } = {
   issueListPanelProps: null,
@@ -60,6 +70,8 @@ const renderState: {
   generate: vi.fn(),
   generateTriage: vi.fn(),
   streamSpec: null,
+  specPhase: 'idle',
+  specCommentCount: undefined,
   streamTriageBrief: null,
 };
 
@@ -89,6 +101,8 @@ vi.mock('../../src/renderer/components/spec-drawer', () => ({
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;
     reviewErrorMessage: string | null;
+    phase?: GenerationPhase;
+    commentCount?: number;
     claudeModel: string;
     onClaudeModelChange: (model: string) => void;
     onGenerate: () => void;
@@ -187,6 +201,8 @@ vi.mock('../../src/renderer/hooks/use-spec-stream', () => ({
     isSpecPersisted: renderState.streamSpec !== null,
     isStreaming: false,
     errorMessage: null,
+    phase: renderState.specPhase,
+    commentCount: renderState.specCommentCount,
     generate: renderState.generate,
   }),
 }));
@@ -216,6 +232,8 @@ describe('App detail drawer refresh', () => {
     renderState.generate = vi.fn();
     renderState.generateTriage = vi.fn();
     renderState.streamSpec = null;
+    renderState.specPhase = 'idle';
+    renderState.specCommentCount = undefined;
     renderState.streamTriageBrief = null;
   });
 
@@ -403,6 +421,52 @@ describe('App detail drawer refresh', () => {
 
     expect(configSet).toHaveBeenLastCalledWith({ claudeModel: 'opus' });
     expect(renderState.generate).toHaveBeenCalledWith('opus');
+  });
+
+  it('forwards spec stream phase metadata into the spec drawer', async () => {
+    renderState.specPhase = 'triaging';
+    renderState.specCommentCount = 4;
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[0], 'spec');
+    });
+
+    expect(renderState.specDrawerProps).toMatchObject({
+      phase: 'triaging',
+      commentCount: 4,
+    });
   });
 
   it('writes the drawer spec content through the explicit write action', async () => {
