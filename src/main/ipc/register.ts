@@ -129,11 +129,16 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
   registerTriageGenerateHandler(ipc, {
     store,
     fetchTriageList: () => fetchTriage(client as LinearClient),
-    streamTriageBrief: ({ issue, computronRepoPath, model, onChunk, onStatus }) =>
+    fetchAndFilterComments: (issueUuid) =>
+      fetchAndFilterComments(client as CommentsClient, issueUuid),
+    triageComments: ({ issueTitle, issueDescription, comments }) =>
+      triageComments({ issueTitle, issueDescription, comments, streamClaude }),
+    streamTriageBrief: ({ issue, computronRepoPath, model, curatedComments, onChunk, onStatus }) =>
       streamTriageBrief({
         issue,
         computronRepoPath,
         model,
+        curatedComments,
         onChunk,
         onStatus,
         streamClaude,

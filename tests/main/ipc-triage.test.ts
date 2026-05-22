@@ -7,6 +7,7 @@ import {
   registerTriageGetHandler,
   registerTriageWriteHandler,
 } from '../../src/main/ipc/triage';
+import type { LinearComment } from '../../src/main/services/comment-fetcher';
 import { IpcChannel } from '../../src/shared/ipc-channels';
 import type { Issue } from '../../src/shared/types';
 
@@ -50,6 +51,22 @@ const triageIssue: Issue = {
   updatedAt: '',
   isBug: false,
   assigneeId: null,
+};
+
+const sampleComment: LinearComment = {
+  id: 'c-1',
+  body: 'hi',
+  createdAt: '2026-05-01T00:00:00.000Z',
+  authorName: 'Alice',
+  isBot: false,
+};
+
+const baseTriageCfg = {
+  linearTokenPath: '',
+  linearTeamKey: 'FUL',
+  repoPath: '',
+  computronRepoPath: '/tmp/computron',
+  claudeModel: 'claude-sonnet-4-6',
 };
 
 describe('triage:get handler', () => {
@@ -123,6 +140,8 @@ describe('triage:generate handler', () => {
         set: async () => undefined,
       } as never,
       fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => [],
+      triageComments: async () => '',
       streamTriageBrief: async ({ onChunk, onStatus }) => {
         onStatus?.('Claude initialized the repo session');
         onStatus?.('Claude is drafting the spec');
@@ -172,6 +191,8 @@ describe('triage:generate handler', () => {
         set: async () => undefined,
       } as never,
       fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => [],
+      triageComments: async () => '',
       streamTriageBrief: vi.fn(),
     });
 
@@ -179,6 +200,112 @@ describe('triage:generate handler', () => {
       ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: 'FUL-77' }),
     ).rejects.toThrow(/computronRepoPath/);
     expect(event.sent.some((s) => s.channel === IpcChannel.TriageGenerateError)).toBe(true);
+  });
+});
+
+describe('triage:generate handler - comment-context pipeline', () => {
+  it('emits triaging then generating phase events with commentCount', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: { get: async () => baseTriageCfg, set: async () => undefined } as never,
+      fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => [sampleComment],
+      triageComments: async () => 'CURATED',
+      streamTriageBrief: async ({ curatedComments, onChunk }) => {
+        expect(curatedComments).toBe('CURATED');
+        onChunk('part');
+        return 'part';
+      },
+    });
+
+    await ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: 'FUL-77' });
+
+    const phaseEvents = event.sent.filter((s) => s.channel === IpcChannel.TriagePhase);
+    expect(phaseEvents).toHaveLength(2);
+    expect(phaseEvents[0].payload).toEqual({
+      issueId: 'FUL-77',
+      phase: 'triaging',
+      commentCount: 1,
+    });
+    expect(phaseEvents[1].payload).toEqual({ issueId: 'FUL-77', phase: 'generating' });
+  });
+
+  it('proceeds with empty curated when triage fails - logs warn, no error event', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+    let observed: string | undefined;
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: { get: async () => baseTriageCfg, set: async () => undefined } as never,
+      fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => [sampleComment],
+      triageComments: async () => {
+        throw new Error('boom');
+      },
+      streamTriageBrief: async ({ curatedComments, onChunk }) => {
+        observed = curatedComments;
+        onChunk('still');
+        return 'still';
+      },
+    });
+
+    const result = await ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: 'FUL-77' });
+
+    expect(observed).toBe('');
+    const errors = event.sent.filter((s) => s.channel === IpcChannel.TriageGenerateError);
+    expect(errors).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[triage] comment triage failed'),
+      expect.any(Error),
+    );
+    expect(result).toMatchObject({ issueId: 'FUL-77' });
+    warnSpy.mockRestore();
+  });
+
+  it('skips the triaging phase event entirely when commentCount === 0', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+    const triage = vi.fn();
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: { get: async () => baseTriageCfg, set: async () => undefined } as never,
+      fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => [],
+      triageComments: triage,
+      streamTriageBrief: async ({ curatedComments, onChunk }) => {
+        expect(curatedComments).toBe('');
+        onChunk('done');
+        return 'done';
+      },
+    });
+
+    await ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: 'FUL-77' });
+
+    expect(triage).not.toHaveBeenCalled();
+    const phaseEvents = event.sent.filter((s) => s.channel === IpcChannel.TriagePhase);
+    expect(phaseEvents).toHaveLength(1);
+    expect(phaseEvents[0].payload).toEqual({ issueId: 'FUL-77', phase: 'generating' });
+  });
+
+  it('invokes fetchAndFilterComments with the issue UUID', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+    const fetchSpy = vi.fn().mockResolvedValue([]);
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: { get: async () => baseTriageCfg, set: async () => undefined } as never,
+      fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: fetchSpy,
+      triageComments: async () => '',
+      streamTriageBrief: async () => '',
+    });
+
+    await ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: triageIssue.id });
+
+    expect(fetchSpy).toHaveBeenCalledWith(triageIssue.uuid);
   });
 });
 

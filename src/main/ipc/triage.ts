@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { IpcChannel } from '../../shared/ipc-channels';
 import { assertSafeIssueId, isSafeIssueId } from '../lib/issue-id';
 import type { ConfigStore } from '../services/config-store';
+import type { LinearComment } from '../services/comment-fetcher';
 import type { Issue, TriageBrief, TriageWriteResult } from '../../shared/types';
 
 type TriageGenerateEventSender = {
@@ -29,14 +30,24 @@ type StreamTriageBrief = (input: {
   issue: Issue;
   computronRepoPath: string;
   model: string;
+  curatedComments?: string;
   onChunk: (delta: string) => void;
   onStatus?: (status: string) => void;
+}) => Promise<string>;
+
+type FetchAndFilterCommentsFn = (issueUuid: string) => Promise<LinearComment[]>;
+type TriageCommentsFn = (input: {
+  issueTitle: string;
+  issueDescription: string;
+  comments: LinearComment[];
 }) => Promise<string>;
 
 export interface TriageGenerateDeps {
   store: ConfigStore;
   fetchTriageList: () => Promise<Issue[]>;
   streamTriageBrief: StreamTriageBrief;
+  fetchAndFilterComments: FetchAndFilterCommentsFn;
+  triageComments: TriageCommentsFn;
 }
 
 export interface TriageGetDeps {
@@ -84,12 +95,47 @@ function sendTriageChunk(
   sender.send(IpcChannel.TriageStreamChunk, { issueId, delta, done, status });
 }
 
+function sendTriagePhase(
+  sender: TriageGenerateEventSender,
+  payload: { issueId: string; phase: 'triaging' | 'generating'; commentCount?: number },
+): void {
+  sender.send(IpcChannel.TriagePhase, payload);
+}
+
 function toBriefStatus(status: string): string {
   if (status === 'Claude is drafting the spec') {
     return 'Claude is drafting the brief';
   }
 
   return status;
+}
+
+async function curateTriageComments(
+  deps: Pick<TriageGenerateDeps, 'fetchAndFilterComments' | 'triageComments'>,
+  sender: TriageGenerateEventSender,
+  issue: Issue,
+): Promise<string> {
+  const comments = await deps.fetchAndFilterComments(issue.uuid);
+  if (comments.length === 0) {
+    return '';
+  }
+
+  sendTriagePhase(sender, {
+    issueId: issue.id,
+    phase: 'triaging',
+    commentCount: comments.length,
+  });
+
+  try {
+    return await deps.triageComments({
+      issueTitle: issue.title,
+      issueDescription: issue.description,
+      comments,
+    });
+  } catch (err) {
+    console.warn('[triage] comment triage failed, proceeding without curated comments:', err);
+    return '';
+  }
 }
 
 export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerateDeps): void {
@@ -105,10 +151,13 @@ export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerate
         const issues = await deps.fetchTriageList();
         const issue = findTriageIssue(issues, payload.issueId);
         const model = payload.model?.trim() || cfg.claudeModel;
+        const curated = await curateTriageComments(deps, event.sender, issue);
+        sendTriagePhase(event.sender, { issueId: payload.issueId, phase: 'generating' });
         const content = await deps.streamTriageBrief({
           issue,
           computronRepoPath: cfg.computronRepoPath,
           model,
+          curatedComments: curated,
           onChunk: (delta) => sendTriageChunk(event.sender, payload.issueId, delta, false),
           onStatus: (status) =>
             sendTriageChunk(event.sender, payload.issueId, '', false, toBriefStatus(status)),
