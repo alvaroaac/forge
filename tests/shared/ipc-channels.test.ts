@@ -14,12 +14,14 @@ describe('IpcChannel', () => {
     expect(IpcChannel.SpecStreamChunk).toBe('spec:stream-chunk');
     expect(IpcChannel.SpecGenerateDone).toBe('spec:generate-done');
     expect(IpcChannel.SpecGenerateError).toBe('spec:generate-error');
+    expect(IpcChannel.SpecPhase).toBe('spec:phase');
     expect(IpcChannel.SpecGet).toBe('spec:get');
     expect(IpcChannel.SpecWrite).toBe('spec:write');
     expect(IpcChannel.TriageGenerate).toBe('triage:generate');
     expect(IpcChannel.TriageStreamChunk).toBe('triage:stream-chunk');
     expect(IpcChannel.TriageGenerateDone).toBe('triage:generate-done');
     expect(IpcChannel.TriageGenerateError).toBe('triage:generate-error');
+    expect(IpcChannel.TriagePhase).toBe('triage:phase');
     expect(IpcChannel.TriageGet).toBe('triage:get');
     expect(IpcChannel.TriageWrite).toBe('triage:write');
     expect(IpcChannel.ConfigGet).toBe('config:get');

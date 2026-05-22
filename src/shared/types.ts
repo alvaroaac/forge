@@ -100,3 +100,17 @@ export interface SpecReviewResult {
   content: string;
   summary: SpecReviewSummary;
 }
+
+export type GenerationPhase = 'idle' | 'triaging' | 'generating' | 'done';
+
+export interface SpecPhaseEvent {
+  issueId: string;
+  phase: 'triaging' | 'generating';
+  commentCount?: number;
+}
+
+export interface TriagePhaseEvent {
+  issueId: string;
+  phase: 'triaging' | 'generating';
+  commentCount?: number;
+}
