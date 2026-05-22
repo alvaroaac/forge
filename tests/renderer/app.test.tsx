@@ -136,6 +136,7 @@ vi.mock('../../src/renderer/hooks/use-config', () => ({
 const issues: Issue[] = [
   {
     id: 'FUL-1',
+    uuid: 'uuid-test-fixture',
     title: 'First',
     description: '',
     status: 'todo',
@@ -148,6 +149,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-2',
+    uuid: 'uuid-test-fixture',
     title: 'Second',
     description: '',
     status: 'todo',
@@ -160,6 +162,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-3',
+    uuid: 'uuid-test-fixture',
     title: 'Triage',
     description: '',
     status: 'triage',

@@ -37,6 +37,7 @@ export function mapIssue(raw: RawLinearIssue): Issue {
 
   return {
     id: raw.identifier,
+    uuid: raw.id,
     title: raw.title,
     description: raw.description ?? '',
     status: mapStatus(raw.state),

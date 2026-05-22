@@ -12,6 +12,7 @@ beforeEach(() => {
 
 const sample: Issue = {
   id: 'FUL-1',
+  uuid: 'uuid-test-fixture',
   title: 't',
   description: '',
   status: 'todo',

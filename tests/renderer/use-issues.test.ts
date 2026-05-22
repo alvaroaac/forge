@@ -25,6 +25,7 @@ function createDeferred<T>(): Deferred<T> {
 function createIssue(id: string, assigneeId: string | null = null): Issue {
   return {
     id,
+    uuid: 'uuid-test-fixture',
     title: id,
     description: '',
     status: 'todo',

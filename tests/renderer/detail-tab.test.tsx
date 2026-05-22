@@ -6,6 +6,7 @@ import { DetailTab } from '../../src/renderer/components/detail-tab';
 
 const baseIssue: Issue = {
   id: 'FUL-1',
+  uuid: 'uuid-test-fixture',
   title: 'Wire details',
   description: '',
   status: 'todo',

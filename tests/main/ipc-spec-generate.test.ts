@@ -66,6 +66,7 @@ function createStore(repoPath: string, computronRepoPath = ''): ConfigStoreDoubl
 }
 
 const issueTemplate: Omit<Issue, 'id' | 'title' | 'description'> = {
+  uuid: 'uuid-test-fixture',
   status: 'todo',
   priority: 'high',
   labels: ['frontend'],

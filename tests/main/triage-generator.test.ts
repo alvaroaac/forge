@@ -4,6 +4,7 @@ import type { Issue } from '../../src/shared/types';
 
 const issue: Issue = {
   id: 'FUL-77',
+  uuid: 'uuid-test-fixture',
   title: 'x',
   description: 'y',
   status: 'triage',

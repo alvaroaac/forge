@@ -15,6 +15,7 @@ import { SpecDrawer } from '../../src/renderer/components/spec-drawer';
 
 const issue: Issue = {
   id: 'FUL-7',
+  uuid: 'uuid-test-fixture',
   title: 'Build the drawer',
   description: 'Linear description',
   status: 'todo',

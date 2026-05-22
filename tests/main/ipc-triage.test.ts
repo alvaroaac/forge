@@ -40,6 +40,7 @@ function fakeEvent() {
 
 const triageIssue: Issue = {
   id: 'FUL-77',
+  uuid: 'uuid-test-fixture',
   title: 't',
   description: 'd',
   status: 'triage',

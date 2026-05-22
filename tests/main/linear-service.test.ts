@@ -26,6 +26,7 @@ describe('mapIssue', () => {
     });
     expect(out).toEqual({
       id: 'FUL-7',
+      uuid: 'i1',
       title: 'thing',
       description: 'body',
       status: 'todo',
@@ -54,6 +55,26 @@ describe('mapIssue', () => {
     expect(out.status).toBe('done');
     expect(out.priority).toBe('none');
     expect(out.isBug).toBe(false);
+  });
+});
+
+describe('mapIssue — UUID preservation', () => {
+  it('preserves raw.id as Issue.uuid while keeping Issue.id = identifier', () => {
+    const raw: RawLinearIssue = {
+      id: '11111111-2222-3333-4444-555555555555',
+      identifier: 'FUL-77',
+      title: 'X',
+      description: null,
+      state: { name: 'Todo', type: 'unstarted' },
+      priority: 3,
+      labels: { nodes: [] },
+      url: 'https://linear.app/x/issue/FUL-77',
+      updatedAt: '2026-05-01T00:00:00.000Z',
+      assignee: null,
+    };
+    const mapped = mapIssue(raw);
+    expect(mapped.id).toBe('FUL-77');
+    expect(mapped.uuid).toBe('11111111-2222-3333-4444-555555555555');
   });
 });
 
@@ -107,6 +128,7 @@ describe('linear-service.fetchIssueDetail', () => {
     expect(client.fetchIssueDetail).toHaveBeenCalledWith('FUL-9');
     expect(issue).toEqual({
       id: 'FUL-9',
+      uuid: 'uuid-1',
       title: 'Fresh',
       description: 'Fresh detail text',
       status: 'todo',

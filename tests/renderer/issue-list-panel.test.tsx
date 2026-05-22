@@ -51,6 +51,7 @@ vi.mock('../../src/renderer/lib/classify', async () => {
 const issues: Issue[] = [
   {
     id: 'FUL-1',
+    uuid: 'uuid-test-fixture',
     title: 'first',
     description: '',
     status: 'todo',
@@ -63,6 +64,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-2',
+    uuid: 'uuid-test-fixture',
     title: 'second',
     description: '',
     status: 'todo',
@@ -75,6 +77,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-3',
+    uuid: 'uuid-test-fixture',
     title: 'third',
     description: '',
     status: 'in_progress',
@@ -87,6 +90,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-4',
+    uuid: 'uuid-test-fixture',
     title: 'fourth',
     description: '',
     status: 'done',
@@ -99,6 +103,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-5',
+    uuid: 'uuid-test-fixture',
     title: 'triage mine',
     description: '',
     status: 'triage',
@@ -111,6 +116,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-6',
+    uuid: 'uuid-test-fixture',
     title: 'triage other',
     description: '',
     status: 'triage',
@@ -243,6 +249,7 @@ describe('IssueListPanel', () => {
       issues: [
         {
           id: 'FUL-A',
+          uuid: 'uuid-test-fixture',
           title: 'alpha',
           description: '',
           status: 'in_progress',
@@ -255,6 +262,7 @@ describe('IssueListPanel', () => {
         },
         {
           id: 'FUL-B',
+          uuid: 'uuid-test-fixture',
           title: 'bravo',
           description: '',
           status: 'in_progress',
@@ -267,6 +275,7 @@ describe('IssueListPanel', () => {
         },
         {
           id: 'FUL-C',
+          uuid: 'uuid-test-fixture',
           title: 'charlie',
           description: '',
           status: 'in_progress',
@@ -279,6 +288,7 @@ describe('IssueListPanel', () => {
         },
         {
           id: 'FUL-D',
+          uuid: 'uuid-test-fixture',
           title: 'delta',
           description: '',
           status: 'in_progress',
@@ -291,6 +301,7 @@ describe('IssueListPanel', () => {
         },
         {
           id: 'FUL-H',
+          uuid: 'uuid-test-fixture',
           title: 'hidden',
           description: '',
           status: 'done',

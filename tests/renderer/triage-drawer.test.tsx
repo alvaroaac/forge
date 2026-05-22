@@ -6,6 +6,7 @@ import { TriageDrawer } from '../../src/renderer/components/triage-drawer';
 
 const issue: Issue = {
   id: 'FUL-77',
+  uuid: 'uuid-test-fixture',
   title: 'Investigate login regression',
   description: 'reported by support team',
   status: 'triage',

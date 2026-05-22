@@ -6,6 +6,7 @@ import { IssueDrawerShell } from '../../src/renderer/components/issue-drawer-she
 
 const issue: Issue = {
   id: 'FUL-7',
+  uuid: 'uuid-test-fixture',
   title: 'Build the drawer shell',
   description: 'Linear description',
   status: 'todo',

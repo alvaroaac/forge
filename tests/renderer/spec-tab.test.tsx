@@ -6,6 +6,7 @@ import type { Issue, Spec, SpecReviewSummary } from '../../src/shared/types';
 
 const issue: Issue = {
   id: 'FUL-7',
+  uuid: 'uuid-test-fixture',
   title: 'Build the spec tab',
   description: '',
   status: 'todo',
