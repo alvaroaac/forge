@@ -147,3 +147,45 @@ describe('COMMENT_TRIAGER_SYSTEM_PROMPT — per-rule coverage', () => {
     expect(COMMENT_TRIAGER_SYSTEM_PROMPT).toContain('fences wrapping the whole output');
   });
 });
+
+describe('triageComments — output contract shape (mocked LLM, parameterised)', () => {
+  const oneComment = [
+    { id: 'c-1', body: 'x', createdAt: '2026-05-01T00:00:00.000Z', authorName: 'Alice', isBot: false },
+  ];
+
+  it('returns whatever the LLM returned, untouched', async () => {
+    const arbitraryShapes = [
+      '## Relevant Comments\n_(none)_\n\n## Skipped Comments\n- Alice (noise): "+1".\n',
+      '## Relevant Comments\n\n### Alice — 2026-05-01\nbody\n\n---\n\n## Skipped Comments\n- (none)\n',
+      '## Relevant Comments\n_(none)_\n\n## Skipped Comments\n- Team (won\'t-do): rejected in thread.\n',
+    ];
+    for (const canned of arbitraryShapes) {
+      const streamClaude = vi.fn().mockResolvedValue(canned);
+      const out = await triageComments({
+        issueTitle: 't',
+        issueDescription: 'd',
+        comments: oneComment,
+        streamClaude,
+      });
+      expect(out).toBe(canned);
+    }
+  });
+
+  it('reason-vocabulary leak detector: only allowed tags appear in the Skipped block', async () => {
+    // The detector is the kind of thing that would run on a real LLM response.
+    // Here we use a synthetic but realistic curated output.
+    const canned =
+      '## Relevant Comments\n_(none)_\n\n## Skipped Comments\n' +
+      '- Alice (noise): "+1".\n' +
+      "- Bob (filler): \"ack\".\n" +
+      '- Carol (off-topic): unrelated to bug.\n' +
+      "- Dan (won't-do): proposal rejected in thread.\n";
+    const skippedBlock = canned.split('## Skipped Comments')[1] ?? '';
+    const reasonMatches = skippedBlock.match(/\(([a-z'-]+)\):/gi) ?? [];
+    expect(reasonMatches.length).toBeGreaterThan(0);
+    const allowed = new Set(['(bot):', "(won't-do):", '(noise):', '(filler):', '(off-topic):']);
+    for (const r of reasonMatches) {
+      expect(allowed.has(r.toLowerCase())).toBe(true);
+    }
+  });
+});
