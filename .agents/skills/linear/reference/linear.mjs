@@ -596,6 +596,30 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     return data.issues.nodes;
   }
 
+  /**
+   * Fetch all comments on an issue.
+   *
+   * @param {string} issueId  Linear issue id (UUID, not identifier)
+   */
+  async function fetchIssueComments(issueId) {
+    const data = await linearRequest(`
+      query($issueId: String!) {
+        issue(id: $issueId) {
+          comments(first: 250) {
+            nodes {
+              id
+              body
+              createdAt
+              user { id name }
+              botActor { id }
+            }
+          }
+        }
+      }
+    `, { issueId });
+    return data.issue?.comments?.nodes ?? [];
+  }
+
   return {
     getTeamId,
     getStateId,
@@ -617,5 +641,6 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     fetchIssueDetail,
     fetchAssignedIssues,
     fetchTeamTriage,
+    fetchIssueComments,
   };
 }
