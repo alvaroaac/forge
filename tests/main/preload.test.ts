@@ -126,4 +126,44 @@ describe('preload API', () => {
     expect(off).toHaveBeenCalledWith(IpcChannel.TriageGenerateDone, doneHandler);
     expect(off).toHaveBeenCalledWith(IpcChannel.TriageGenerateError, errorHandler);
   });
+
+  it('exposes spec.onPhase as a function returning an unsubscribe', () => {
+    const forge = getForgeApi();
+
+    expect(typeof forge.spec.onPhase).toBe('function');
+    const onPhase = forge.spec.onPhase;
+    if (!onPhase) {
+      throw new Error('spec.onPhase was not exposed');
+    }
+
+    const unsubscribe = onPhase(() => undefined);
+    const phaseHandler = on.mock.calls[0][1];
+
+    expect(typeof unsubscribe).toBe('function');
+    expect(on).toHaveBeenCalledWith(IpcChannel.SpecPhase, phaseHandler);
+
+    unsubscribe();
+
+    expect(off).toHaveBeenCalledWith(IpcChannel.SpecPhase, phaseHandler);
+  });
+
+  it('exposes triage.onPhase as a function returning an unsubscribe', () => {
+    const forge = getForgeApi();
+
+    expect(typeof forge.triage.onPhase).toBe('function');
+    const onPhase = forge.triage.onPhase;
+    if (!onPhase) {
+      throw new Error('triage.onPhase was not exposed');
+    }
+
+    const unsubscribe = onPhase(() => undefined);
+    const phaseHandler = on.mock.calls[0][1];
+
+    expect(typeof unsubscribe).toBe('function');
+    expect(on).toHaveBeenCalledWith(IpcChannel.TriagePhase, phaseHandler);
+
+    unsubscribe();
+
+    expect(off).toHaveBeenCalledWith(IpcChannel.TriagePhase, phaseHandler);
+  });
 });
