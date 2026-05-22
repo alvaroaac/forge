@@ -25,7 +25,7 @@ DONE
 ## Commits
 
 - Initial Task 1 commit: `5a7761675951052bddcce32b45b3e50a04d168aa`
-- QA follow-up commit: `652d88e9d67d66c164fe90be347d1f1c0d032320`
+- QA follow-up commit: `ab058c86efbb51685341ef067be0ad8f5e5112f9`
 
 ## Self-review findings
 
