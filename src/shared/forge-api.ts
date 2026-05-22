@@ -35,7 +35,7 @@ export interface ForgeApi {
     onChunk: (handler: (chunk: SpecStreamChunk) => void) => () => void;
     onDone: (handler: (payload: SpecGenerateDone) => void) => () => void;
     onError: (handler: (payload: SpecGenerateError) => void) => () => void;
-    onPhase?: (handler: (event: SpecPhaseEvent) => void) => () => void;
+    onPhase: (handler: (event: SpecPhaseEvent) => void) => () => void;
   };
   triage: {
     get: (issueId: string) => Promise<TriageBrief | null>;
@@ -48,7 +48,7 @@ export interface ForgeApi {
     onChunk: (handler: (chunk: TriageStreamChunk) => void) => () => void;
     onDone: (handler: (payload: TriageGenerateDone) => void) => () => void;
     onError: (handler: (payload: TriageGenerateError) => void) => () => void;
-    onPhase?: (handler: (event: TriagePhaseEvent) => void) => () => void;
+    onPhase: (handler: (event: TriagePhaseEvent) => void) => () => void;
   };
   config: {
     get: () => Promise<AppConfig>;

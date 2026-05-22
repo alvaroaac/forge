@@ -51,6 +51,7 @@ function setTriageApi(writeMock: ReturnType<typeof vi.fn>) {
       onChunk: vi.fn(),
       onDone: vi.fn(),
       onError: vi.fn(),
+      onPhase: vi.fn(() => vi.fn()),
     },
     triage: {
       get: vi.fn(),
@@ -59,6 +60,7 @@ function setTriageApi(writeMock: ReturnType<typeof vi.fn>) {
       onChunk: vi.fn(),
       onDone: vi.fn(),
       onError: vi.fn(),
+      onPhase: vi.fn(() => vi.fn()),
     },
   };
 }

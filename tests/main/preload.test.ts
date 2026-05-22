@@ -131,12 +131,7 @@ describe('preload API', () => {
     const forge = getForgeApi();
 
     expect(typeof forge.spec.onPhase).toBe('function');
-    const onPhase = forge.spec.onPhase;
-    if (!onPhase) {
-      throw new Error('spec.onPhase was not exposed');
-    }
-
-    const unsubscribe = onPhase(() => undefined);
+    const unsubscribe = forge.spec.onPhase(() => undefined);
     const phaseHandler = on.mock.calls[0][1];
 
     expect(typeof unsubscribe).toBe('function');
@@ -151,12 +146,7 @@ describe('preload API', () => {
     const forge = getForgeApi();
 
     expect(typeof forge.triage.onPhase).toBe('function');
-    const onPhase = forge.triage.onPhase;
-    if (!onPhase) {
-      throw new Error('triage.onPhase was not exposed');
-    }
-
-    const unsubscribe = onPhase(() => undefined);
+    const unsubscribe = forge.triage.onPhase(() => undefined);
     const phaseHandler = on.mock.calls[0][1];
 
     expect(typeof unsubscribe).toBe('function');

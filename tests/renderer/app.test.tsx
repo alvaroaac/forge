@@ -245,6 +245,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -254,6 +255,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -298,6 +300,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -307,6 +310,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -364,6 +368,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -373,6 +378,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -418,6 +424,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -427,6 +434,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -471,6 +479,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -480,6 +489,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
     renderState.streamSpec = {
@@ -530,6 +540,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -539,6 +550,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
     renderState.streamSpec = {
@@ -604,6 +616,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -613,6 +626,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
     renderState.streamSpec = {
@@ -669,6 +683,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -678,6 +693,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
     renderState.streamSpec = {
@@ -730,6 +746,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -739,6 +756,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -778,6 +796,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -787,6 +806,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 

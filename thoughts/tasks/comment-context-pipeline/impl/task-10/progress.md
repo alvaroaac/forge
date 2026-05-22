@@ -2,36 +2,34 @@
 
 ## Summary
 
-- Added preload coverage for `spec.onPhase` and `triage.onPhase`, including unsubscribe behavior and IPC channel registration.
-- Extended `ForgeApi` with `SpecPhaseEvent` and `TriagePhaseEvent` handler types for the phase subscribers.
-- Implemented preload `onPhase` subscribers using `subscribe<SpecPhaseEvent>(IpcChannel.SpecPhase, handler)` and `subscribe<TriagePhaseEvent>(IpcChannel.TriagePhase, handler)`.
+- Exposed required `spec.onPhase` and `triage.onPhase` preload subscribers.
+- Kept `ForgeApi.spec.onPhase` and `ForgeApi.triage.onPhase` as required function signatures using `SpecPhaseEvent` and `TriagePhaseEvent`.
+- Added preload tests for both phase subscribers returning unsubscribe functions and registering the correct IPC channels.
+- Updated renderer test fixtures with no-op `onPhase` subscribers so the required shared API contract typechecks.
 
 ## Files Changed
 
 - `src/main/preload.ts`
 - `src/shared/forge-api.ts`
 - `tests/main/preload.test.ts`
+- `tests/renderer/app.test.tsx`
+- `tests/renderer/triage-drawer.test.tsx`
+- `tests/renderer/use-auth-status.test.ts`
+- `tests/renderer/use-issues.test.ts`
+- `tests/renderer/use-spec-stream.test.ts`
+- `tests/renderer/use-triage-stream.test.ts`
 - `thoughts/tasks/comment-context-pipeline/impl/task-10/progress.md`
 
-## Tests Run
+## Verification
 
-- `npm test -- tests/main/preload.test.ts`
-  - Red run: failed because `spec.onPhase` and `triage.onPhase` were undefined.
-  - Green run: passed, 8 tests.
-- `npm run typecheck`
-  - Initial run failed because renderer test stubs outside Task 10 did not include the newly required `onPhase` properties.
-  - Final run passed after keeping `ForgeApi` phase subscribers optional while the preload implementation exposes them unconditionally.
+- `npm run typecheck` passed.
+- `npm test -- tests/main/preload.test.ts tests/renderer/app.test.tsx tests/renderer/triage-drawer.test.tsx tests/renderer/use-auth-status.test.ts tests/renderer/use-issues.test.ts tests/renderer/use-spec-stream.test.ts tests/renderer/use-triage-stream.test.ts` passed, 64 tests.
 
-## Self-Review
+## Commits
 
-- Confirmed the preload subscribers use the requested phase IPC channels.
-- Kept implementation edits scoped to the Task 10 source/test files.
-- Did not modify unrelated renderer test stubs, per the requested write scope.
+- `a7c3e51 feat(preload): expose spec/triage onPhase subscribers`
+- `fix(preload): require onPhase API contract`
 
 ## Tech Debt
 
 - None logged.
-
-## Commit
-
-- `feat(preload): expose spec/triage onPhase subscribers`

@@ -63,6 +63,7 @@ function setForge(options: {
       launchReview: vi.fn(),
       onDone: options.onDone ?? vi.fn(() => vi.fn()),
       onError: options.onError ?? vi.fn(() => vi.fn()),
+      onPhase: vi.fn(() => vi.fn()),
     },
     triage: {
       get: vi.fn(),
@@ -71,6 +72,7 @@ function setForge(options: {
       onChunk: vi.fn(),
       onDone: vi.fn(),
       onError: vi.fn(),
+      onPhase: vi.fn(() => vi.fn()),
     },
   };
 }
