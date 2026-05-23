@@ -27,7 +27,7 @@ describe('GeneratedDocument', () => {
   });
 
   it('renders activity before content arrives', () => {
-    render(
+    const { container } = render(
       <GeneratedDocument
         artifactPath="thoughts/tasks/FUL-7/triage-brief.md"
         content=""
@@ -43,6 +43,7 @@ describe('GeneratedDocument', () => {
     expect(screen.getByText('Generating brief')).toBeTruthy();
     expect(screen.getByText('Reading repository context')).toBeTruthy();
     expect(screen.getByText('Starting Claude')).toBeTruthy();
+    expect(container.querySelector('.stream-spinner')).toBeTruthy();
   });
 
   it('renders markdown sections through MarkdownSection', () => {
@@ -61,6 +62,24 @@ describe('GeneratedDocument', () => {
     expect(screen.getByText('Summary')).toBeTruthy();
     expect(screen.getByText('Verification')).toBeTruthy();
     expect(container.querySelector('.md-code')?.textContent).toBe('GeneratedDocument');
+    expect(container.querySelector('.stream-spinner')).toBeNull();
+  });
+
+  it('renders a spinner directly after streamed markdown content', () => {
+    const { container } = render(
+      <GeneratedDocument
+        artifactPath="thoughts/tasks/FUL-7/initial-spec.md"
+        content={'## Partial\nStreaming words.'}
+        isStreaming={true}
+        emptyTitle="No document yet."
+        activityTitle="Generating document"
+        activityStatusFallback="Starting generator"
+      />,
+    );
+
+    expect(screen.getByText('Partial')).toBeTruthy();
+    expect(container.querySelector('.spec-scroll .stream-spinner-row')).toBeTruthy();
+    expect(container.querySelector('.spec-scroll .stream-spinner')).toBeTruthy();
   });
 
   it('renders populated and empty action slots', () => {

@@ -21,6 +21,7 @@ import { writeSpec } from '../services/spec-writer';
 import { checkRepoAccess } from '../services/repo-access-checker';
 import { configPath, issuesCachePath } from '../lib/paths';
 import { registerAuthHandlers } from './auth';
+import { registerCommentsFetchHandler, registerCommentsGenerateSummaryHandler } from './comments';
 import { registerConfigHandlers } from './config';
 import { registerLinearHandlers } from './linear';
 import {
@@ -81,6 +82,18 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
 
   registerConfigHandlers(ipc, store);
   registerAuthHandlers(ipc, store, checkAll, client);
+  registerCommentsFetchHandler(ipc, {
+    cache,
+    fetchAndFilterComments: (issueUuid) =>
+      fetchAndFilterComments(client as CommentsClient, issueUuid),
+  });
+  registerCommentsGenerateSummaryHandler(ipc, {
+    cache,
+    fetchAndFilterComments: (issueUuid) =>
+      fetchAndFilterComments(client as CommentsClient, issueUuid),
+    triageComments: ({ issueTitle, issueDescription, comments }) =>
+      triageComments({ issueTitle, issueDescription, comments, streamClaude }),
+  });
   registerLinearHandlers(ipc, {
     cache,
     fetchIssues: (linearClient) => fetchIssues(linearClient as LinearClient),

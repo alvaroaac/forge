@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
 import type { Issue } from '../../src/shared/types';
+import type { DrawerTab } from '../../src/renderer/components/spec-drawer';
 import { type Group, classifyGroup } from '../../src/renderer/lib/classify';
 
 import { IssueListPanel } from '../../src/renderer/components/issue-list-panel';
@@ -16,7 +17,7 @@ vi.mock('../../src/renderer/components/issue-group', () => ({
   }: {
     name: Group;
     items: Issue[];
-    onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
+    onOpen: (issue: Issue, which: DrawerTab) => void;
     activeId: string | null;
     hasSpecFor: (issueId: string) => boolean;
   }) => (
@@ -148,7 +149,7 @@ function renderPanel(
     issues: Issue[];
     tab: Parameters<typeof IssueListPanel>[0]['tab'];
     setTab: (next: Parameters<typeof IssueListPanel>[0]['tab']) => void;
-    onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
+    onOpen: (issue: Issue, which: DrawerTab) => void;
     activeId: string | null;
     hasSpecFor: (issueId: string) => boolean;
     onRefresh: () => void;

@@ -88,6 +88,31 @@ export interface TriageWriteResult {
   exists: boolean;
 }
 
+export interface CommentSummaryComment {
+  id: string;
+  body: string;
+  createdAt: string;
+  authorName: string;
+  isBot: boolean;
+}
+
+export interface CommentSummaryResult {
+  issueId: string;
+  comments: CommentSummaryComment[];
+  commentCount: number;
+  summary: string;
+  skippedReason?: 'missing-uuid' | 'no-comments';
+  errorMessage?: string;
+}
+
+export interface CommentFetchResult {
+  issueId: string;
+  comments: CommentSummaryComment[];
+  commentCount: number;
+  skippedReason?: 'missing-uuid' | 'no-comments';
+  errorMessage?: string;
+}
+
 export interface SpecReviewSummary {
   verdict: 'approved' | 'changes_requested';
   reviewerSummary: string;

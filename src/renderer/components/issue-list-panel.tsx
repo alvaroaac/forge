@@ -1,5 +1,6 @@
 import { classifyGroup, type Group } from '../lib/classify';
 import type { Issue, IssueStatus } from '../../shared/types';
+import type { DrawerTab } from './spec-drawer';
 
 import { IconRefresh } from './icons';
 import { IssueGroup } from './issue-group';
@@ -23,7 +24,7 @@ type IssueListPanelProps = {
   issues: Issue[];
   tab: Tab;
   setTab: (next: Tab) => void;
-  onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
+  onOpen: (issue: Issue, which: DrawerTab) => void;
   activeId: string | null;
   hasSpecFor: (issueId: string) => boolean;
   onRefresh: () => void;

@@ -23,9 +23,12 @@ function createDeferred<T>(): Deferred<T> {
 }
 
 const renderState: {
-  issueListPanelProps: { onOpen: (issue: Issue, which: 'detail' | 'spec') => void } | null;
+  issueListPanelProps: {
+    onOpen: (issue: Issue, which: 'detail' | 'spec' | 'comments') => void;
+  } | null;
   specDrawerIssue: Issue | null;
   specDrawerProps: {
+    tab: 'detail' | 'spec' | 'comments';
     spec: Spec | null;
     streaming: string;
     streamStatus: string[];
@@ -90,7 +93,7 @@ vi.mock('../../src/renderer/components/right-panel', () => ({
 }));
 
 vi.mock('../../src/renderer/components/issue-list-panel', () => ({
-  IssueListPanel: (props: { onOpen: (issue: Issue, which: 'detail' | 'spec') => void }) => {
+  IssueListPanel: (props: { onOpen: (issue: Issue, which: 'detail' | 'spec' | 'comments') => void }) => {
     renderState.issueListPanelProps = props;
     return <div data-testid="issue-list-panel" />;
   },
@@ -99,6 +102,7 @@ vi.mock('../../src/renderer/components/issue-list-panel', () => ({
 vi.mock('../../src/renderer/components/spec-drawer', () => ({
   SpecDrawer: (props: {
     issue: Issue | null;
+    tab: 'detail' | 'spec' | 'comments';
     spec: Spec | null;
     streaming: string;
     streamStatus: string[];
@@ -136,6 +140,8 @@ vi.mock('../../src/renderer/components/triage-drawer', () => ({
     isBriefLoading: boolean;
     brief: TriageBrief | null;
     errorMessage: string | null;
+    tab?: 'detail' | 'comments' | 'brief';
+    setTab?: (tab: 'detail' | 'comments' | 'brief') => void;
     onGenerate: () => void;
     onClose: () => void;
   }) => {
@@ -300,8 +306,9 @@ describe('App detail drawer refresh', () => {
     });
 
     await waitFor(() => {
-      expect(renderState.specDrawerIssue?.description).toBe('Fresh description from detail query');
-    });
+    expect(renderState.specDrawerIssue?.description).toBe('Fresh description from detail query');
+    expect(renderState.specDrawerProps?.tab).toBe('detail');
+  });
   });
 
   it('does not replace drawer issue when an older detail request resolves after selection changes', async () => {
@@ -479,6 +486,55 @@ describe('App detail drawer refresh', () => {
       phase: 'triaging',
       commentCount: 4,
     });
+  });
+
+  it('renders SpecDrawer detail view for non-triage issues opened on detail', async () => {
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[0], 'detail');
+    });
+
+    expect(renderState.specDrawerIssue).toEqual(issues[0]);
+    expect(renderState.specDrawerProps).toMatchObject({
+      tab: 'detail',
+      streaming: '',
+      reviewedContent: null,
+      reviewSummary: null,
+    });
+    expect(renderState.triageDrawerIssue).toBeNull();
+    expect(renderState.triageDrawerProps).toBeNull();
   });
 
   it('writes the drawer spec content through the explicit write action', async () => {
@@ -847,6 +903,7 @@ describe('App detail drawer refresh', () => {
       canGenerate: true,
       isStreaming: false,
       streaming: '',
+      tab: 'brief',
       brief: null,
       errorMessage: null,
     });
@@ -900,7 +957,7 @@ describe('App detail drawer refresh', () => {
     });
   });
 
-  it('renders SpecDrawer detail view for triage issues opened on detail', async () => {
+  it('renders TriageDrawer detail view for triage issues opened on detail', async () => {
     window.forge = {
       auth: { check: vi.fn() },
       config: { get: vi.fn(), set: vi.fn() },
@@ -938,13 +995,14 @@ describe('App detail drawer refresh', () => {
       renderState.issueListPanelProps?.onOpen(issues[2], 'detail');
     });
 
-    expect(renderState.specDrawerIssue).toEqual(issues[2]);
-    expect(renderState.specDrawerProps).toMatchObject({
+    expect(renderState.triageDrawerIssue).toEqual(issues[2]);
+    expect(renderState.triageDrawerProps).toMatchObject({
+      tab: 'detail',
       streaming: '',
-      reviewedContent: null,
-      reviewSummary: null,
+      brief: null,
+      errorMessage: null,
     });
-    expect(renderState.triageDrawerIssue).toBeNull();
-    expect(renderState.triageDrawerProps).toBeNull();
+    expect(renderState.specDrawerIssue).toBeNull();
+    expect(renderState.specDrawerProps).toBeNull();
   });
 });

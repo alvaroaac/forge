@@ -131,11 +131,15 @@ function GeneratedDocumentMessages({ errorMessage, statusMessage }: MessageStack
   );
 }
 
+function StreamSpinner() {
+  return <span className="stream-spinner" aria-hidden="true" />;
+}
+
 function GeneratedDocumentActivity({ title, currentStatus, priorStatuses }: ActivityProps) {
   return (
     <div className="spec-activity" role="status" aria-live="polite">
       <div className="spec-activity-head">
-        <span className="spec-activity-pulse" aria-hidden="true" />
+        <StreamSpinner />
         <div>
           <div className="spec-activity-title">{title}</div>
           <div className="mono dim">{currentStatus}</div>
@@ -166,7 +170,10 @@ function GeneratedDocumentEmpty({ title, description, actions }: EmptyStateProps
   );
 }
 
-function GeneratedDocumentMarkdown({ content }: Pick<GeneratedDocumentProps, 'content'>) {
+function GeneratedDocumentMarkdown({
+  content,
+  isStreaming,
+}: Pick<GeneratedDocumentProps, 'content' | 'isStreaming'>) {
   const sections = splitSections(content);
 
   return (
@@ -174,6 +181,11 @@ function GeneratedDocumentMarkdown({ content }: Pick<GeneratedDocumentProps, 'co
       {sections.map((section, index) => (
         <MarkdownSection key={`${section.h}-${index}`} h={section.h} body={section.body} />
       ))}
+      {isStreaming ? (
+        <div className="stream-spinner-row" role="status" aria-live="polite">
+          <StreamSpinner />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -190,7 +202,7 @@ function GeneratedDocumentBody({
   hasContent,
 }: DocumentBodyProps) {
   if (hasContent) {
-    return <GeneratedDocumentMarkdown content={content} />;
+    return <GeneratedDocumentMarkdown content={content} isStreaming={isStreaming} />;
   }
 
   if (isStreaming) {

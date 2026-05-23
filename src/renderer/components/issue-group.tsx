@@ -1,6 +1,7 @@
 import type { CSSProperties, ComponentType } from 'react';
 
 import type { Issue } from '../../shared/types';
+import type { DrawerTab } from './spec-drawer';
 import { IconBug, IconFlame, IconSpark, IconTerminal } from './icons';
 import { IssueCard } from './issue-card';
 import { Group } from '../lib/classify';
@@ -29,7 +30,7 @@ function intoRows<T>(items: T[]): [T[], T[]] {
 type IssueGroupProps = {
   name: Group;
   items: Issue[];
-  onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
+  onOpen: (issue: Issue, which: DrawerTab) => void;
   activeId: string | null;
   hasSpecFor: (issueId: string) => boolean;
 };

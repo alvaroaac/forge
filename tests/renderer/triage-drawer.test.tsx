@@ -4,6 +4,19 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { Issue, TriageBrief } from '../../src/shared/types';
 import { TriageDrawer } from '../../src/renderer/components/triage-drawer';
 
+const commentsTabMock = vi.fn();
+
+vi.mock('../../src/renderer/components/detail-tab', () => ({
+  DetailTab: () => <div data-testid="detail-body">detail body</div>,
+}));
+
+vi.mock('../../src/renderer/components/comments-tab', () => ({
+  CommentsTab: (props: unknown) => {
+    commentsTabMock(props);
+    return <div data-testid="comments-body">comments body</div>;
+  },
+}));
+
 const issue: Issue = {
   id: 'FUL-77',
   uuid: 'uuid-test-fixture',
@@ -62,12 +75,17 @@ function setTriageApi(writeMock: ReturnType<typeof vi.fn>) {
       onError: vi.fn(),
       onPhase: vi.fn(() => vi.fn()),
     },
+    comments: {
+      fetch: vi.fn(),
+      generateSummary: vi.fn(),
+    },
   };
 }
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  commentsTabMock.mockClear();
 });
 
 describe('TriageDrawer', () => {
@@ -95,6 +113,7 @@ describe('TriageDrawer', () => {
     const { container } = render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={false}
         isStreaming={false}
         streaming=""
@@ -112,9 +131,96 @@ describe('TriageDrawer', () => {
     expect(generateButton.getAttribute('disabled')).toBe('');
     expect(generateButton.className).toContain('btn-ghost-accent');
     expect(screen.getByText(/computronRepoPath/i)).toBeTruthy();
-    expect(screen.getByText('Brief')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Brief' })).toBeTruthy();
     expect(screen.getByText('No brief yet for FUL-77.')).toBeTruthy();
     expect(screen.getByText('thoughts/tasks/FUL-77/triage-brief.md')).toBeTruthy();
+  });
+
+  it('defaults to the Details tab when no tab is provided', () => {
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Details' }).className).toContain(
+      'drawer-tab-active',
+    );
+    expect(screen.getByTestId('detail-body')).toBeTruthy();
+    expect(screen.queryByText('No brief yet for FUL-77.')).toBeNull();
+  });
+
+  it('shows Details, Comments, and Brief tabs and switches by calling setTab', () => {
+    const writeMock = vi.fn();
+    const setTab = vi.fn();
+    setTriageApi(writeMock);
+
+    const { rerender } = render(
+      <TriageDrawer
+        issue={issue}
+        tab="brief"
+        setTab={setTab}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Details' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Comments' }));
+
+    expect(setTab).toHaveBeenCalledWith('detail');
+    expect(setTab).toHaveBeenCalledWith('comments');
+    expect(screen.getByRole('button', { name: 'Brief' }).className).toContain(
+      'drawer-tab-active',
+    );
+
+    rerender(
+      <TriageDrawer
+        issue={issue}
+        tab="detail"
+        setTab={setTab}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('detail-body')).toBeTruthy();
+
+    rerender(
+      <TriageDrawer
+        issue={issue}
+        tab="comments"
+        setTab={setTab}
+        canGenerate={true}
+        isStreaming={false}
+        streaming=""
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('comments-body')).toBeTruthy();
+    expect(commentsTabMock).toHaveBeenCalledWith(expect.objectContaining({ issue }));
   });
 
   it('closes when the drawer scrim is clicked', () => {
@@ -125,6 +231,7 @@ describe('TriageDrawer', () => {
     const { container } = render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""
@@ -148,6 +255,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""
@@ -170,6 +278,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={true}
         streaming=""
@@ -197,6 +306,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={true}
         streaming=""
@@ -219,6 +329,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={true}
         streaming=""
@@ -240,6 +351,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={true}
         streaming=""
@@ -261,6 +373,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={true}
         streaming={'## Live brief\n\nStreaming body'}
@@ -289,6 +402,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={true}
         streaming={'## New brief\n\nFresh streamed context.'}
@@ -324,6 +438,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={true}
         streaming={'## New brief\n\nFresh streamed context.'}
@@ -352,6 +467,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""
@@ -379,6 +495,7 @@ describe('TriageDrawer', () => {
     const { container } = render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""
@@ -403,6 +520,7 @@ describe('TriageDrawer', () => {
     const { rerender } = render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""
@@ -424,6 +542,7 @@ describe('TriageDrawer', () => {
     rerender(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""
@@ -466,6 +585,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""
@@ -506,6 +626,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""
@@ -544,6 +665,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""
@@ -585,6 +707,7 @@ describe('TriageDrawer', () => {
     render(
       <TriageDrawer
         issue={issue}
+        tab="brief"
         canGenerate={true}
         isStreaming={false}
         streaming=""

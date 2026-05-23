@@ -5,6 +5,8 @@ export const IpcChannel = {
   LinearFetchTeamTriage: 'linear:fetch-team-triage',
   LinearGetViewerId: 'linear:get-viewer-id',
   LinearRefresh: 'linear:refresh',
+  CommentsFetch: 'comments:fetch',
+  CommentsGenerateSummary: 'comments:generate-summary',
   SpecGenerate: 'spec:generate',
   SpecLaunchReview: 'spec:launch-review',
   SpecStreamChunk: 'spec:stream-chunk',

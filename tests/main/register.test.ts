@@ -10,6 +10,8 @@ import type { RawLinearComment } from '../../src/main/services/comment-fetcher';
 
 const mocks = vi.hoisted(() => ({
   registerAuthHandlers: vi.fn(),
+  registerCommentsFetchHandler: vi.fn(),
+  registerCommentsGenerateSummaryHandler: vi.fn(),
   registerConfigHandlers: vi.fn(),
   registerLinearHandlers: vi.fn(),
   registerSpecGenerateHandler: vi.fn(),
@@ -24,6 +26,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../src/main/ipc/auth', () => ({
   registerAuthHandlers: mocks.registerAuthHandlers,
+}));
+
+vi.mock('../../src/main/ipc/comments', () => ({
+  registerCommentsFetchHandler: mocks.registerCommentsFetchHandler,
+  registerCommentsGenerateSummaryHandler: mocks.registerCommentsGenerateSummaryHandler,
 }));
 
 vi.mock('../../src/main/ipc/config', () => ({
@@ -136,6 +143,13 @@ describe('registerAll comment context wiring', () => {
 
     const specDeps = mocks.registerSpecGenerateHandler.mock.calls[0]?.[1] as SpecGenerateDeps;
     const triageDeps = mocks.registerTriageGenerateHandler.mock.calls[0]?.[1] as TriageGenerateDeps;
+    const commentsDeps = mocks.registerCommentsGenerateSummaryHandler.mock.calls[0]?.[1] as {
+      fetchAndFilterComments: SpecGenerateDeps['fetchAndFilterComments'];
+      triageComments: SpecGenerateDeps['triageComments'];
+    };
+    const commentsFetchDeps = mocks.registerCommentsFetchHandler.mock.calls[0]?.[1] as {
+      fetchAndFilterComments: SpecGenerateDeps['fetchAndFilterComments'];
+    };
 
     await expect(specDeps.fetchAndFilterComments('uuid-abc')).resolves.toEqual([
       {
@@ -147,9 +161,13 @@ describe('registerAll comment context wiring', () => {
       },
     ]);
     await triageDeps.fetchAndFilterComments('uuid-def');
+    await commentsDeps.fetchAndFilterComments('uuid-ghi');
+    await commentsFetchDeps.fetchAndFilterComments('uuid-jkl');
 
     expect(fetchIssueComments).toHaveBeenNthCalledWith(1, 'uuid-abc');
     expect(fetchIssueComments).toHaveBeenNthCalledWith(2, 'uuid-def');
+    expect(fetchIssueComments).toHaveBeenNthCalledWith(3, 'uuid-ghi');
+    expect(fetchIssueComments).toHaveBeenNthCalledWith(4, 'uuid-jkl');
     await expect(
       specDeps.triageComments({
         issueTitle: 'Title',
@@ -159,6 +177,13 @@ describe('registerAll comment context wiring', () => {
     ).resolves.toBe('');
     await expect(
       triageDeps.triageComments({
+        issueTitle: 'Title',
+        issueDescription: 'Description',
+        comments: [],
+      }),
+    ).resolves.toBe('');
+    await expect(
+      commentsDeps.triageComments({
         issueTitle: 'Title',
         issueDescription: 'Description',
         comments: [],

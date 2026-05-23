@@ -1,9 +1,10 @@
 import type { GenerationPhase, Issue, Spec, SpecReviewSummary } from '../../shared/types';
+import { CommentsTab } from './comments-tab';
 import { DetailTab } from './detail-tab';
 import { IssueDrawerShell } from './issue-drawer-shell';
 import { SpecTab } from './spec-tab';
 
-export type DrawerTab = 'detail' | 'spec';
+export type DrawerTab = 'detail' | 'spec' | 'comments';
 
 type SpecDrawerProps = {
   issue: Issue | null;
@@ -86,6 +87,10 @@ function SpecDrawerBody({
     return <DetailTab issue={issue} />;
   }
 
+  if (tab === 'comments') {
+    return <CommentsTab issue={issue} />;
+  }
+
   return (
     <SpecTab
       issue={issue}
@@ -151,6 +156,12 @@ export function SpecDrawer({
           onClick: () => setTab('detail'),
         },
         { key: 'spec', label: 'Spec', isActive: tab === 'spec', onClick: () => setTab('spec') },
+        {
+          key: 'comments',
+          label: 'Comments',
+          isActive: tab === 'comments',
+          onClick: () => setTab('comments'),
+        },
       ]}
     >
       <SpecDrawerBody

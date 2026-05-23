@@ -9,6 +9,8 @@ describe('IpcChannel', () => {
     expect(IpcChannel.LinearFetchTeamTriage).toBe('linear:fetch-team-triage');
     expect(IpcChannel.LinearGetViewerId).toBe('linear:get-viewer-id');
     expect(IpcChannel.LinearRefresh).toBe('linear:refresh');
+    expect(IpcChannel.CommentsFetch).toBe('comments:fetch');
+    expect(IpcChannel.CommentsGenerateSummary).toBe('comments:generate-summary');
     expect(IpcChannel.SpecGenerate).toBe('spec:generate');
     expect(IpcChannel.SpecLaunchReview).toBe('spec:launch-review');
     expect(IpcChannel.SpecStreamChunk).toBe('spec:stream-chunk');

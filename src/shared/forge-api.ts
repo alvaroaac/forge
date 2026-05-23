@@ -14,6 +14,8 @@ import type {
   TriageStreamChunk,
   TriageWriteResult,
   SpecReviewResult,
+  CommentFetchResult,
+  CommentSummaryResult,
 } from './types';
 
 export interface ForgeApi {
@@ -49,6 +51,14 @@ export interface ForgeApi {
     onDone: (handler: (payload: TriageGenerateDone) => void) => () => void;
     onError: (handler: (payload: TriageGenerateError) => void) => () => void;
     onPhase: (handler: (event: TriagePhaseEvent) => void) => () => void;
+  };
+  comments?: {
+    fetch: (issueId: string, issue?: Issue) => Promise<CommentFetchResult>;
+    generateSummary: (
+      issueId: string,
+      issue?: Issue,
+      comments?: CommentFetchResult['comments'],
+    ) => Promise<CommentSummaryResult>;
   };
   config: {
     get: () => Promise<AppConfig>;

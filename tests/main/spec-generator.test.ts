@@ -154,9 +154,9 @@ describe('streamSpec', () => {
     });
 
     const expectation = expect(result).rejects.toThrow(
-      'Claude CLI timed out after 300s. Received 59 stdout chars. Stderr tail: still thinking Last Claude events: system:status:requesting',
+      'Claude CLI timed out after 600s. Received 59 stdout chars. Stderr tail: still thinking Last Claude events: system:status:requesting',
     );
-    await vi.advanceTimersByTimeAsync(300_000);
+    await vi.advanceTimersByTimeAsync(600_000);
     await expectation;
   });
 

@@ -5,7 +5,7 @@ import {
 } from 'node:child_process';
 import { buildCliEnv } from '../lib/cli-env';
 
-const CLAUDE_SPEC_TIMEOUT_MS = 300_000;
+const GENERATE_SPEC_TIMEOUT_MS = 600_000;
 
 export interface StreamSpecInput {
   model: string;
@@ -179,7 +179,7 @@ function toTimeoutError(
 
 export async function streamClaude(input: StreamClaudeInput): Promise<string> {
   const spawnProcess = input.spawnProcess ?? spawn;
-  const timeoutMs = input.timeoutMs ?? CLAUDE_SPEC_TIMEOUT_MS;
+  const timeoutMs = input.timeoutMs ?? GENERATE_SPEC_TIMEOUT_MS;
   const claude = spawnProcess('claude', buildClaudeArgs(input), {
     shell: false,
     stdio: ['pipe', 'pipe', 'pipe'],
