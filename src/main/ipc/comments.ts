@@ -7,8 +7,6 @@ import type { LinearComment } from '../services/comment-fetcher';
 
 type CommentsGeneratePayload = {
   issueId: string;
-  issue?: Issue;
-  comments?: LinearComment[];
 };
 
 type FetchAndFilterCommentsFn = (issueUuid: string) => Promise<LinearComment[]>;
@@ -26,16 +24,7 @@ export interface CommentsGenerateSummaryDeps {
 
 export type CommentsFetchDeps = Omit<CommentsGenerateSummaryDeps, 'triageComments'>;
 
-function isPayloadIssue(issue: Issue | undefined, issueId: string): issue is Issue {
-  return Boolean(issue && issue.id === issueId && isSafeIssueId(issue.id));
-}
-
-function findIssue(issues: Issue[], payload: CommentsGeneratePayload): Issue {
-  if (isPayloadIssue(payload.issue, payload.issueId)) {
-    return payload.issue;
-  }
-
-  const { issueId } = payload;
+function findIssue(issues: Issue[], issueId: string): Issue {
   if (!isSafeIssueId(issueId)) {
     throw new Error(`Issue not found in cache: ${issueId}`);
   }
@@ -82,7 +71,7 @@ export function registerCommentsFetchHandler(ipc: IpcMain, deps: CommentsFetchDe
     IpcChannel.CommentsFetch,
     async (_event, payload: CommentsGeneratePayload): Promise<CommentFetchResult> => {
       const issues = await deps.cache.read();
-      const issue = findIssue(issues, payload);
+      const issue = findIssue(issues, payload.issueId);
 
       if (!issue.uuid) {
         return emptyFetchResult(payload.issueId, 'missing-uuid');
@@ -110,13 +99,13 @@ export function registerCommentsGenerateSummaryHandler(
     IpcChannel.CommentsGenerateSummary,
     async (_event, payload: CommentsGeneratePayload): Promise<CommentSummaryResult> => {
       const issues = await deps.cache.read();
-      const issue = findIssue(issues, payload);
+      const issue = findIssue(issues, payload.issueId);
 
       if (!issue.uuid) {
         return emptyResult(payload.issueId, 'missing-uuid');
       }
 
-      const comments = payload.comments ?? (await deps.fetchAndFilterComments(issue.uuid));
+      const comments = await deps.fetchAndFilterComments(issue.uuid);
       if (comments.length === 0) {
         return emptyResult(payload.issueId, 'no-comments');
       }

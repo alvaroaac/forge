@@ -53,12 +53,8 @@ export interface ForgeApi {
     onPhase: (handler: (event: TriagePhaseEvent) => void) => () => void;
   };
   comments?: {
-    fetch: (issueId: string, issue?: Issue) => Promise<CommentFetchResult>;
-    generateSummary: (
-      issueId: string,
-      issue?: Issue,
-      comments?: CommentFetchResult['comments'],
-    ) => Promise<CommentSummaryResult>;
+    fetch: (issueId: string) => Promise<CommentFetchResult>;
+    generateSummary: (issueId: string) => Promise<CommentSummaryResult>;
   };
   config: {
     get: () => Promise<AppConfig>;

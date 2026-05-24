@@ -64,9 +64,9 @@ const api: ForgeApi = {
     onPhase: (handler) => subscribe<TriagePhaseEvent>(IpcChannel.TriagePhase, handler),
   },
   comments: {
-    fetch: (issueId, issue) => ipcRenderer.invoke(IpcChannel.CommentsFetch, { issueId, issue }),
-    generateSummary: (issueId, issue, comments) =>
-      ipcRenderer.invoke(IpcChannel.CommentsGenerateSummary, { issueId, issue, comments }),
+    fetch: (issueId) => ipcRenderer.invoke(IpcChannel.CommentsFetch, { issueId }),
+    generateSummary: (issueId) =>
+      ipcRenderer.invoke(IpcChannel.CommentsGenerateSummary, { issueId }),
   },
   config: {
     get: () => ipcRenderer.invoke(IpcChannel.ConfigGet),

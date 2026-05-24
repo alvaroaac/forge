@@ -135,47 +135,57 @@ describe('registerCommentsGenerateSummaryHandler', () => {
     expect(fetchAndFilterComments).not.toHaveBeenCalled();
   });
 
-  it('uses a renderer-provided issue snapshot when the issue is not in the assigned cache', async () => {
+  it('ignores a renderer-provided issue snapshot when resolving the Linear UUID', async () => {
     const ipc = new IpcMainDouble();
     const fetchAndFilterComments = vi.fn().mockResolvedValue([
       {
         id: 'comment-1',
-        body: 'Triage-only context',
+        body: 'Cached context',
         createdAt: '2026-05-20T12:00:00.000Z',
         authorName: 'Alice',
         isBot: false,
       },
     ]);
+    const spoofedIssue = { ...issue, uuid: 'spoofed-uuid' };
 
     registerCommentsGenerateSummaryHandler(ipc as unknown as IpcMain, {
-      cache: { read: vi.fn().mockResolvedValue([]) },
+      cache: { read: vi.fn().mockResolvedValue([issue]) },
       fetchAndFilterComments,
-      triageComments: vi.fn().mockResolvedValue('Triage-only summary'),
+      triageComments: vi.fn().mockResolvedValue('Cached summary'),
     });
 
     await expect(
-      ipc.invoke(IpcChannel.CommentsGenerateSummary, { issueId: 'FUL-7', issue }),
+      ipc.invoke(IpcChannel.CommentsGenerateSummary, { issueId: 'FUL-7', issue: spoofedIssue }),
     ).resolves.toMatchObject({
       issueId: 'FUL-7',
       commentCount: 1,
-      summary: 'Triage-only summary',
+      summary: 'Cached summary',
     });
     expect(fetchAndFilterComments).toHaveBeenCalledWith('uuid-7');
   });
 
-  it('uses provided comments for summary generation without fetching comments again', async () => {
+  it('does not use renderer-provided comments for summary generation', async () => {
     const ipc = new IpcMainDouble();
-    const comments = [
+    const rendererComments = [
       {
-        id: 'comment-1',
-        body: 'Already fetched context',
+        id: 'renderer-comment',
+        body: 'Spoofed context',
+        createdAt: '2026-05-20T12:00:00.000Z',
+        authorName: 'Mallory',
+        isBot: false,
+      },
+    ];
+    const cachedComments = [
+      {
+        id: 'cached-comment',
+        body: 'Main-owned context',
         createdAt: '2026-05-20T12:00:00.000Z',
         authorName: 'Alice',
         isBot: false,
       },
     ];
-    const fetchAndFilterComments = vi.fn();
-    const triageComments = vi.fn().mockResolvedValue('Summary from provided comments');
+    const fetchAndFilterComments = vi.fn().mockResolvedValue(cachedComments);
+    const triageComments = vi.fn().mockResolvedValue('Summary from cached comments');
 
     registerCommentsGenerateSummaryHandler(ipc as unknown as IpcMain, {
       cache: { read: vi.fn().mockResolvedValue([issue]) },
@@ -186,15 +196,20 @@ describe('registerCommentsGenerateSummaryHandler', () => {
     await expect(
       ipc.invoke(IpcChannel.CommentsGenerateSummary, {
         issueId: 'FUL-7',
-        comments,
+        comments: rendererComments,
       }),
     ).resolves.toMatchObject({
       issueId: 'FUL-7',
-      comments,
+      comments: cachedComments,
       commentCount: 1,
-      summary: 'Summary from provided comments',
+      summary: 'Summary from cached comments',
     });
-    expect(fetchAndFilterComments).not.toHaveBeenCalled();
+    expect(fetchAndFilterComments).toHaveBeenCalledWith('uuid-7');
+    expect(triageComments).toHaveBeenCalledWith({
+      issueTitle: issue.title,
+      issueDescription: issue.description,
+      comments: cachedComments,
+    });
   });
 });
 
@@ -231,6 +246,32 @@ describe('registerCommentsFetchHandler', () => {
       comments,
       commentCount: 1,
     });
+  });
+
+  it('ignores a renderer-provided issue snapshot when fetching comments', async () => {
+    const ipc = new IpcMainDouble();
+    const comments = [
+      {
+        id: 'comment-1',
+        body: 'Raw context',
+        createdAt: '2026-05-20T12:00:00.000Z',
+        authorName: 'Alice',
+        isBot: false,
+      },
+    ];
+    const fetchAndFilterComments = vi.fn().mockResolvedValue(comments);
+
+    registerCommentsFetchHandler(ipc as unknown as IpcMain, {
+      cache: { read: vi.fn().mockResolvedValue([issue]) },
+      fetchAndFilterComments,
+    });
+
+    await ipc.invoke(IpcChannel.CommentsFetch, {
+      issueId: 'FUL-7',
+      issue: { ...issue, uuid: 'spoofed-uuid' },
+    });
+
+    expect(fetchAndFilterComments).toHaveBeenCalledWith('uuid-7');
   });
 
   it('returns no-comments when the issue has no human comments', async () => {

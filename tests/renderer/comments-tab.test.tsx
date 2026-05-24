@@ -95,7 +95,7 @@ afterEach(() => {
 });
 
 describe('CommentsTab', () => {
-  it('passes the current issue snapshot when generating a comment summary', async () => {
+  it('requests comment summary by issue id only', async () => {
     const comments = [
       {
         id: 'comment-1',
@@ -124,7 +124,7 @@ describe('CommentsTab', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Generate Comment Summary' }));
 
     await waitFor(() => {
-      expect(generateSummary).toHaveBeenCalledWith('FUL-7', issueA, comments);
+      expect(generateSummary).toHaveBeenCalledWith('FUL-7');
     });
   });
 
@@ -144,7 +144,7 @@ describe('CommentsTab', () => {
     const button = screen.getByRole('button', { name: 'Checking comments...' });
     expect(button.hasAttribute('disabled')).toBe(true);
     expect(container.querySelector('.stream-spinner')).toBeTruthy();
-    expect(fetch).toHaveBeenCalledWith('FUL-7', issueA);
+    expect(fetch).toHaveBeenCalledWith('FUL-7');
 
     fetchDone.resolve({
       issueId: 'FUL-7',
@@ -230,6 +230,61 @@ describe('CommentsTab', () => {
     expect(screen.queryByText('First summary')).toBeNull();
     expect(screen.queryByText('Only belongs to the first issue.')).toBeNull();
     expect(await screen.findByText('No human comments found for this issue.')).toBeTruthy();
-    expect(fetch).toHaveBeenLastCalledWith('FUL-8', issueB);
+    expect(fetch).toHaveBeenLastCalledWith('FUL-8');
+  });
+
+  it('ignores a stale summary result after switching issues', async () => {
+    const firstComments = [
+      {
+        id: 'comment-1',
+        body: 'Belongs only to issue A.',
+        createdAt: '2026-05-20T12:00:00.000Z',
+        authorName: 'Alice',
+        isBot: false,
+      },
+    ];
+    const summaryDone = createDeferred<{
+      issueId: string;
+      comments: typeof firstComments;
+      commentCount: number;
+      summary: string;
+    }>();
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        issueId: 'FUL-7',
+        comments: firstComments,
+        commentCount: 1,
+      })
+      .mockResolvedValueOnce({
+        issueId: 'FUL-8',
+        comments: [],
+        commentCount: 0,
+        skippedReason: 'no-comments',
+      });
+    const generateSummary = vi.fn(() => summaryDone.promise);
+    setCommentsApi({ fetch, generateSummary });
+
+    const { rerender } = render(<CommentsTab issue={issueA} />);
+    await screen.findByText('Belongs only to issue A.');
+    fireEvent.click(screen.getByRole('button', { name: 'Generate Comment Summary' }));
+    expect(generateSummary).toHaveBeenCalledWith('FUL-7');
+
+    rerender(<CommentsTab issue={issueB} />);
+    expect(await screen.findByText('No human comments found for this issue.')).toBeTruthy();
+
+    summaryDone.resolve({
+      issueId: 'FUL-7',
+      comments: firstComments,
+      commentCount: 1,
+      summary: '## Stale summary\nThis is issue A only.',
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Stale summary')).toBeNull();
+      expect(screen.queryByText('This is issue A only.')).toBeNull();
+      expect(screen.queryByText('Belongs only to issue A.')).toBeNull();
+    });
+    expect(screen.getByText('No human comments found for this issue.')).toBeTruthy();
   });
 });

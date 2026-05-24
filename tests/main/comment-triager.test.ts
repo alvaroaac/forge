@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   triageComments,
   type TriageCommentsInput,
+  COMMENT_TRIAGE_TIMEOUT_MS,
   COMMENT_TRIAGER_MODEL,
   COMMENT_TRIAGER_SYSTEM_PROMPT,
 } from '../../src/main/services/comment-triager';
@@ -36,6 +37,13 @@ describe('triageComments — Claude invocation', () => {
     await triageComments({ issueTitle: 't', issueDescription: 'd', comments: oneComment, streamClaude });
     expect(streamClaude.mock.calls[0][0].model).toBe('claude-haiku-4-5-20251001');
     expect(COMMENT_TRIAGER_MODEL).toBe('claude-haiku-4-5-20251001');
+  });
+
+  it('uses the shorter comment triage timeout', async () => {
+    const streamClaude = vi.fn().mockResolvedValue('');
+    await triageComments({ issueTitle: 't', issueDescription: 'd', comments: oneComment, streamClaude });
+    expect(COMMENT_TRIAGE_TIMEOUT_MS).toBe(60_000);
+    expect(streamClaude.mock.calls[0][0].timeoutMs).toBe(COMMENT_TRIAGE_TIMEOUT_MS);
   });
 
   it('passes the constant system prompt unchanged', async () => {

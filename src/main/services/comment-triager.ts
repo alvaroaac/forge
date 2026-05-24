@@ -2,6 +2,7 @@ import type { LinearComment } from './comment-fetcher';
 import type { StreamClaudeInput } from './spec-generator';
 
 export const COMMENT_TRIAGER_MODEL = 'claude-haiku-4-5-20251001';
+export const COMMENT_TRIAGE_TIMEOUT_MS = 60_000;
 
 export const COMMENT_TRIAGER_SYSTEM_PROMPT = `You are filtering and restructuring Linear ticket comments for an engineer
 who is about to triage or spec the ticket. Your only job is to produce a
@@ -77,6 +78,7 @@ export async function triageComments(input: TriageCommentsInput): Promise<string
     model: COMMENT_TRIAGER_MODEL,
     system: COMMENT_TRIAGER_SYSTEM_PROMPT,
     user: renderUserPrompt(input),
+    timeoutMs: COMMENT_TRIAGE_TIMEOUT_MS,
     onChunk: () => undefined,
   });
 }

@@ -1,7 +1,11 @@
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { streamClaude, streamSpec } from '../../src/main/services/spec-generator';
+import {
+  GENERATE_SPEC_TIMEOUT_MS,
+  streamClaude,
+  streamSpec,
+} from '../../src/main/services/spec-generator';
 
 type SpawnProcess = NonNullable<Parameters<typeof streamSpec>[0]['spawnProcess']>;
 
@@ -158,6 +162,10 @@ describe('streamSpec', () => {
     );
     await vi.advanceTimersByTimeAsync(600_000);
     await expectation;
+  });
+
+  it('keeps the default full spec generation timeout at 10 minutes', () => {
+    expect(GENERATE_SPEC_TIMEOUT_MS).toBe(600_000);
   });
 
   it('separates distinct assistant text events with a blank line', async () => {

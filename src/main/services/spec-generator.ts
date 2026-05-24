@@ -5,7 +5,7 @@ import {
 } from 'node:child_process';
 import { buildCliEnv } from '../lib/cli-env';
 
-const GENERATE_SPEC_TIMEOUT_MS = 600_000;
+export const GENERATE_SPEC_TIMEOUT_MS = 600_000;
 
 export interface StreamSpecInput {
   model: string;

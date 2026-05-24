@@ -124,7 +124,7 @@ describe('TriageDrawer comments tab', () => {
       />,
     );
 
-    expect(fetch).toHaveBeenCalledWith('FUL-77', issue);
+    expect(fetch).toHaveBeenCalledWith('FUL-77');
     expect(screen.getByRole('button', { name: 'Checking comments...' }).hasAttribute('disabled')).toBe(
       true,
     );

@@ -559,10 +559,65 @@ describe('spec:generate', () => {
     expect(sent.some((s) => s.channel === IpcChannel.SpecStreamChunk)).toBe(true);
     expect(sent.filter((s) => s.channel === IpcChannel.SpecGenerateError)).toHaveLength(0);
     expect(warnSpy).toHaveBeenCalledWith(
-      '[spec] comment triage failed, proceeding without curated comments:',
+      '[spec] comment context failed, proceeding without curated comments:',
       expect.any(Error),
     );
     expect(result).toMatchObject({ issueId: 'FUL-77' });
+    warnSpy.mockRestore();
+  });
+
+  it('proceeds to generation with curated="" when fetching comments throws', async () => {
+    const issue: Issue = {
+      id: 'FUL-77',
+      title: 'Build UI',
+      description: 'Add streaming spec preview.',
+      ...issueTemplate,
+    };
+    const cache: IssuesCacheDouble = {
+      read: vi.fn().mockResolvedValue([issue]),
+      write: vi.fn(),
+    };
+    const readRepoContext = vi.fn().mockResolvedValue({ agentsMd: '', thoughts: [] });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const sent: Array<{ channel: IpcChannelName; payload: SentPayload }> = [];
+    let observed: string | undefined;
+    const streamSpec = vi.fn(
+      async ({ curatedComments, onChunk }: StreamSpecInput): Promise<string> => {
+        observed = curatedComments;
+        onChunk('still-streaming');
+        return 'still-streaming';
+      },
+    );
+    const triageComments = vi.fn().mockResolvedValue('CURATED');
+    const handler = createHandler({
+      store: createStore(dir),
+      cache,
+      readRepoContext,
+      streamSpec,
+      templateMd: '',
+      fetchAndFilterComments: async () => {
+        throw new Error('linear unavailable');
+      },
+      triageComments,
+    });
+    const event = {
+      sender: {
+        send: (channel: IpcChannelName, payload: SentPayload) => {
+          sent.push({ channel, payload });
+        },
+      },
+    };
+
+    const result = await handler(event, { issueId: 'FUL-77' });
+
+    expect(observed).toBe('');
+    expect(triageComments).not.toHaveBeenCalled();
+    expect(sent.filter((s) => s.channel === IpcChannel.SpecGenerateError)).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[spec] comment context failed, proceeding without curated comments:',
+      expect.any(Error),
+    );
+    expect(result).toMatchObject({ issueId: 'FUL-77', content: 'still-streaming' });
     warnSpy.mockRestore();
   });
 

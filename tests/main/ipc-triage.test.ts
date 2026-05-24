@@ -258,10 +258,45 @@ describe('triage:generate handler - comment-context pipeline', () => {
     const errors = event.sent.filter((s) => s.channel === IpcChannel.TriageGenerateError);
     expect(errors).toHaveLength(0);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[triage] comment triage failed'),
+      expect.stringContaining('[triage] comment context failed'),
       expect.any(Error),
     );
     expect(result).toMatchObject({ issueId: 'FUL-77' });
+    warnSpy.mockRestore();
+  });
+
+  it('proceeds with empty curated when comment fetch fails - logs warn, no error event', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+    let observed: string | undefined;
+    const triage = vi.fn().mockResolvedValue('CURATED');
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: { get: async () => baseTriageCfg, set: async () => undefined } as never,
+      fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => {
+        throw new Error('linear unavailable');
+      },
+      triageComments: triage,
+      streamTriageBrief: async ({ curatedComments, onChunk }) => {
+        observed = curatedComments;
+        onChunk('still');
+        return 'still';
+      },
+    });
+
+    const result = await ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: 'FUL-77' });
+
+    expect(observed).toBe('');
+    expect(triage).not.toHaveBeenCalled();
+    const errors = event.sent.filter((s) => s.channel === IpcChannel.TriageGenerateError);
+    expect(errors).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[triage] comment context failed'),
+      expect.any(Error),
+    );
+    expect(result).toMatchObject({ issueId: 'FUL-77', content: 'still' });
     warnSpy.mockRestore();
   });
 

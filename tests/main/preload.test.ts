@@ -86,20 +86,9 @@ describe('preload API', () => {
 
   it('calls comments.generateSummary through IpcChannel.CommentsGenerateSummary with issueId', async () => {
     const forge = getForgeApi();
-    const comments = [
-      {
-        id: 'comment-1',
-        body: 'Already fetched',
-        createdAt: '2026-05-20T12:00:00.000Z',
-        authorName: 'Alice',
-        isBot: false,
-      },
-    ];
-    await forge.comments?.generateSummary('FUL-7', undefined, comments);
+    await forge.comments?.generateSummary('FUL-7');
     expect(invoke).toHaveBeenCalledWith(IpcChannel.CommentsGenerateSummary, {
       issueId: 'FUL-7',
-      issue: undefined,
-      comments,
     });
   });
 
@@ -108,7 +97,6 @@ describe('preload API', () => {
     await forge.comments?.fetch('FUL-7');
     expect(invoke).toHaveBeenCalledWith(IpcChannel.CommentsFetch, {
       issueId: 'FUL-7',
-      issue: undefined,
     });
   });
 

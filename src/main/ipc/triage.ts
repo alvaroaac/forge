@@ -119,25 +119,25 @@ async function curateTriageComments(
     return '';
   }
 
-  const comments = await deps.fetchAndFilterComments(issue.uuid);
-  if (comments.length === 0) {
-    return '';
-  }
-
-  sendTriagePhase(sender, {
-    issueId: issue.id,
-    phase: 'triaging',
-    commentCount: comments.length,
-  });
-
   try {
+    const comments = await deps.fetchAndFilterComments(issue.uuid);
+    if (comments.length === 0) {
+      return '';
+    }
+
+    sendTriagePhase(sender, {
+      issueId: issue.id,
+      phase: 'triaging',
+      commentCount: comments.length,
+    });
+
     return await deps.triageComments({
       issueTitle: issue.title,
       issueDescription: issue.description,
       comments,
     });
   } catch (err) {
-    console.warn('[triage] comment triage failed, proceeding without curated comments:', err);
+    console.warn('[triage] comment context failed, proceeding without curated comments:', err);
     return '';
   }
 }

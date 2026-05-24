@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { CommentFetchResult, CommentSummaryResult, Issue } from '../../shared/types';
 import { GeneratedDocument } from './generated-document';
@@ -32,6 +32,7 @@ function commentStatus(result: CommentFetchResult | CommentSummaryResult | null)
 }
 
 export function CommentsTab({ issue }: CommentsTabProps) {
+  const currentIssueIdRef = useRef(issue.id);
   const [commentsResult, setCommentsResult] = useState<CommentFetchResult | null>(null);
   const [summaryResult, setSummaryResult] = useState<CommentSummaryResult | null>(null);
   const [fetchState, setFetchState] = useState<FetchState>('checking');
@@ -40,6 +41,7 @@ export function CommentsTab({ issue }: CommentsTabProps) {
 
   useEffect(() => {
     let cancelled = false;
+    currentIssueIdRef.current = issue.id;
 
     setCommentsResult(null);
     setSummaryResult(null);
@@ -53,7 +55,7 @@ export function CommentsTab({ issue }: CommentsTabProps) {
           throw new Error('Comments API is unavailable');
         }
 
-        const nextResult = await window.forge.comments.fetch(issue.id, issue);
+        const nextResult = await window.forge.comments.fetch(issue.id);
         if (cancelled) {
           return;
         }
@@ -79,6 +81,7 @@ export function CommentsTab({ issue }: CommentsTabProps) {
   }, [issue]);
 
   const handleGenerateClick = async (): Promise<void> => {
+    const requestIssueId = issue.id;
     const comments = commentsResult?.comments ?? [];
     if (comments.length === 0) {
       return;
@@ -92,7 +95,14 @@ export function CommentsTab({ issue }: CommentsTabProps) {
         throw new Error('Comments API is unavailable');
       }
 
-      const nextResult = await window.forge.comments.generateSummary(issue.id, issue, comments);
+      const nextResult = await window.forge.comments.generateSummary(requestIssueId);
+      if (
+        currentIssueIdRef.current !== requestIssueId ||
+        nextResult.issueId !== requestIssueId
+      ) {
+        return;
+      }
+
       setSummaryResult(nextResult);
       setCommentsResult({
         issueId: nextResult.issueId,
@@ -104,6 +114,10 @@ export function CommentsTab({ issue }: CommentsTabProps) {
       setSummaryState('loaded');
       setErrorMessage(nextResult.errorMessage ?? null);
     } catch (error) {
+      if (currentIssueIdRef.current !== requestIssueId) {
+        return;
+      }
+
       setSummaryState('error');
       setErrorMessage(error instanceof Error ? error.message : 'Comment summary failed');
     }
