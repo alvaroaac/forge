@@ -596,6 +596,47 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     return data.issues.nodes;
   }
 
+  /**
+   * Fetch all comments on an issue.
+   *
+   * @param {string} issueId  Linear issue id (UUID, not identifier)
+   */
+  async function fetchIssueComments(issueId) {
+    const comments = [];
+    let after = null;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+      const afterArgument = after ? ', after: $after' : '';
+      const afterVariable = after ? ', $after: String' : '';
+      const variables = after ? { issueId, after } : { issueId };
+
+      const data = await linearRequest(`
+      query($issueId: String!${afterVariable}) {
+        issue(id: $issueId) {
+          comments(first: 250${afterArgument}) {
+            pageInfo { hasNextPage endCursor }
+            nodes {
+              id
+              body
+              createdAt
+              user { id name }
+              botActor { id }
+            }
+          }
+        }
+      }
+    `, variables);
+
+      const page = data.issue?.comments;
+      comments.push(...(page?.nodes ?? []));
+      hasNextPage = page?.pageInfo?.hasNextPage ?? false;
+      after = page?.pageInfo?.endCursor ?? null;
+    }
+
+    return comments;
+  }
+
   return {
     getTeamId,
     getStateId,
@@ -617,5 +658,6 @@ export function createLinearClient({ teamKey, titlePrefix }) {
     fetchIssueDetail,
     fetchAssignedIssues,
     fetchTeamTriage,
+    fetchIssueComments,
   };
 }

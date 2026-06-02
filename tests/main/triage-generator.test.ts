@@ -4,6 +4,7 @@ import type { Issue } from '../../src/shared/types';
 
 const issue: Issue = {
   id: 'FUL-77',
+  uuid: 'uuid-test-fixture',
   title: 'x',
   description: 'y',
   status: 'triage',
@@ -44,5 +45,38 @@ describe('streamTriageBrief', () => {
     expect(arg.onStatus).toBe(onStatus);
     expect(typeof arg.system).toBe('string');
     expect(arg.user).toContain('FUL-77');
+  });
+});
+
+describe('streamTriageBrief — curatedComments passthrough', () => {
+  it('forwards curatedComments to streamClaude when provided', async () => {
+    const calls: Array<{ user: string; curatedComments?: string }> = [];
+    await streamTriageBrief({
+      issue,
+      computronRepoPath: '/tmp/cmp',
+      model: 'claude-sonnet-4-6',
+      curatedComments: '## Relevant Comments\n_(none)_',
+      onChunk: () => undefined,
+      streamClaude: async (input) => {
+        calls.push({ user: input.user, curatedComments: input.curatedComments });
+        return 'ok';
+      },
+    });
+    expect(calls[0].curatedComments).toBe('## Relevant Comments\n_(none)_');
+  });
+
+  it('omits curatedComments when not provided', async () => {
+    const calls: Array<{ curatedComments?: string }> = [];
+    await streamTriageBrief({
+      issue,
+      computronRepoPath: '/tmp/cmp',
+      model: 'claude-sonnet-4-6',
+      onChunk: () => undefined,
+      streamClaude: async (input) => {
+        calls.push({ curatedComments: input.curatedComments });
+        return 'ok';
+      },
+    });
+    expect(calls[0].curatedComments).toBeUndefined();
   });
 });

@@ -3,18 +3,32 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import type { Issue, Spec } from '../../src/shared/types';
 
+const specTabMock = vi.fn();
+const commentsTabMock = vi.fn();
+
 vi.mock('../../src/renderer/components/detail-tab', () => ({
   DetailTab: () => <div data-testid="detail-body">detail body</div>,
 }));
 
 vi.mock('../../src/renderer/components/spec-tab', () => ({
-  SpecTab: () => <div data-testid="spec-body">spec body</div>,
+  SpecTab: (props: unknown) => {
+    specTabMock(props);
+    return <div data-testid="spec-body">spec body</div>;
+  },
+}));
+
+vi.mock('../../src/renderer/components/comments-tab', () => ({
+  CommentsTab: (props: unknown) => {
+    commentsTabMock(props);
+    return <div data-testid="comments-body">comments body</div>;
+  },
 }));
 
 import { SpecDrawer } from '../../src/renderer/components/spec-drawer';
 
 const issue: Issue = {
   id: 'FUL-7',
+  uuid: 'uuid-test-fixture',
   title: 'Build the drawer',
   description: 'Linear description',
   status: 'todo',
@@ -35,6 +49,8 @@ const spec: Spec = {
 
 describe('SpecDrawer', () => {
   afterEach(() => {
+    specTabMock.mockClear();
+    commentsTabMock.mockClear();
     cleanup();
   });
 
@@ -159,8 +175,10 @@ describe('SpecDrawer', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Detail' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Comments' }));
 
     expect(setTab).toHaveBeenCalledWith('detail');
+    expect(setTab).toHaveBeenCalledWith('comments');
     expect(container.querySelector('.drawer-tab-active')?.textContent).toBe('Spec');
   });
 
@@ -203,6 +221,54 @@ describe('SpecDrawer', () => {
     );
 
     expect(screen.getByTestId('spec-body')).toBeTruthy();
+
+    rerender(
+      <SpecDrawer
+        issue={issue}
+        tab="comments"
+        setTab={vi.fn()}
+        onClose={vi.fn()}
+        spec={spec}
+        streaming=""
+        isStreaming={false}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('comments-body')).toBeTruthy();
+    expect(commentsTabMock).toHaveBeenCalledWith(expect.objectContaining({ issue }));
+  });
+
+  it('forwards phase and comment count to the spec tab', () => {
+    render(
+      <SpecDrawer
+        issue={issue}
+        tab="spec"
+        setTab={vi.fn()}
+        onClose={vi.fn()}
+        spec={spec}
+        streaming=""
+        phase="triaging"
+        commentCount={2}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(specTabMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phase: 'triaging',
+        commentCount: 2,
+      }),
+    );
   });
 
   it('renders every Linear label badge and the outbound anchor attributes', () => {

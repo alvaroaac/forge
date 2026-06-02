@@ -146,6 +146,20 @@ describe('MarkdownSection', () => {
     );
   });
 
+  it('does not render unsafe markdown link href schemes', () => {
+    const section: Section = sectionFixture(
+      '',
+      'Bad [link](javascript:alert(1)) and [file](file:///tmp/token) but [good](https://example.com).',
+    );
+    const { container } = render(<MarkdownSection h={section.h} body={section.body} />);
+
+    expect(container.querySelector('a[href="javascript:alert(1)"]')).toBeNull();
+    expect(container.querySelector('a[href="file:///tmp/token"]')).toBeNull();
+    expect(container.textContent).toContain('link');
+    expect(container.textContent).toContain('file');
+    expect(container.querySelector('a[href="https://example.com"]')?.textContent).toBe('good');
+  });
+
   it('renders malicious HTML-like content as literal text', () => {
     const section: Section = sectionFixture('', '<img src=x onerror=alert(1)>');
     const { container } = render(<MarkdownSection h={section.h} body={section.body} />);

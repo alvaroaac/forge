@@ -5,6 +5,7 @@ import type { Issue } from '../../src/shared/types';
 describe('buildTriagePrompt', () => {
   const issue: Issue = {
     id: 'FUL-77',
+    uuid: 'uuid-test-fixture',
     title: 'job runner stuck',
     description: 'It stops at 30%',
     status: 'triage',

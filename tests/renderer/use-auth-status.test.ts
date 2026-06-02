@@ -41,6 +41,7 @@ function createSpecApi() {
     onChunk: vi.fn(),
     onDone: vi.fn(),
     onError: vi.fn(),
+    onPhase: vi.fn(() => vi.fn()),
   };
 }
 
@@ -62,6 +63,7 @@ function createTriageApi() {
     onChunk: vi.fn(),
     onDone: vi.fn(),
     onError: vi.fn(),
+    onPhase: vi.fn(() => vi.fn()),
   };
 }
 

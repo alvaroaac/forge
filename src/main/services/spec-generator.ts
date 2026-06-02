@@ -5,12 +5,13 @@ import {
 } from 'node:child_process';
 import { buildCliEnv } from '../lib/cli-env';
 
-const CLAUDE_SPEC_TIMEOUT_MS = 300_000;
+export const GENERATE_SPEC_TIMEOUT_MS = 600_000;
 
 export interface StreamSpecInput {
   model: string;
   system: string;
   user: string;
+  curatedComments?: string;
   onChunk: (delta: string) => void;
   onStatus?: (status: string) => void;
   spawnProcess?: SpawnProcess;
@@ -126,6 +127,13 @@ function resultText(value: unknown): string | null {
   return event.result;
 }
 
+function buildUserPayload(user: string, curatedComments?: string): string {
+  if (!curatedComments) {
+    return user;
+  }
+  return `## Comment context\n\n${curatedComments}\n\n---\n\n${user}`;
+}
+
 function isErrorResult(value: unknown): boolean {
   if (!value || typeof value !== 'object') {
     return false;
@@ -171,14 +179,14 @@ function toTimeoutError(
 
 export async function streamClaude(input: StreamClaudeInput): Promise<string> {
   const spawnProcess = input.spawnProcess ?? spawn;
-  const timeoutMs = input.timeoutMs ?? CLAUDE_SPEC_TIMEOUT_MS;
+  const timeoutMs = input.timeoutMs ?? GENERATE_SPEC_TIMEOUT_MS;
   const claude = spawnProcess('claude', buildClaudeArgs(input), {
     shell: false,
     stdio: ['pipe', 'pipe', 'pipe'],
     env: buildCliEnv(),
     cwd: input.cwd,
   });
-  claude.stdin.end(input.user);
+  claude.stdin.end(buildUserPayload(input.user, input.curatedComments));
 
   return new Promise<string>((resolve, reject) => {
     let full = '';

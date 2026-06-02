@@ -13,6 +13,8 @@ import type {
   TriageWriteResult,
   SpecReviewSummary,
   SpecReviewResult,
+  CommentFetchResult,
+  CommentSummaryResult,
 } from '../../src/shared/types';
 import { ok, err, type Result } from '../../src/shared/result';
 
@@ -107,6 +109,39 @@ describe('shared types', () => {
       path: string;
       written: boolean;
       exists: boolean;
+    }>();
+  });
+
+  it('supports manual comment summary results', () => {
+    expectTypeOf<CommentSummaryResult>().toEqualTypeOf<{
+      issueId: string;
+      comments: Array<{
+        id: string;
+        body: string;
+        createdAt: string;
+        authorName: string;
+        isBot: boolean;
+      }>;
+      commentCount: number;
+      summary: string;
+      skippedReason?: 'missing-uuid' | 'no-comments';
+      errorMessage?: string;
+    }>();
+  });
+
+  it('supports manual comment fetch results', () => {
+    expectTypeOf<CommentFetchResult>().toEqualTypeOf<{
+      issueId: string;
+      comments: Array<{
+        id: string;
+        body: string;
+        createdAt: string;
+        authorName: string;
+        isBot: boolean;
+      }>;
+      commentCount: number;
+      skippedReason?: 'missing-uuid' | 'no-comments';
+      errorMessage?: string;
     }>();
   });
 });

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Issue, SpecReviewSummary } from '../shared/types';
 import { RightPanel } from './components/right-panel';
 import { SpecDrawer, type DrawerTab } from './components/spec-drawer';
-import { TriageDrawer } from './components/triage-drawer';
+import { TriageDrawer, type TriageDrawerTab } from './components/triage-drawer';
 import { TopBar } from './components/top-bar';
 import { IssueListPanel, type Tab } from './components/issue-list-panel';
 import { useAuthStatus } from './hooks/use-auth-status';
@@ -13,6 +13,26 @@ import { useSpecStream } from './hooks/use-spec-stream';
 import { useTriageStream } from './hooks/use-triage-stream';
 
 const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-4-6';
+
+function toTriageDrawerTab(tab: DrawerTab): TriageDrawerTab {
+  if (tab === 'detail') {
+    return 'detail';
+  }
+
+  if (tab === 'comments') {
+    return 'comments';
+  }
+
+  return 'brief';
+}
+
+function fromTriageDrawerTab(tab: TriageDrawerTab): DrawerTab {
+  if (tab === 'brief') {
+    return 'spec';
+  }
+
+  return tab;
+}
 
 function formatSync(ts: number): string {
   if (!ts) {
@@ -49,6 +69,8 @@ export function App() {
     isSpecPersisted,
     isStreaming,
     errorMessage,
+    phase: specPhase,
+    commentCount: specCommentCount,
     generate: generateSpec,
   } = useSpecStream(drawerIssueId);
   const specIds = useRef(new Set<string>());
@@ -227,9 +249,15 @@ export function App() {
         <RightPanel auth={auth} />
       </div>
 
-      {drawer?.issue?.status === 'triage' && drawer.tab === 'spec' ? (
+      {drawer?.issue?.status === 'triage' ? (
         <TriageDrawerContainer
           issue={drawer.issue}
+          tab={toTriageDrawerTab(drawer.tab)}
+          setTab={(nextTab) =>
+            setDrawer((current) =>
+              current ? { ...current, tab: fromTriageDrawerTab(nextTab) } : current,
+            )
+          }
           canGenerate={auth.computron}
           onClose={() => setDrawer(null)}
         />
@@ -242,6 +270,8 @@ export function App() {
           spec={spec}
           streaming={streaming}
           streamStatus={streamStatus}
+          phase={specPhase}
+          commentCount={specCommentCount}
           isSpecPersisted={isSpecPersisted && !reviewedContent}
           reviewedContent={reviewedContent}
           reviewSummary={reviewSummary}
@@ -264,11 +294,19 @@ export function App() {
 
 type TriageDrawerContainerProps = {
   issue: Issue;
+  tab: TriageDrawerTab;
+  setTab: (tab: TriageDrawerTab) => void;
   canGenerate: boolean;
   onClose: () => void;
 };
 
-function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerContainerProps) {
+function TriageDrawerContainer({
+  issue,
+  tab,
+  setTab,
+  canGenerate,
+  onClose,
+}: TriageDrawerContainerProps) {
   const {
     brief,
     streaming,
@@ -277,15 +315,21 @@ function TriageDrawerContainer({ issue, canGenerate, onClose }: TriageDrawerCont
     isBriefLoading,
     isStreaming,
     errorMessage,
+    phase,
+    commentCount,
     generate,
   } = useTriageStream(issue.id);
 
   return (
     <TriageDrawer
       issue={issue}
+      tab={tab}
+      setTab={setTab}
       brief={brief}
       streaming={streaming}
       streamStatus={streamStatus}
+      phase={phase}
+      commentCount={commentCount}
       isBriefPersisted={isBriefPersisted}
       isBriefLoading={isBriefLoading}
       isStreaming={isStreaming}

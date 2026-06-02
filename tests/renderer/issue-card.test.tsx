@@ -1,11 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, within } from '@testing-library/react';
 
 import { IssueCard } from '../../src/renderer/components/issue-card';
 import type { Issue } from '../../src/shared/types';
 
 const issue: Issue = {
   id: 'FUL-7',
+  uuid: 'uuid-test-fixture',
   title: 'do a thing',
   description: '',
   status: 'todo',
@@ -17,8 +18,12 @@ const issue: Issue = {
   assigneeId: null,
 };
 
+afterEach(() => {
+  cleanup();
+});
+
 describe('IssueCard', () => {
-  it('calls onOpen(issue, "spec") when the main card control is clicked', () => {
+  it('calls onOpen(issue, "detail") when the main card control is clicked', () => {
     const onOpen = vi.fn();
     const { getByRole } = render(
       <IssueCard issue={issue} onOpen={onOpen} isActive={false} hasSpec={false} />,
@@ -26,7 +31,22 @@ describe('IssueCard', () => {
 
     fireEvent.click(getByRole('button', { name: /open ful-7 do a thing/i }));
 
-    expect(onOpen).toHaveBeenCalledWith(issue, 'spec');
+    expect(onOpen).toHaveBeenCalledWith(issue, 'detail');
+  });
+
+  it('calls onOpen(issue, "detail") when a triage card body is clicked', () => {
+    const triageIssue: Issue = {
+      ...issue,
+      status: 'triage',
+    };
+    const onOpen = vi.fn();
+    const { getByRole } = render(
+      <IssueCard issue={triageIssue} onOpen={onOpen} isActive={false} hasSpec={false} />,
+    );
+
+    fireEvent.click(getByRole('button', { name: /open ful-7 do a thing/i }));
+
+    expect(onOpen).toHaveBeenCalledWith(triageIssue, 'detail');
   });
 
   it('calls onOpen(issue, "detail") when Detail is clicked', () => {

@@ -20,6 +20,7 @@ type GetViewerId = (client: unknown) => Promise<string>;
 
 const baseIssue: Issue = {
   id: 'FUL-0',
+  uuid: 'uuid-test-fixture',
   title: 'Base',
   description: 'desc',
   status: 'todo',

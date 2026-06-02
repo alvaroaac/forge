@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
+  GenerationPhase,
   TriageBrief,
   TriageGenerateDone,
   TriageGenerateError,
+  TriagePhaseEvent,
   TriageStreamChunk,
 } from '../../shared/types';
 
@@ -23,6 +25,8 @@ export function useTriageStream(issueId: string | null) {
   const [isBriefLoading, setIsBriefLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [phase, setPhase] = useState<GenerationPhase>('idle');
+  const [commentCount, setCommentCount] = useState<number | undefined>(undefined);
   const currentIssueIdRef = useRef<string | null>(null);
   const setupVersionRef = useRef(0);
 
@@ -45,6 +49,8 @@ export function useTriageStream(issueId: string | null) {
     setIsBriefLoading(false);
     setIsStreaming(false);
     setErrorMessage(null);
+    setPhase('idle');
+    setCommentCount(undefined);
   }, []);
 
   const commitGeneratedBrief = useCallback(
@@ -66,6 +72,7 @@ export function useTriageStream(issueId: string | null) {
       }
 
       setIsStreaming(false);
+      setPhase('done');
     },
     [isCurrentRun],
   );
@@ -138,6 +145,25 @@ export function useTriageStream(issueId: string | null) {
     [failStreaming],
   );
 
+  const handlePhase = useCallback(
+    (targetIssueId: string, setupVersion: number, payload: TriagePhaseEvent): void => {
+      if (payload.issueId !== targetIssueId) {
+        return;
+      }
+
+      if (!isCurrentRun(targetIssueId, setupVersion)) {
+        return;
+      }
+
+      setPhase(payload.phase);
+
+      if (typeof payload.commentCount === 'number') {
+        setCommentCount(payload.commentCount);
+      }
+    },
+    [isCurrentRun],
+  );
+
   useEffect(() => {
     setupVersionRef.current += 1;
     const setupVersion = setupVersionRef.current;
@@ -186,17 +212,22 @@ export function useTriageStream(issueId: string | null) {
       handleError(issueId, setupVersion, payload);
     });
 
+    const unsubscribePhase = window.forge.triage.onPhase((payload: TriagePhaseEvent) => {
+      handlePhase(issueId, setupVersion, payload);
+    });
+
     return () => {
       cancelled = true;
       unsubscribe();
       unsubscribeDone();
       unsubscribeError();
+      unsubscribePhase();
 
       if (currentIssueIdRef.current === issueId) {
         currentIssueIdRef.current = null;
       }
     };
-  }, [issueId, handleChunk, handleDone, handleError, isCurrentRun, resetStreamState]);
+  }, [issueId, handleChunk, handleDone, handleError, handlePhase, isCurrentRun, resetStreamState]);
 
   const generate = useCallback(
     async (model?: string): Promise<void> => {
@@ -215,6 +246,8 @@ export function useTriageStream(issueId: string | null) {
       setIsStreaming(true);
       setErrorMessage(null);
 
+      let generationFailed = false;
+
       try {
         const result = model
           ? await window.forge.triage.generate(issueId, model)
@@ -222,10 +255,13 @@ export function useTriageStream(issueId: string | null) {
 
         commitGeneratedBrief(issueId, setupVersion, result.content);
       } catch (error) {
+        generationFailed = true;
         const message = error instanceof Error ? error.message : String(error);
         failStreaming(issueId, setupVersion, message);
       } finally {
-        finishStreaming(issueId, setupVersion);
+        if (!generationFailed) {
+          finishStreaming(issueId, setupVersion);
+        }
       }
     },
     [issueId, isCurrentIssue, commitGeneratedBrief, finishStreaming, failStreaming],
@@ -239,6 +275,8 @@ export function useTriageStream(issueId: string | null) {
     isBriefLoading,
     isStreaming,
     errorMessage,
+    phase,
+    commentCount,
     generate,
   };
 }

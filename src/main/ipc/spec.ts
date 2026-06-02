@@ -9,6 +9,11 @@ import type { IssuesCache } from '../services/issues-cache';
 import type { RepoContext } from '../services/repo-reader';
 import { buildSpecPrompt } from '../services/spec-prompt';
 import type { Issue, Spec, SpecReviewResult } from '../../shared/types';
+import {
+  curateIssueCommentContext,
+  type FetchAndFilterCommentsFn,
+  type TriageCommentsFn,
+} from './comment-context';
 
 type SpecGenerateEventSender = {
   send: (channel: string, payload: unknown) => void;
@@ -40,6 +45,7 @@ type StreamSpecFn = (input: {
   user: string;
   extraArgs?: readonly string[];
   cwd?: string;
+  curatedComments?: string;
   onChunk: (delta: string) => void;
   onStatus?: (status: string) => void;
 }) => Promise<string>;
@@ -53,6 +59,8 @@ export interface SpecGenerateDeps {
   streamSpec: StreamSpecFn;
   preflightClaudeRepoAccess?: PreflightClaudeRepoAccessFn;
   templateMd: string;
+  fetchAndFilterComments: FetchAndFilterCommentsFn;
+  triageComments: TriageCommentsFn;
 }
 
 export interface SpecWriteDeps {
@@ -98,6 +106,26 @@ function sendSpecChunk(
   status?: string,
 ): void {
   sender.send(IpcChannel.SpecStreamChunk, { issueId, delta, done, status });
+}
+
+function sendSpecPhase(
+  sender: SpecGenerateEventSender,
+  payload: { issueId: string; phase: 'triaging' | 'generating'; commentCount?: number },
+): void {
+  sender.send(IpcChannel.SpecPhase, payload);
+}
+
+async function curateSpecComments(
+  deps: Pick<SpecGenerateDeps, 'fetchAndFilterComments' | 'triageComments'>,
+  sender: SpecGenerateEventSender,
+  issue: Issue,
+): Promise<string> {
+  return curateIssueCommentContext({
+    deps,
+    issue,
+    emitPhase: (payload) => sendSpecPhase(sender, payload),
+    logPrefix: '[spec]',
+  });
 }
 
 function specRepoPath(cfg: { repoPath: string; computronRepoPath?: string }): string {
@@ -149,6 +177,8 @@ export function registerSpecGenerateHandler(ipc: IpcMain, deps: SpecGenerateDeps
         const model = pickSpecModel(payload, cfg.claudeModel);
         const context = await deps.readRepoContext(targetRepoPath);
         const prompt = buildSpecPrompt({ issue, context, templateMd: deps.templateMd });
+        const curated = await curateSpecComments(deps, event.sender, issue);
+        sendSpecPhase(event.sender, { issueId: payload.issueId, phase: 'generating' });
         if (cfg.computronRepoPath && deps.preflightClaudeRepoAccess) {
           await deps.preflightClaudeRepoAccess({ repoPath: cfg.computronRepoPath });
         }
@@ -159,6 +189,7 @@ export function registerSpecGenerateHandler(ipc: IpcMain, deps: SpecGenerateDeps
             user: prompt.user,
             extraArgs: specExtraArgs(targetRepoPath),
             cwd: targetRepoPath || undefined,
+            curatedComments: curated,
             onChunk: (delta) => sendSpecChunk(event.sender, payload.issueId, delta, false),
             onStatus: (status) => sendSpecChunk(event.sender, payload.issueId, '', false, status),
           }),

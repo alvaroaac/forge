@@ -6,6 +6,7 @@ import type {
   TriageBrief,
   TriageGenerateDone,
   TriageGenerateError,
+  TriagePhaseEvent,
   TriageStreamChunk,
 } from '../../src/shared/types';
 
@@ -18,6 +19,7 @@ type Deferred<T> = {
 type ChunkHandler = (chunk: TriageStreamChunk) => void;
 type DoneHandler = (payload: TriageGenerateDone) => void;
 type ErrorHandler = (payload: TriageGenerateError) => void;
+type PhaseHandler = (payload: TriagePhaseEvent) => void;
 
 function createDeferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
@@ -44,6 +46,7 @@ function setForge(options: {
   onChunk: (handler: ChunkHandler) => () => void;
   onDone?: (handler: DoneHandler) => () => void;
   onError?: (handler: ErrorHandler) => () => void;
+  onPhase?: (handler: PhaseHandler) => () => void;
 }) {
   window.forge = {
     auth: { check: vi.fn() },
@@ -63,6 +66,7 @@ function setForge(options: {
       onChunk: vi.fn(),
       onDone: vi.fn(),
       onError: vi.fn(),
+      onPhase: vi.fn(() => vi.fn()),
     },
     triage: {
       get: options.get ?? vi.fn().mockResolvedValue(null),
@@ -71,6 +75,31 @@ function setForge(options: {
       onChunk: options.onChunk,
       onDone: options.onDone ?? vi.fn(() => vi.fn()),
       onError: options.onError ?? vi.fn(() => vi.fn()),
+      onPhase: options.onPhase ?? vi.fn(() => vi.fn()),
+    },
+  };
+}
+
+function createHandlerRegistry<TPayload>(): {
+  handlers: Array<(payload: TPayload) => void>;
+  subscribe: (handler: (payload: TPayload) => void) => () => void;
+  emit: (payload: TPayload) => void;
+} {
+  const handlers: Array<(payload: TPayload) => void> = [];
+
+  return {
+    handlers,
+    subscribe: vi.fn((handler: (payload: TPayload) => void) => {
+      handlers.push(handler);
+      return vi.fn(() => {
+        const index = handlers.indexOf(handler);
+        if (index >= 0) {
+          handlers.splice(index, 1);
+        }
+      });
+    }),
+    emit: (payload: TPayload) => {
+      handlers.forEach((handler) => handler(payload));
     },
   };
 }
@@ -129,6 +158,8 @@ describe('useTriageStream', () => {
       isBriefLoading: true,
       isStreaming: false,
       errorMessage: null,
+      phase: 'idle',
+      commentCount: undefined,
       generate: expect.any(Function),
     });
 
@@ -258,6 +289,8 @@ describe('useTriageStream', () => {
       isBriefLoading: true,
       isStreaming: false,
       errorMessage: null,
+      phase: 'idle',
+      commentCount: undefined,
       generate: expect.any(Function),
     });
 
@@ -425,5 +458,168 @@ describe('useTriageStream', () => {
     expect(result.current.brief).toEqual(
       expect.objectContaining({ issueId: 'FUL-7', content: 'fresh' }),
     );
+  });
+
+  it('does not transition to done when triage generation rejects', async () => {
+    const generateDeferred = createDeferred<TriageBrief>();
+    const generate = vi.fn(() => generateDeferred.promise);
+    const onChunk = vi.fn(() => vi.fn());
+    const phase = createHandlerRegistry<TriagePhaseEvent>();
+
+    setForge({ generate, onChunk, onPhase: phase.subscribe });
+
+    const { result } = renderHook(() => useTriageStream('FUL-7'));
+
+    await act(async () => {
+      void result.current.generate();
+    });
+
+    act(() => {
+      phase.emit({ issueId: 'FUL-7', phase: 'generating' });
+    });
+
+    generateDeferred.reject(new Error('generate failed'));
+
+    await waitFor(() => {
+      expect(result.current.errorMessage).toBe('generate failed');
+    });
+
+    expect(result.current.isStreaming).toBe(false);
+    expect(result.current.phase).toBe('generating');
+    expect(result.current.phase).not.toBe('done');
+  });
+
+  describe('phase state', () => {
+    it('starts at idle before any phase event', () => {
+      const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
+      const onChunk = vi.fn(() => vi.fn());
+
+      setForge({ generate, onChunk });
+
+      const { result } = renderHook(() => useTriageStream('FUL-77'));
+
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.commentCount).toBeUndefined();
+    });
+
+    it('transitions to triaging with commentCount on a matching triaging phase event', () => {
+      const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
+      const onChunk = vi.fn(() => vi.fn());
+      const phase = createHandlerRegistry<TriagePhaseEvent>();
+
+      setForge({ generate, onChunk, onPhase: phase.subscribe });
+
+      const { result } = renderHook(() => useTriageStream('FUL-77'));
+
+      act(() => {
+        phase.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 3 });
+      });
+
+      expect(result.current.phase).toBe('triaging');
+      expect(result.current.commentCount).toBe(3);
+    });
+
+    it('transitions to generating after a generating phase event', () => {
+      const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
+      const onChunk = vi.fn(() => vi.fn());
+      const phase = createHandlerRegistry<TriagePhaseEvent>();
+
+      setForge({ generate, onChunk, onPhase: phase.subscribe });
+
+      const { result } = renderHook(() => useTriageStream('FUL-77'));
+
+      act(() => {
+        phase.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 1 });
+        phase.emit({ issueId: 'FUL-77', phase: 'generating' });
+      });
+
+      expect(result.current.phase).toBe('generating');
+      expect(result.current.commentCount).toBe(1);
+    });
+
+    it('transitions to done on the done event', () => {
+      const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
+      const onChunk = vi.fn(() => vi.fn());
+      const phase = createHandlerRegistry<TriagePhaseEvent>();
+      const done = createHandlerRegistry<TriageGenerateDone>();
+
+      setForge({ generate, onChunk, onDone: done.subscribe, onPhase: phase.subscribe });
+
+      const { result } = renderHook(() => useTriageStream('FUL-77'));
+
+      act(() => {
+        phase.emit({ issueId: 'FUL-77', phase: 'generating' });
+        done.emit({ issueId: 'FUL-77' });
+      });
+
+      expect(result.current.phase).toBe('done');
+    });
+
+    it('leaves phase as-is on the error event', () => {
+      const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
+      const onChunk = vi.fn(() => vi.fn());
+      const phase = createHandlerRegistry<TriagePhaseEvent>();
+      const error = createHandlerRegistry<TriageGenerateError>();
+
+      setForge({ generate, onChunk, onError: error.subscribe, onPhase: phase.subscribe });
+
+      const { result } = renderHook(() => useTriageStream('FUL-77'));
+
+      act(() => {
+        phase.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 4 });
+        error.emit({ issueId: 'FUL-77', message: 'Claude CLI missing login' });
+      });
+
+      expect(result.current.phase).toBe('triaging');
+      expect(result.current.commentCount).toBe(4);
+    });
+
+    it('ignores phase events for a different issue id', () => {
+      const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
+      const onChunk = vi.fn(() => vi.fn());
+      const phase = createHandlerRegistry<TriagePhaseEvent>();
+
+      setForge({ generate, onChunk, onPhase: phase.subscribe });
+
+      const { result } = renderHook(() => useTriageStream('FUL-77'));
+
+      act(() => {
+        phase.emit({ issueId: 'FUL-99', phase: 'triaging', commentCount: 5 });
+      });
+
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.commentCount).toBeUndefined();
+    });
+
+    it('ignores phase events from a stale setup after issue switch', () => {
+      const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
+      const onChunk = vi.fn(() => vi.fn());
+      const phase = createHandlerRegistry<TriagePhaseEvent>();
+
+      setForge({ generate, onChunk, onPhase: phase.subscribe });
+
+      const { result, rerender } = renderHook(({ issueId }) => useTriageStream(issueId), {
+        initialProps: { issueId: 'FUL-77' as string | null },
+      });
+
+      act(() => {
+        phase.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 2 });
+      });
+
+      expect(result.current.phase).toBe('triaging');
+      expect(result.current.commentCount).toBe(2);
+
+      rerender({ issueId: 'FUL-78' });
+
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.commentCount).toBeUndefined();
+
+      act(() => {
+        phase.emit({ issueId: 'FUL-77', phase: 'generating' });
+      });
+
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.commentCount).toBeUndefined();
+    });
   });
 });

@@ -1,7 +1,13 @@
 import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Issue, Spec, SpecReviewSummary, TriageBrief } from '../../src/shared/types';
+import type {
+  GenerationPhase,
+  Issue,
+  Spec,
+  SpecReviewSummary,
+  TriageBrief,
+} from '../../src/shared/types';
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -17,9 +23,12 @@ function createDeferred<T>(): Deferred<T> {
 }
 
 const renderState: {
-  issueListPanelProps: { onOpen: (issue: Issue, which: 'detail' | 'spec') => void } | null;
+  issueListPanelProps: {
+    onOpen: (issue: Issue, which: 'detail' | 'spec' | 'comments') => void;
+  } | null;
   specDrawerIssue: Issue | null;
   specDrawerProps: {
+    tab: 'detail' | 'spec' | 'comments';
     spec: Spec | null;
     streaming: string;
     streamStatus: string[];
@@ -28,6 +37,8 @@ const renderState: {
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;
     reviewErrorMessage: string | null;
+    phase?: GenerationPhase;
+    commentCount?: number;
     claudeModel: string;
     onClaudeModelChange: (model: string) => void;
     onGenerate: () => void;
@@ -40,6 +51,8 @@ const renderState: {
     isStreaming: boolean;
     streaming: string;
     streamStatus: string[];
+    phase?: GenerationPhase;
+    commentCount?: number;
     isBriefPersisted: boolean;
     isBriefLoading: boolean;
     brief: TriageBrief | null;
@@ -50,7 +63,11 @@ const renderState: {
   generate: ReturnType<typeof vi.fn>;
   generateTriage: ReturnType<typeof vi.fn>;
   streamSpec: Spec | null;
+  specPhase: GenerationPhase;
+  specCommentCount?: number;
   streamTriageBrief: TriageBrief | null;
+  triagePhase: GenerationPhase;
+  triageCommentCount?: number;
 } = {
   issueListPanelProps: null,
   specDrawerIssue: null,
@@ -60,7 +77,11 @@ const renderState: {
   generate: vi.fn(),
   generateTriage: vi.fn(),
   streamSpec: null,
+  specPhase: 'idle',
+  specCommentCount: undefined,
   streamTriageBrief: null,
+  triagePhase: 'idle',
+  triageCommentCount: undefined,
 };
 
 vi.mock('../../src/renderer/components/top-bar', () => ({
@@ -72,7 +93,7 @@ vi.mock('../../src/renderer/components/right-panel', () => ({
 }));
 
 vi.mock('../../src/renderer/components/issue-list-panel', () => ({
-  IssueListPanel: (props: { onOpen: (issue: Issue, which: 'detail' | 'spec') => void }) => {
+  IssueListPanel: (props: { onOpen: (issue: Issue, which: 'detail' | 'spec' | 'comments') => void }) => {
     renderState.issueListPanelProps = props;
     return <div data-testid="issue-list-panel" />;
   },
@@ -81,6 +102,7 @@ vi.mock('../../src/renderer/components/issue-list-panel', () => ({
 vi.mock('../../src/renderer/components/spec-drawer', () => ({
   SpecDrawer: (props: {
     issue: Issue | null;
+    tab: 'detail' | 'spec' | 'comments';
     spec: Spec | null;
     streaming: string;
     streamStatus: string[];
@@ -89,6 +111,8 @@ vi.mock('../../src/renderer/components/spec-drawer', () => ({
     reviewSummary: SpecReviewSummary | null;
     reviewStatusMessage: string | null;
     reviewErrorMessage: string | null;
+    phase?: GenerationPhase;
+    commentCount?: number;
     claudeModel: string;
     onClaudeModelChange: (model: string) => void;
     onGenerate: () => void;
@@ -110,10 +134,14 @@ vi.mock('../../src/renderer/components/triage-drawer', () => ({
     isStreaming: boolean;
     streaming: string;
     streamStatus: string[];
+    phase?: GenerationPhase;
+    commentCount?: number;
     isBriefPersisted: boolean;
     isBriefLoading: boolean;
     brief: TriageBrief | null;
     errorMessage: string | null;
+    tab?: 'detail' | 'comments' | 'brief';
+    setTab?: (tab: 'detail' | 'comments' | 'brief') => void;
     onGenerate: () => void;
     onClose: () => void;
   }) => {
@@ -136,6 +164,7 @@ vi.mock('../../src/renderer/hooks/use-config', () => ({
 const issues: Issue[] = [
   {
     id: 'FUL-1',
+    uuid: 'uuid-test-fixture',
     title: 'First',
     description: '',
     status: 'todo',
@@ -148,6 +177,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-2',
+    uuid: 'uuid-test-fixture',
     title: 'Second',
     description: '',
     status: 'todo',
@@ -160,6 +190,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-3',
+    uuid: 'uuid-test-fixture',
     title: 'Triage',
     description: '',
     status: 'triage',
@@ -184,6 +215,8 @@ vi.mock('../../src/renderer/hooks/use-spec-stream', () => ({
     isSpecPersisted: renderState.streamSpec !== null,
     isStreaming: false,
     errorMessage: null,
+    phase: renderState.specPhase,
+    commentCount: renderState.specCommentCount,
     generate: renderState.generate,
   }),
 }));
@@ -197,6 +230,8 @@ vi.mock('../../src/renderer/hooks/use-triage-stream', () => ({
     isBriefLoading: false,
     isStreaming: false,
     errorMessage: null,
+    phase: renderState.triagePhase,
+    commentCount: renderState.triageCommentCount,
     generate: renderState.generateTriage,
   }),
 }));
@@ -213,7 +248,11 @@ describe('App detail drawer refresh', () => {
     renderState.generate = vi.fn();
     renderState.generateTriage = vi.fn();
     renderState.streamSpec = null;
+    renderState.specPhase = 'idle';
+    renderState.specCommentCount = undefined;
     renderState.streamTriageBrief = null;
+    renderState.triagePhase = 'idle';
+    renderState.triageCommentCount = undefined;
   });
 
   afterEach(() => {
@@ -242,6 +281,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -251,6 +291,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -265,8 +306,9 @@ describe('App detail drawer refresh', () => {
     });
 
     await waitFor(() => {
-      expect(renderState.specDrawerIssue?.description).toBe('Fresh description from detail query');
-    });
+    expect(renderState.specDrawerIssue?.description).toBe('Fresh description from detail query');
+    expect(renderState.specDrawerProps?.tab).toBe('detail');
+  });
   });
 
   it('does not replace drawer issue when an older detail request resolves after selection changes', async () => {
@@ -295,6 +337,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -304,6 +347,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -361,6 +405,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -370,6 +415,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -396,6 +442,101 @@ describe('App detail drawer refresh', () => {
     expect(renderState.generate).toHaveBeenCalledWith('opus');
   });
 
+  it('forwards spec stream phase metadata into the spec drawer', async () => {
+    renderState.specPhase = 'triaging';
+    renderState.specCommentCount = 4;
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[0], 'spec');
+    });
+
+    expect(renderState.specDrawerProps).toMatchObject({
+      phase: 'triaging',
+      commentCount: 4,
+    });
+  });
+
+  it('renders SpecDrawer detail view for non-triage issues opened on detail', async () => {
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[0], 'detail');
+    });
+
+    expect(renderState.specDrawerIssue).toEqual(issues[0]);
+    expect(renderState.specDrawerProps).toMatchObject({
+      tab: 'detail',
+      streaming: '',
+      reviewedContent: null,
+      reviewSummary: null,
+    });
+    expect(renderState.triageDrawerIssue).toBeNull();
+    expect(renderState.triageDrawerProps).toBeNull();
+  });
+
   it('writes the drawer spec content through the explicit write action', async () => {
     const specWrite = vi.fn().mockResolvedValue({ issueId: 'FUL-1', content: '# Spec' });
     window.forge = {
@@ -415,6 +556,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -424,6 +566,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -468,6 +611,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -477,6 +621,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
     renderState.streamSpec = {
@@ -527,6 +672,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -536,6 +682,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
     renderState.streamSpec = {
@@ -601,6 +748,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -610,6 +758,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
     renderState.streamSpec = {
@@ -666,6 +815,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -675,6 +825,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
     renderState.streamSpec = {
@@ -727,6 +878,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -736,6 +888,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -750,6 +903,7 @@ describe('App detail drawer refresh', () => {
       canGenerate: true,
       isStreaming: false,
       streaming: '',
+      tab: 'brief',
       brief: null,
       errorMessage: null,
     });
@@ -757,7 +911,9 @@ describe('App detail drawer refresh', () => {
     expect(renderState.specDrawerProps).toBeNull();
   });
 
-  it('renders SpecDrawer detail view for triage issues opened on detail', async () => {
+  it('forwards triage stream phase metadata into the triage drawer', async () => {
+    renderState.triagePhase = 'triaging';
+    renderState.triageCommentCount = 5;
     window.forge = {
       auth: { check: vi.fn() },
       config: { get: vi.fn(), set: vi.fn() },
@@ -775,6 +931,7 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
       spec: {
         get: vi.fn(),
@@ -784,6 +941,51 @@ describe('App detail drawer refresh', () => {
         onChunk: vi.fn(),
         onDone: vi.fn(),
         onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+    };
+
+    render(<App />);
+
+    await act(async () => {
+      renderState.issueListPanelProps?.onOpen(issues[2], 'spec');
+    });
+
+    expect(renderState.triageDrawerProps).toMatchObject({
+      phase: 'triaging',
+      commentCount: 5,
+    });
+  });
+
+  it('renders TriageDrawer detail view for triage issues opened on detail', async () => {
+    window.forge = {
+      auth: { check: vi.fn() },
+      config: { get: vi.fn(), set: vi.fn() },
+      linear: {
+        fetch: vi.fn(),
+        refresh: vi.fn(),
+        fetchIssueDetail: vi.fn().mockResolvedValue(null),
+        fetchTeamTriage: vi.fn(),
+        getViewerId: vi.fn(),
+      },
+      triage: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
+      },
+      spec: {
+        get: vi.fn(),
+        generate: vi.fn(),
+        write: vi.fn(),
+        launchReview: vi.fn(),
+        onChunk: vi.fn(),
+        onDone: vi.fn(),
+        onError: vi.fn(),
+        onPhase: vi.fn(() => vi.fn()),
       },
     };
 
@@ -793,13 +995,14 @@ describe('App detail drawer refresh', () => {
       renderState.issueListPanelProps?.onOpen(issues[2], 'detail');
     });
 
-    expect(renderState.specDrawerIssue).toEqual(issues[2]);
-    expect(renderState.specDrawerProps).toMatchObject({
+    expect(renderState.triageDrawerIssue).toEqual(issues[2]);
+    expect(renderState.triageDrawerProps).toMatchObject({
+      tab: 'detail',
       streaming: '',
-      reviewedContent: null,
-      reviewSummary: null,
+      brief: null,
+      errorMessage: null,
     });
-    expect(renderState.triageDrawerIssue).toBeNull();
-    expect(renderState.triageDrawerProps).toBeNull();
+    expect(renderState.specDrawerIssue).toBeNull();
+    expect(renderState.specDrawerProps).toBeNull();
   });
 });

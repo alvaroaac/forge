@@ -1,7 +1,11 @@
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { streamClaude, streamSpec } from '../../src/main/services/spec-generator';
+import {
+  GENERATE_SPEC_TIMEOUT_MS,
+  streamClaude,
+  streamSpec,
+} from '../../src/main/services/spec-generator';
 
 type SpawnProcess = NonNullable<Parameters<typeof streamSpec>[0]['spawnProcess']>;
 
@@ -154,10 +158,14 @@ describe('streamSpec', () => {
     });
 
     const expectation = expect(result).rejects.toThrow(
-      'Claude CLI timed out after 300s. Received 59 stdout chars. Stderr tail: still thinking Last Claude events: system:status:requesting',
+      'Claude CLI timed out after 600s. Received 59 stdout chars. Stderr tail: still thinking Last Claude events: system:status:requesting',
     );
-    await vi.advanceTimersByTimeAsync(300_000);
+    await vi.advanceTimersByTimeAsync(600_000);
     await expectation;
+  });
+
+  it('keeps the default full spec generation timeout at 10 minutes', () => {
+    expect(GENERATE_SPEC_TIMEOUT_MS).toBe(600_000);
   });
 
   it('separates distinct assistant text events with a blank line', async () => {
@@ -292,5 +300,64 @@ describe('streamClaude', () => {
         spawnProcess,
       }),
     ).rejects.toThrow('Not logged in · Please run /login');
+  });
+});
+
+describe('streamSpec — curatedComments prepend', () => {
+  it('prepends a "## Comment context" block above the user body when curatedComments is non-empty', async () => {
+    let stdinText = '';
+    const { spawnProcess } = createFakeSpawn((child) => {
+      stdinText = child.stdin.read()?.toString() ?? '';
+      child.stdout.write(jsonLine({ type: 'result', is_error: false, result: 'ok' }));
+      child.emit('close', 0);
+    });
+
+    await streamSpec({
+      model: 'claude-sonnet-4-6',
+      system: 'sys',
+      user: 'ISSUE BODY HERE',
+      curatedComments: '## Relevant Comments\n\n### Alice — 2026-05-01\nhi',
+      onChunk: () => undefined,
+      spawnProcess,
+    });
+
+    expect(stdinText.startsWith('## Comment context\n\n')).toBe(true);
+    expect(stdinText).toContain('## Relevant Comments');
+    expect(stdinText.endsWith('\n\n---\n\nISSUE BODY HERE')).toBe(true);
+  });
+
+  it('passes the user body unchanged when curatedComments is undefined', async () => {
+    let stdinText = '';
+    const { spawnProcess } = createFakeSpawn((child) => {
+      stdinText = child.stdin.read()?.toString() ?? '';
+      child.stdout.write(jsonLine({ type: 'result', is_error: false, result: 'ok' }));
+      child.emit('close', 0);
+    });
+    await streamSpec({
+      model: 'claude-sonnet-4-6',
+      system: 'sys',
+      user: 'ISSUE BODY HERE',
+      onChunk: () => undefined,
+      spawnProcess,
+    });
+    expect(stdinText).toBe('ISSUE BODY HERE');
+  });
+
+  it('passes the user body unchanged when curatedComments is the empty string', async () => {
+    let stdinText = '';
+    const { spawnProcess } = createFakeSpawn((child) => {
+      stdinText = child.stdin.read()?.toString() ?? '';
+      child.stdout.write(jsonLine({ type: 'result', is_error: false, result: 'ok' }));
+      child.emit('close', 0);
+    });
+    await streamSpec({
+      model: 'claude-sonnet-4-6',
+      system: 'sys',
+      user: 'ISSUE BODY HERE',
+      curatedComments: '',
+      onChunk: () => undefined,
+      spawnProcess,
+    });
+    expect(stdinText).toBe('ISSUE BODY HERE');
   });
 });

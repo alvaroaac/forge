@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
+  GenerationPhase,
   Spec,
   SpecGenerateDone,
   SpecGenerateError,
+  SpecPhaseEvent,
   SpecStreamChunk,
 } from '../../shared/types';
 
@@ -23,6 +25,8 @@ export function useSpecStream(issueId: string | null) {
   const [isSpecPersisted, setIsSpecPersisted] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [phase, setPhase] = useState<GenerationPhase>('idle');
+  const [commentCount, setCommentCount] = useState<number | undefined>(undefined);
   const currentIssueIdRef = useRef<string | null>(null);
   const setupVersionRef = useRef(0);
 
@@ -44,6 +48,8 @@ export function useSpecStream(issueId: string | null) {
     setIsSpecPersisted(false);
     setIsStreaming(false);
     setErrorMessage(null);
+    setPhase('idle');
+    setCommentCount(undefined);
   }, []);
 
   const commitPersistedSpec = useCallback(
@@ -78,6 +84,7 @@ export function useSpecStream(issueId: string | null) {
       }
 
       setIsStreaming(false);
+      setPhase('done');
     },
     [isCurrentRun],
   );
@@ -150,6 +157,27 @@ export function useSpecStream(issueId: string | null) {
     [failStreaming],
   );
 
+  const handlePhase = useCallback(
+    (targetIssueId: string, setupVersion: number, payload: SpecPhaseEvent): void => {
+      if (payload.issueId !== targetIssueId) {
+        return;
+      }
+
+      if (!isCurrentRun(targetIssueId, setupVersion)) {
+        return;
+      }
+
+      setPhase(payload.phase);
+
+      if (typeof payload.commentCount !== 'number') {
+        return;
+      }
+
+      setCommentCount(payload.commentCount);
+    },
+    [isCurrentRun],
+  );
+
   useEffect(() => {
     setupVersionRef.current += 1;
     const setupVersion = setupVersionRef.current;
@@ -186,18 +214,30 @@ export function useSpecStream(issueId: string | null) {
     const unsubscribeError = window.forge.spec.onError((payload: SpecGenerateError) => {
       handleError(issueId, setupVersion, payload);
     });
+    const unsubscribePhase = window.forge.spec.onPhase((payload: SpecPhaseEvent) => {
+      handlePhase(issueId, setupVersion, payload);
+    });
 
     return () => {
       cancelled = true;
       unsubscribe();
       unsubscribeDone();
       unsubscribeError();
+      unsubscribePhase();
 
       if (currentIssueIdRef.current === issueId) {
         currentIssueIdRef.current = null;
       }
     };
-  }, [issueId, commitPersistedSpec, handleChunk, handleDone, handleError, resetStreamState]);
+  }, [
+    issueId,
+    commitPersistedSpec,
+    handleChunk,
+    handleDone,
+    handleError,
+    handlePhase,
+    resetStreamState,
+  ]);
 
   const generate = useCallback(
     async (model?: string): Promise<void> => {
@@ -216,23 +256,35 @@ export function useSpecStream(issueId: string | null) {
       setIsStreaming(true);
       setErrorMessage(null);
 
+      let generationFailed = false;
+
       try {
         const result = model
           ? await window.forge.spec.generate(issueId, model)
           : await window.forge.spec.generate(issueId);
         commitGeneratedSpec(issueId, setupVersion, result.content);
       } catch (error) {
+        generationFailed = true;
         const message = error instanceof Error ? error.message : String(error);
-        if (isCurrentIssue(issueId)) {
-          setErrorMessage(message);
-          setIsStreaming(false);
-        }
+        failStreaming(issueId, setupVersion, message);
       } finally {
-        finishStreaming(issueId, setupVersion);
+        if (!generationFailed) {
+          finishStreaming(issueId, setupVersion);
+        }
       }
     },
-    [issueId, commitGeneratedSpec, finishStreaming, isCurrentIssue],
+    [issueId, commitGeneratedSpec, failStreaming, finishStreaming, isCurrentIssue],
   );
 
-  return { spec, streaming, streamStatus, isSpecPersisted, isStreaming, errorMessage, generate };
+  return {
+    spec,
+    streaming,
+    streamStatus,
+    isSpecPersisted,
+    isStreaming,
+    errorMessage,
+    phase,
+    commentCount,
+    generate,
+  };
 }

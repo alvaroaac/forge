@@ -4,9 +4,11 @@ import type { ForgeApi } from '../shared/forge-api';
 import type {
   SpecGenerateDone,
   SpecGenerateError,
+  SpecPhaseEvent,
   SpecStreamChunk,
   TriageGenerateDone,
   TriageGenerateError,
+  TriagePhaseEvent,
   TriageStreamChunk,
 } from '../shared/types';
 
@@ -43,6 +45,7 @@ const api: ForgeApi = {
     onError: (handler) => {
       return subscribe<SpecGenerateError>(IpcChannel.SpecGenerateError, handler);
     },
+    onPhase: (handler) => subscribe<SpecPhaseEvent>(IpcChannel.SpecPhase, handler),
   },
   triage: {
     get: (issueId) => ipcRenderer.invoke(IpcChannel.TriageGet, { issueId }),
@@ -58,6 +61,12 @@ const api: ForgeApi = {
     onError: (handler) => {
       return subscribe<TriageGenerateError>(IpcChannel.TriageGenerateError, handler);
     },
+    onPhase: (handler) => subscribe<TriagePhaseEvent>(IpcChannel.TriagePhase, handler),
+  },
+  comments: {
+    fetch: (issueId) => ipcRenderer.invoke(IpcChannel.CommentsFetch, { issueId }),
+    generateSummary: (issueId) =>
+      ipcRenderer.invoke(IpcChannel.CommentsGenerateSummary, { issueId }),
   },
   config: {
     get: () => ipcRenderer.invoke(IpcChannel.ConfigGet),

@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react';
 
-import type { Issue, TriageBrief } from '../../shared/types';
+import type { GenerationPhase, Issue, TriageBrief } from '../../shared/types';
+import { CommentsTab } from './comments-tab';
+import { DetailTab } from './detail-tab';
 import { GeneratedDocument } from './generated-document';
 import { IssueDrawerShell } from './issue-drawer-shell';
 
 type WriteState = 'idle' | 'saving' | 'saved';
+export type TriageDrawerTab = 'detail' | 'comments' | 'brief';
 
 type TriageDrawerProps = {
   issue: Issue | null;
+  tab?: TriageDrawerTab;
+  setTab?: (tab: TriageDrawerTab) => void;
   canGenerate: boolean;
   isStreaming: boolean;
   streaming: string;
   streamStatus?: string[];
+  phase?: GenerationPhase;
+  commentCount?: number;
   isBriefPersisted?: boolean;
   isBriefLoading?: boolean;
   brief: TriageBrief | null;
@@ -31,6 +38,41 @@ type TriageActionsProps = GenerateButtonProps & {
 
 function pickBriefContent(brief: TriageBrief | null, streaming: string): string {
   return streaming ? streaming : (brief?.content ?? '');
+}
+
+function pickStreamStatus(streamStatus?: string[]): string[] {
+  return streamStatus ?? [];
+}
+
+function pickPhaseStatus(phase?: GenerationPhase, commentCount?: number): string | null {
+  if (phase === 'triaging') {
+    if (commentCount === 0) {
+      return 'No comments to triage';
+    }
+
+    return `Triaging ${commentCount ?? '…'} comment(s)…`;
+  }
+
+  if (phase === 'generating') {
+    return 'Generating brief…';
+  }
+
+  return null;
+}
+
+function pickActivityStatus(
+  streamStatus?: string[],
+  phase?: GenerationPhase,
+  commentCount?: number,
+): string[] {
+  const statuses = pickStreamStatus(streamStatus);
+  const phaseStatus = pickPhaseStatus(phase, commentCount);
+
+  if (!phaseStatus) {
+    return statuses;
+  }
+
+  return [...statuses, phaseStatus];
 }
 
 async function writeBriefWithOverwrite(issueId: string, content: string): Promise<boolean> {
@@ -135,10 +177,14 @@ function TriageConfigHint({ canGenerate }: Pick<TriageDrawerProps, 'canGenerate'
 
 export function TriageDrawer({
   issue,
+  tab = 'detail',
+  setTab = () => undefined,
   canGenerate,
   isStreaming,
   streaming,
   streamStatus = [],
+  phase,
+  commentCount,
   isBriefPersisted = false,
   isBriefLoading = false,
   brief,
@@ -181,21 +227,49 @@ export function TriageDrawer({
       closeTitle="Close"
       closeAriaLabel="Close"
       renderClosedShell={false}
+      tabs={[
+        {
+          key: 'detail',
+          label: 'Details',
+          isActive: tab === 'detail',
+          onClick: () => setTab('detail'),
+        },
+        {
+          key: 'comments',
+          label: 'Comments',
+          isActive: tab === 'comments',
+          onClick: () => setTab('comments'),
+        },
+        {
+          key: 'brief',
+          label: 'Brief',
+          isActive: tab === 'brief',
+          onClick: () => setTab('brief'),
+        },
+      ]}
     >
       <TriageConfigHint canGenerate={canGenerate} />
-      <GeneratedDocument
-        artifactName="Brief"
-        artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
-        content={content}
-        isStreaming={isStreaming || isCheckingBrief}
-        streamStatus={isCheckingBrief ? ['Checking triage-brief.md'] : streamStatus}
-        errorMessage={errorMessage}
-        emptyTitle={`No brief yet for ${issue.id}.`}
-        activityTitle={isCheckingBrief ? 'Loading brief' : 'Generating brief'}
-        activityStatusFallback="Starting brief"
-        actions={isCheckingBrief ? null : actions}
-        emptyActions={isCheckingBrief ? null : generateButton}
-      />
+      {tab === 'detail' ? <DetailTab issue={issue} /> : null}
+      {tab === 'comments' ? <CommentsTab issue={issue} /> : null}
+      {tab === 'brief' ? (
+        <GeneratedDocument
+          artifactName="Brief"
+          artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
+          content={content}
+          isStreaming={isStreaming || isCheckingBrief}
+          streamStatus={
+            isCheckingBrief
+              ? ['Checking triage-brief.md']
+              : pickActivityStatus(streamStatus, phase, commentCount)
+          }
+          errorMessage={errorMessage}
+          emptyTitle={`No brief yet for ${issue.id}.`}
+          activityTitle={isCheckingBrief ? 'Loading brief' : 'Generating brief'}
+          activityStatusFallback="Starting brief"
+          actions={isCheckingBrief ? null : actions}
+          emptyActions={isCheckingBrief ? null : generateButton}
+        />
+      ) : null}
     </IssueDrawerShell>
   );
 }

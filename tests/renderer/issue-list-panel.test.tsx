@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
 import type { Issue } from '../../src/shared/types';
+import type { DrawerTab } from '../../src/renderer/components/spec-drawer';
 import { type Group, classifyGroup } from '../../src/renderer/lib/classify';
 
 import { IssueListPanel } from '../../src/renderer/components/issue-list-panel';
@@ -16,7 +17,7 @@ vi.mock('../../src/renderer/components/issue-group', () => ({
   }: {
     name: Group;
     items: Issue[];
-    onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
+    onOpen: (issue: Issue, which: DrawerTab) => void;
     activeId: string | null;
     hasSpecFor: (issueId: string) => boolean;
   }) => (
@@ -51,6 +52,7 @@ vi.mock('../../src/renderer/lib/classify', async () => {
 const issues: Issue[] = [
   {
     id: 'FUL-1',
+    uuid: 'uuid-test-fixture',
     title: 'first',
     description: '',
     status: 'todo',
@@ -63,6 +65,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-2',
+    uuid: 'uuid-test-fixture',
     title: 'second',
     description: '',
     status: 'todo',
@@ -75,6 +78,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-3',
+    uuid: 'uuid-test-fixture',
     title: 'third',
     description: '',
     status: 'in_progress',
@@ -87,6 +91,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-4',
+    uuid: 'uuid-test-fixture',
     title: 'fourth',
     description: '',
     status: 'done',
@@ -99,6 +104,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-5',
+    uuid: 'uuid-test-fixture',
     title: 'triage mine',
     description: '',
     status: 'triage',
@@ -111,6 +117,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-6',
+    uuid: 'uuid-test-fixture',
     title: 'triage other',
     description: '',
     status: 'triage',
@@ -142,7 +149,7 @@ function renderPanel(
     issues: Issue[];
     tab: Parameters<typeof IssueListPanel>[0]['tab'];
     setTab: (next: Parameters<typeof IssueListPanel>[0]['tab']) => void;
-    onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
+    onOpen: (issue: Issue, which: DrawerTab) => void;
     activeId: string | null;
     hasSpecFor: (issueId: string) => boolean;
     onRefresh: () => void;
@@ -243,6 +250,7 @@ describe('IssueListPanel', () => {
       issues: [
         {
           id: 'FUL-A',
+          uuid: 'uuid-test-fixture',
           title: 'alpha',
           description: '',
           status: 'in_progress',
@@ -255,6 +263,7 @@ describe('IssueListPanel', () => {
         },
         {
           id: 'FUL-B',
+          uuid: 'uuid-test-fixture',
           title: 'bravo',
           description: '',
           status: 'in_progress',
@@ -267,6 +276,7 @@ describe('IssueListPanel', () => {
         },
         {
           id: 'FUL-C',
+          uuid: 'uuid-test-fixture',
           title: 'charlie',
           description: '',
           status: 'in_progress',
@@ -279,6 +289,7 @@ describe('IssueListPanel', () => {
         },
         {
           id: 'FUL-D',
+          uuid: 'uuid-test-fixture',
           title: 'delta',
           description: '',
           status: 'in_progress',
@@ -291,6 +302,7 @@ describe('IssueListPanel', () => {
         },
         {
           id: 'FUL-H',
+          uuid: 'uuid-test-fixture',
           title: 'hidden',
           description: '',
           status: 'done',

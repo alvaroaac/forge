@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { Issue, Spec, SpecReviewSummary } from '../../shared/types';
+import type { GenerationPhase, Issue, Spec, SpecReviewSummary } from '../../shared/types';
 import { cleanSpecMarkdown } from '../../shared/spec-markdown';
 import { GeneratedDocument } from './generated-document';
 import { IconCheck, IconEdit, IconSpark, IconTerminal } from './icons';
@@ -15,6 +15,8 @@ type SpecTabProps = {
   spec: Spec | null;
   streaming: string;
   streamStatus?: string[];
+  phase?: GenerationPhase;
+  commentCount?: number;
   isSpecPersisted?: boolean;
   reviewedContent?: string | null;
   reviewSummary?: SpecReviewSummary | null;
@@ -91,6 +93,37 @@ function pickErrorMessage(
 
 function pickStreamStatus(streamStatus?: string[]): string[] {
   return streamStatus ?? [];
+}
+
+function pickPhaseStatus(phase?: GenerationPhase, commentCount?: number): string | null {
+  if (phase === 'triaging') {
+    if (commentCount === 0) {
+      return 'No comments to triage';
+    }
+
+    return `Triaging ${commentCount ?? '…'} comment(s)…`;
+  }
+
+  if (phase === 'generating') {
+    return 'Generating spec…';
+  }
+
+  return null;
+}
+
+function pickActivityStatus(
+  streamStatus?: string[],
+  phase?: GenerationPhase,
+  commentCount?: number,
+): string[] {
+  const statuses = pickStreamStatus(streamStatus);
+  const phaseStatus = pickPhaseStatus(phase, commentCount);
+
+  if (!phaseStatus) {
+    return statuses;
+  }
+
+  return [...statuses, phaseStatus];
 }
 
 function pickIsReviewPending(isReviewPending?: boolean): boolean {
@@ -235,6 +268,8 @@ export function SpecTab({
   spec,
   streaming,
   streamStatus,
+  phase,
+  commentCount,
   isSpecPersisted = false,
   reviewedContent,
   reviewSummary,
@@ -285,7 +320,7 @@ export function SpecTab({
         artifactPath={`thoughts/tasks/${issue.id}/initial-spec.md`}
         content={content}
         isStreaming={isStreaming}
-        streamStatus={pickStreamStatus(streamStatus)}
+        streamStatus={pickActivityStatus(streamStatus, phase, commentCount)}
         errorMessage={combinedErrorMessage}
         statusMessage={effectiveReviewStatus}
         emptyTitle={<SpecEmptyTitle issueId={issue.id} />}

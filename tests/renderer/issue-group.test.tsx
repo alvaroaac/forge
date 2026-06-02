@@ -37,6 +37,7 @@ vi.mock('../../src/renderer/components/issue-card', () => ({
 const issues: Issue[] = [
   {
     id: 'FUL-1',
+    uuid: 'uuid-test-fixture',
     title: 'first issue',
     description: '',
     status: 'todo',
@@ -49,6 +50,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-2',
+    uuid: 'uuid-test-fixture',
     title: 'second issue',
     description: '',
     status: 'todo',
@@ -61,6 +63,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-3',
+    uuid: 'uuid-test-fixture',
     title: 'third issue',
     description: '',
     status: 'todo',
@@ -73,6 +76,7 @@ const issues: Issue[] = [
   },
   {
     id: 'FUL-4',
+    uuid: 'uuid-test-fixture',
     title: 'fourth issue',
     description: '',
     status: 'todo',

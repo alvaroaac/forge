@@ -25,6 +25,7 @@ function createDeferred<T>(): Deferred<T> {
 function createIssue(id: string, assigneeId: string | null = null): Issue {
   return {
     id,
+    uuid: 'uuid-test-fixture',
     title: id,
     description: '',
     status: 'todo',
@@ -60,6 +61,7 @@ function setForge(
       onChunk: vi.fn(),
       onDone: vi.fn(),
       onError: vi.fn(),
+      onPhase: vi.fn(() => vi.fn()),
     },
     triage: {
       get: vi.fn(),
@@ -68,6 +70,7 @@ function setForge(
       onChunk: vi.fn(),
       onDone: vi.fn(),
       onError: vi.fn(),
+      onPhase: vi.fn(() => vi.fn()),
     },
   };
 }

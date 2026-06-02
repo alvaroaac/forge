@@ -6,6 +6,7 @@ import type { Issue, Spec, SpecReviewSummary } from '../../src/shared/types';
 
 const issue: Issue = {
   id: 'FUL-7',
+  uuid: 'uuid-test-fixture',
   title: 'Build the spec tab',
   description: '',
   status: 'todo',
@@ -198,6 +199,107 @@ Streaming body`}
     expect(screen.getByText('Generating spec')).toBeTruthy();
     expect(screen.getByText('Claude initialized the repo session')).toBeTruthy();
     expect(screen.getByText('Starting Claude')).toBeTruthy();
+  });
+
+  it('shows triaging comment activity before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        streamStatus={['Starting Claude']}
+        phase="triaging"
+        commentCount={3}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Triaging 3 comment(s)…')).toBeTruthy();
+  });
+
+  it('shows no-comment activity before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        phase="triaging"
+        commentCount={0}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('No comments to triage')).toBeTruthy();
+  });
+
+  it('shows an unknown comment count while triaging before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        phase="triaging"
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Triaging … comment(s)…')).toBeTruthy();
+  });
+
+  it('shows generating activity before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        phase="generating"
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Generating spec…')).toBeTruthy();
+  });
+
+  it('hides phase activity after markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming={`## Live
+Streaming body`}
+        phase="triaging"
+        commentCount={3}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Triaging 3 comment(s)…')).toBeNull();
+    expect(screen.getByText('Live')).toBeTruthy();
   });
 
   it('keeps the model picker visible while generation activity is running', () => {

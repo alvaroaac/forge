@@ -84,6 +84,22 @@ describe('preload API', () => {
     expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGet, { issueId: 'FUL-7' });
   });
 
+  it('calls comments.generateSummary through IpcChannel.CommentsGenerateSummary with issueId', async () => {
+    const forge = getForgeApi();
+    await forge.comments?.generateSummary('FUL-7');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.CommentsGenerateSummary, {
+      issueId: 'FUL-7',
+    });
+  });
+
+  it('calls comments.fetch through IpcChannel.CommentsFetch with issueId', async () => {
+    const forge = getForgeApi();
+    await forge.comments?.fetch('FUL-7');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.CommentsFetch, {
+      issueId: 'FUL-7',
+    });
+  });
+
   it('calls triage.write through IpcChannel.TriageWrite with overwrite default false', async () => {
     const forge = getForgeApi();
     await forge.triage.write('FUL-7', 'hello');
@@ -125,5 +141,35 @@ describe('preload API', () => {
     expect(off).toHaveBeenCalledWith(IpcChannel.TriageStreamChunk, chunkHandler);
     expect(off).toHaveBeenCalledWith(IpcChannel.TriageGenerateDone, doneHandler);
     expect(off).toHaveBeenCalledWith(IpcChannel.TriageGenerateError, errorHandler);
+  });
+
+  it('exposes spec.onPhase as a function returning an unsubscribe', () => {
+    const forge = getForgeApi();
+
+    expect(typeof forge.spec.onPhase).toBe('function');
+    const unsubscribe = forge.spec.onPhase(() => undefined);
+    const phaseHandler = on.mock.calls[0][1];
+
+    expect(typeof unsubscribe).toBe('function');
+    expect(on).toHaveBeenCalledWith(IpcChannel.SpecPhase, phaseHandler);
+
+    unsubscribe();
+
+    expect(off).toHaveBeenCalledWith(IpcChannel.SpecPhase, phaseHandler);
+  });
+
+  it('exposes triage.onPhase as a function returning an unsubscribe', () => {
+    const forge = getForgeApi();
+
+    expect(typeof forge.triage.onPhase).toBe('function');
+    const unsubscribe = forge.triage.onPhase(() => undefined);
+    const phaseHandler = on.mock.calls[0][1];
+
+    expect(typeof unsubscribe).toBe('function');
+    expect(on).toHaveBeenCalledWith(IpcChannel.TriagePhase, phaseHandler);
+
+    unsubscribe();
+
+    expect(off).toHaveBeenCalledWith(IpcChannel.TriagePhase, phaseHandler);
   });
 });

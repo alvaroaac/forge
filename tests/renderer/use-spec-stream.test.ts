@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useSpecStream } from '../../src/renderer/hooks/use-spec-stream';
 import type {
+  SpecPhaseEvent,
   Spec,
   SpecGenerateDone,
   SpecGenerateError,
@@ -19,6 +20,7 @@ type Deferred<T> = {
 type ChunkHandler = (chunk: SpecStreamChunk) => void;
 type DoneHandler = (payload: SpecGenerateDone) => void;
 type ErrorHandler = (payload: SpecGenerateError) => void;
+type PhaseHandler = (payload: SpecPhaseEvent) => void;
 
 function createDeferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
@@ -46,6 +48,7 @@ function setForge(options: {
   onChunk: (handler: ChunkHandler) => () => void;
   onDone?: (handler: DoneHandler) => () => void;
   onError?: (handler: ErrorHandler) => () => void;
+  onPhase?: (handler: PhaseHandler) => () => void;
 }) {
   window.forge = {
     auth: { check: vi.fn() },
@@ -63,6 +66,7 @@ function setForge(options: {
       launchReview: vi.fn(),
       onDone: options.onDone ?? vi.fn(() => vi.fn()),
       onError: options.onError ?? vi.fn(() => vi.fn()),
+      onPhase: options.onPhase ?? vi.fn(() => vi.fn()),
     },
     triage: {
       get: vi.fn(),
@@ -71,6 +75,7 @@ function setForge(options: {
       onChunk: vi.fn(),
       onDone: vi.fn(),
       onError: vi.fn(),
+      onPhase: vi.fn(() => vi.fn()),
     },
   };
 }
@@ -79,6 +84,23 @@ function waitForNextTick(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
+}
+
+function createPhaseRegistry() {
+  const activeHandlers = new Set<PhaseHandler>();
+  const onPhase = vi.fn((handler: PhaseHandler) => {
+    activeHandlers.add(handler);
+    return vi.fn(() => {
+      activeHandlers.delete(handler);
+    });
+  });
+  const emit = (payload: SpecPhaseEvent) => {
+    activeHandlers.forEach((handler) => {
+      handler(payload);
+    });
+  };
+
+  return { onPhase, emit };
 }
 
 afterEach(() => {
@@ -107,6 +129,8 @@ describe('useSpecStream', () => {
       isSpecPersisted: false,
       isStreaming: false,
       errorMessage: null,
+      phase: 'idle',
+      commentCount: undefined,
       generate: expect.any(Function),
     });
 
@@ -226,6 +250,8 @@ describe('useSpecStream', () => {
       isSpecPersisted: false,
       isStreaming: false,
       errorMessage: null,
+      phase: 'idle',
+      commentCount: undefined,
       generate: expect.any(Function),
     });
 
@@ -243,6 +269,8 @@ describe('useSpecStream', () => {
       isSpecPersisted: false,
       isStreaming: false,
       errorMessage: null,
+      phase: 'idle',
+      commentCount: undefined,
       generate: expect.any(Function),
     });
   });
@@ -291,6 +319,8 @@ describe('useSpecStream', () => {
       isSpecPersisted: false,
       isStreaming: false,
       errorMessage: null,
+      phase: 'idle',
+      commentCount: undefined,
       generate: expect.any(Function),
     });
     expect(unsubscribeA).toHaveBeenCalledTimes(1);
@@ -392,6 +422,8 @@ describe('useSpecStream', () => {
         isSpecPersisted: false,
         isStreaming: false,
         errorMessage: null,
+        phase: 'idle',
+        commentCount: undefined,
         generate: expect.any(Function),
       });
 
@@ -465,6 +497,36 @@ describe('useSpecStream', () => {
     });
   });
 
+  it('does not transition to done when spec generation rejects', async () => {
+    const get = vi.fn().mockResolvedValue(null);
+    const generateDeferred = createDeferred<{ issueId: string; content: string }>();
+    const generate = vi.fn(() => generateDeferred.promise);
+    const onChunk = vi.fn(() => vi.fn());
+    const phases = createPhaseRegistry();
+
+    setForge({ get, generate, onChunk, onPhase: phases.onPhase });
+
+    const { result } = renderHook(() => useSpecStream('FUL-7'));
+
+    await act(async () => {
+      void result.current.generate();
+    });
+
+    act(() => {
+      phases.emit({ issueId: 'FUL-7', phase: 'generating' });
+    });
+
+    generateDeferred.reject(new Error('generate failed'));
+
+    await waitFor(() => {
+      expect(result.current.errorMessage).toBe('generate failed');
+    });
+
+    expect(result.current.isStreaming).toBe(false);
+    expect(result.current.phase).toBe('generating');
+    expect(result.current.phase).not.toBe('done');
+  });
+
   it('survives the StrictMode setup-cleanup-setup cycle without leaking subscriptions', async () => {
     const get = vi.fn().mockResolvedValue(null);
     const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-7', content: '' });
@@ -495,5 +557,162 @@ describe('useSpecStream', () => {
 
     expect(handlers.length).toBe(2);
     expect(unsubscribeB).not.toHaveBeenCalled();
+  });
+
+  describe('phase state', () => {
+    it('starts at idle before any phase event', () => {
+      const get = vi.fn().mockResolvedValue(null);
+      const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-77', content: '' });
+      const onChunk = vi.fn(() => vi.fn());
+
+      setForge({ get, generate, onChunk });
+
+      const { result } = renderHook(() => useSpecStream('FUL-77'));
+
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.commentCount).toBeUndefined();
+    });
+
+    it('transitions to triaging with commentCount on a matching phase event', () => {
+      const get = vi.fn().mockResolvedValue(null);
+      const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-77', content: '' });
+      const onChunk = vi.fn(() => vi.fn());
+      const phases = createPhaseRegistry();
+
+      setForge({ get, generate, onChunk, onPhase: phases.onPhase });
+
+      const { result } = renderHook(() => useSpecStream('FUL-77'));
+
+      act(() => {
+        phases.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 3 });
+      });
+
+      expect(result.current.phase).toBe('triaging');
+      expect(result.current.commentCount).toBe(3);
+    });
+
+    it('transitions to generating after a matching generating phase event', () => {
+      const get = vi.fn().mockResolvedValue(null);
+      const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-77', content: '' });
+      const onChunk = vi.fn(() => vi.fn());
+      const phases = createPhaseRegistry();
+
+      setForge({ get, generate, onChunk, onPhase: phases.onPhase });
+
+      const { result } = renderHook(() => useSpecStream('FUL-77'));
+
+      act(() => {
+        phases.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 1 });
+        phases.emit({ issueId: 'FUL-77', phase: 'generating' });
+      });
+
+      expect(result.current.phase).toBe('generating');
+      expect(result.current.commentCount).toBe(1);
+    });
+
+    it('transitions to done on the done event', () => {
+      const get = vi.fn().mockResolvedValue(null);
+      const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-77', content: '' });
+      const onChunk = vi.fn(() => vi.fn());
+      const phases = createPhaseRegistry();
+      const doneHandlers: DoneHandler[] = [];
+      const onDone = vi.fn((handler: DoneHandler) => {
+        doneHandlers.push(handler);
+        return vi.fn();
+      });
+
+      setForge({ get, generate, onChunk, onDone, onPhase: phases.onPhase });
+
+      const { result } = renderHook(() => useSpecStream('FUL-77'));
+
+      act(() => {
+        phases.emit({ issueId: 'FUL-77', phase: 'generating' });
+        doneHandlers[0]?.({ issueId: 'FUL-77' });
+      });
+
+      expect(result.current.phase).toBe('done');
+    });
+
+    it('leaves phase as-is when an error event arrives', () => {
+      const get = vi.fn().mockResolvedValue(null);
+      const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-77', content: '' });
+      const onChunk = vi.fn(() => vi.fn());
+      const phases = createPhaseRegistry();
+      const errorHandlers: ErrorHandler[] = [];
+      const onError = vi.fn((handler: ErrorHandler) => {
+        errorHandlers.push(handler);
+        return vi.fn();
+      });
+
+      setForge({ get, generate, onChunk, onError, onPhase: phases.onPhase });
+
+      const { result } = renderHook(() => useSpecStream('FUL-77'));
+
+      act(() => {
+        phases.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 2 });
+        errorHandlers[0]?.({ issueId: 'FUL-77', message: 'failed' });
+      });
+
+      expect(result.current.phase).toBe('triaging');
+      expect(result.current.commentCount).toBe(2);
+    });
+
+    it('ignores phase events for other issue ids', () => {
+      const get = vi.fn().mockResolvedValue(null);
+      const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-77', content: '' });
+      const onChunk = vi.fn(() => vi.fn());
+      const phases = createPhaseRegistry();
+
+      setForge({ get, generate, onChunk, onPhase: phases.onPhase });
+
+      const { result } = renderHook(() => useSpecStream('FUL-77'));
+
+      act(() => {
+        phases.emit({ issueId: 'FUL-99', phase: 'triaging', commentCount: 5 });
+      });
+
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.commentCount).toBeUndefined();
+    });
+
+    it('resets phase state on issue switch and ignores stale phase handlers', () => {
+      const get = vi.fn().mockResolvedValue(null);
+      const generate = vi.fn().mockResolvedValue({ issueId: 'FUL-77', content: '' });
+      const onChunk = vi.fn(() => vi.fn());
+      const phaseHandlers: PhaseHandler[] = [];
+      const unsubscribeA = vi.fn();
+      const unsubscribeB = vi.fn();
+      const onPhase = vi.fn((handler: PhaseHandler) => {
+        phaseHandlers.push(handler);
+        return phaseHandlers.length === 1 ? unsubscribeA : unsubscribeB;
+      });
+
+      setForge({ get, generate, onChunk, onPhase });
+
+      const { result, rerender } = renderHook(({ issueId }) => useSpecStream(issueId), {
+        initialProps: { issueId: 'FUL-77' as string | null },
+      });
+
+      act(() => {
+        phaseHandlers[0]?.({ issueId: 'FUL-77', phase: 'triaging', commentCount: 4 });
+      });
+
+      expect(result.current.phase).toBe('triaging');
+      expect(result.current.commentCount).toBe(4);
+
+      rerender({ issueId: 'FUL-88' });
+
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.commentCount).toBeUndefined();
+      expect(unsubscribeA).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        phaseHandlers[0]?.({ issueId: 'FUL-77', phase: 'generating' });
+      });
+
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.commentCount).toBeUndefined();
+      expect(unsubscribeB).not.toHaveBeenCalled();
+    });
   });
 });

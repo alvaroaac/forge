@@ -3,6 +3,7 @@ import { LabelBadge } from './label-badge';
 import { PriorityChip } from './priority-chip';
 import { IconChevronRight } from './icons';
 import { classifyGroup, type Group } from '../lib/classify';
+import type { DrawerTab } from './spec-drawer';
 
 const GROUP_COLOR: Record<Group, string> = {
   Bugs: 'var(--danger)',
@@ -13,7 +14,7 @@ const GROUP_COLOR: Record<Group, string> = {
 
 type IssueCardProps = {
   issue: Issue;
-  onOpen: (issue: Issue, which: 'spec' | 'detail') => void;
+  onOpen: (issue: Issue, which: DrawerTab) => void;
   isActive: boolean;
   hasSpec: boolean;
 };
@@ -21,8 +22,8 @@ type IssueCardProps = {
 export function IssueCard({ issue, onOpen, isActive, hasSpec }: IssueCardProps) {
   const group = classifyGroup(issue);
   const firstLabel = issue.labels[0] ?? '';
-  const openSpecLabel = `Open ${issue.id} ${issue.title}`;
-  const openSpec = () => onOpen(issue, 'spec');
+  const openIssueLabel = `Open ${issue.id} ${issue.title}`;
+  const openDetail = () => onOpen(issue, 'detail');
   const specActionLabel = issue.status === 'triage' ? 'Brief' : hasSpec ? 'View Spec' : 'Spec';
 
   return (
@@ -33,7 +34,7 @@ export function IssueCard({ issue, onOpen, isActive, hasSpec }: IssueCardProps) 
       <button
         type="button"
         className="issue-card-main"
-        aria-label={openSpecLabel}
+        aria-label={openIssueLabel}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -48,7 +49,7 @@ export function IssueCard({ issue, onOpen, isActive, hasSpec }: IssueCardProps) 
           font: 'inherit',
           color: 'inherit',
         }}
-        onClick={openSpec}
+        onClick={openDetail}
       >
         <div className="issue-card-top">
           <span className="mono dim">{issue.id}</span>

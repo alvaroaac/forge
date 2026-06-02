@@ -2,6 +2,26 @@ import type { ReactNode } from 'react';
 
 import { inlineParts } from '../lib/markdown';
 
+function isSafeLinkHref(href: string): boolean {
+  const trimmed = href.trim();
+  const hasControlCharacter = [...trimmed].some((char) => {
+    const code = char.charCodeAt(0);
+    return code <= 31 || code === 127;
+  });
+
+  if (!trimmed || hasControlCharacter) {
+    return false;
+  }
+
+  const schemeMatch = trimmed.match(/^([a-zA-Z][a-zA-Z\d+.-]*):/);
+  if (!schemeMatch) {
+    return true;
+  }
+
+  const scheme = schemeMatch[1].toLowerCase();
+  return scheme === 'http' || scheme === 'https' || scheme === 'mailto';
+}
+
 export function renderInlineMarkdown(line: string, keyPrefix: string | number): ReactNode[] {
   return inlineParts(line).map((part, index) => {
     const key = `${keyPrefix}-${index}`;
@@ -39,8 +59,13 @@ export function renderInlineMarkdown(line: string, keyPrefix: string | number): 
     }
 
     if (part.type === 'link') {
+      const href = part.href ?? '';
+      if (!isSafeLinkHref(href)) {
+        return part.text;
+      }
+
       return (
-        <a key={key} className="md-link" href={part.href} target="_blank" rel="noreferrer">
+        <a key={key} className="md-link" href={href} target="_blank" rel="noreferrer">
           {part.text}
         </a>
       );

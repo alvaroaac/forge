@@ -5,6 +5,7 @@ export interface StreamTriageBriefInput {
   issue: Issue;
   computronRepoPath: string;
   model: string;
+  curatedComments?: string;
   onChunk: (delta: string) => void;
   onStatus?: (status: string) => void;
   streamClaude: (input: {
@@ -15,6 +16,7 @@ export interface StreamTriageBriefInput {
     extraArgs: readonly string[];
     onChunk: (delta: string) => void;
     onStatus?: (status: string) => void;
+    curatedComments?: string;
   }) => Promise<string>;
 }
 
@@ -28,5 +30,6 @@ export async function streamTriageBrief(input: StreamTriageBriefInput): Promise<
     extraArgs: ['--add-dir', input.computronRepoPath, '--allowedTools', 'Read,Glob,Grep'],
     onChunk: input.onChunk,
     onStatus: input.onStatus,
+    curatedComments: input.curatedComments,
   });
 }

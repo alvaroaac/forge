@@ -1,9 +1,10 @@
-import type { Issue, Spec, SpecReviewSummary } from '../../shared/types';
+import type { GenerationPhase, Issue, Spec, SpecReviewSummary } from '../../shared/types';
+import { CommentsTab } from './comments-tab';
 import { DetailTab } from './detail-tab';
 import { IssueDrawerShell } from './issue-drawer-shell';
 import { SpecTab } from './spec-tab';
 
-export type DrawerTab = 'detail' | 'spec';
+export type DrawerTab = 'detail' | 'spec' | 'comments';
 
 type SpecDrawerProps = {
   issue: Issue | null;
@@ -13,6 +14,8 @@ type SpecDrawerProps = {
   spec: Spec | null;
   streaming: string;
   streamStatus?: string[];
+  phase?: GenerationPhase;
+  commentCount?: number;
   isSpecPersisted?: boolean;
   reviewedContent?: string | null;
   reviewSummary?: SpecReviewSummary | null;
@@ -59,6 +62,8 @@ function SpecDrawerBody({
   spec,
   streaming,
   streamStatus,
+  phase,
+  commentCount,
   isSpecPersisted,
   reviewedContent,
   reviewSummary,
@@ -82,12 +87,18 @@ function SpecDrawerBody({
     return <DetailTab issue={issue} />;
   }
 
+  if (tab === 'comments') {
+    return <CommentsTab issue={issue} />;
+  }
+
   return (
     <SpecTab
       issue={issue}
       spec={spec}
       streaming={streaming}
       streamStatus={getStreamStatus(streamStatus)}
+      phase={phase}
+      commentCount={commentCount}
       isSpecPersisted={getOptionalBoolean(isSpecPersisted)}
       reviewedContent={getReviewedContent(reviewedContent)}
       reviewSummary={getReviewSummary(reviewSummary)}
@@ -114,6 +125,8 @@ export function SpecDrawer({
   spec,
   streaming,
   streamStatus,
+  phase,
+  commentCount,
   isSpecPersisted,
   reviewedContent,
   reviewSummary,
@@ -143,6 +156,12 @@ export function SpecDrawer({
           onClick: () => setTab('detail'),
         },
         { key: 'spec', label: 'Spec', isActive: tab === 'spec', onClick: () => setTab('spec') },
+        {
+          key: 'comments',
+          label: 'Comments',
+          isActive: tab === 'comments',
+          onClick: () => setTab('comments'),
+        },
       ]}
     >
       <SpecDrawerBody
@@ -151,6 +170,8 @@ export function SpecDrawer({
         spec={spec}
         streaming={streaming}
         streamStatus={streamStatus}
+        phase={phase}
+        commentCount={commentCount}
         isSpecPersisted={isSpecPersisted}
         reviewedContent={reviewedContent}
         reviewSummary={reviewSummary}

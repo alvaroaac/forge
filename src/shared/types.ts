@@ -3,6 +3,7 @@ export type Priority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
 
 export interface Issue {
   id: string;
+  uuid: string;
   title: string;
   description: string;
   status: IssueStatus;
@@ -87,6 +88,31 @@ export interface TriageWriteResult {
   exists: boolean;
 }
 
+export interface CommentSummaryComment {
+  id: string;
+  body: string;
+  createdAt: string;
+  authorName: string;
+  isBot: boolean;
+}
+
+export interface CommentSummaryResult {
+  issueId: string;
+  comments: CommentSummaryComment[];
+  commentCount: number;
+  summary: string;
+  skippedReason?: 'missing-uuid' | 'no-comments';
+  errorMessage?: string;
+}
+
+export interface CommentFetchResult {
+  issueId: string;
+  comments: CommentSummaryComment[];
+  commentCount: number;
+  skippedReason?: 'missing-uuid' | 'no-comments';
+  errorMessage?: string;
+}
+
 export interface SpecReviewSummary {
   verdict: 'approved' | 'changes_requested';
   reviewerSummary: string;
@@ -98,4 +124,18 @@ export interface SpecReviewSummary {
 export interface SpecReviewResult {
   content: string;
   summary: SpecReviewSummary;
+}
+
+export type GenerationPhase = 'idle' | 'triaging' | 'generating' | 'done';
+
+export interface SpecPhaseEvent {
+  issueId: string;
+  phase: 'triaging' | 'generating';
+  commentCount?: number;
+}
+
+export interface TriagePhaseEvent {
+  issueId: string;
+  phase: 'triaging' | 'generating';
+  commentCount?: number;
 }
