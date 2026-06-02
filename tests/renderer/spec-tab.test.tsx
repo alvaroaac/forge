@@ -222,6 +222,26 @@ Streaming body`}
     expect(screen.getByText('Triaging 3 comment(s)…')).toBeTruthy();
   });
 
+  it('shows no-comment activity before markdown content arrives', () => {
+    render(
+      <SpecTab
+        issue={issue}
+        spec={null}
+        streaming=""
+        phase="triaging"
+        commentCount={0}
+        isStreaming={true}
+        errorMessage={null}
+        claudeModel="claude-sonnet-4-6"
+        onClaudeModelChange={vi.fn()}
+        onGenerate={vi.fn()}
+        onCopy={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('No comments to triage')).toBeTruthy();
+  });
+
   it('shows an unknown comment count while triaging before markdown content arrives', () => {
     render(
       <SpecTab

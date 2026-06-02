@@ -300,7 +300,7 @@ describe('triage:generate handler - comment-context pipeline', () => {
     warnSpy.mockRestore();
   });
 
-  it('skips the triaging phase event entirely when commentCount === 0', async () => {
+  it('emits triaging with commentCount 0 without calling the comment triager', async () => {
     const ipc = fakeIpc();
     const event = fakeEvent();
     const triage = vi.fn();
@@ -321,8 +321,13 @@ describe('triage:generate handler - comment-context pipeline', () => {
 
     expect(triage).not.toHaveBeenCalled();
     const phaseEvents = event.sent.filter((s) => s.channel === IpcChannel.TriagePhase);
-    expect(phaseEvents).toHaveLength(1);
-    expect(phaseEvents[0].payload).toEqual({ issueId: 'FUL-77', phase: 'generating' });
+    expect(phaseEvents).toHaveLength(2);
+    expect(phaseEvents[0].payload).toEqual({
+      issueId: 'FUL-77',
+      phase: 'triaging',
+      commentCount: 0,
+    });
+    expect(phaseEvents[1].payload).toEqual({ issueId: 'FUL-77', phase: 'generating' });
   });
 
   it('invokes fetchAndFilterComments with the issue UUID', async () => {

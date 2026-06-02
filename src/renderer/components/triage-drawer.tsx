@@ -46,6 +46,10 @@ function pickStreamStatus(streamStatus?: string[]): string[] {
 
 function pickPhaseStatus(phase?: GenerationPhase, commentCount?: number): string | null {
   if (phase === 'triaging') {
+    if (commentCount === 0) {
+      return 'No comments to triage';
+    }
+
     return `Triaging ${commentCount ?? '…'} comment(s)…`;
   }
 

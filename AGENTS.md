@@ -51,6 +51,8 @@ thoughts/
 - For project-level work that is not tracked in Linear (phase plans, internal refactors, etc.): slug = free-form kebab-case name (e.g. `phase1-mvp`).
 - Never mix the two schemes inside one folder.
 
+**Overrides `superpowers:writing-plans` default.** Plans go in `thoughts/tasks/<task-slug>/plans/<plan-slug>.md`, NOT `docs/superpowers/plans/`.
+
 ## Spec format
 
 Specs live at `thoughts/tasks/<task-slug>/initial-spec.md`. Template at `docs/templates/spec-template.md`.

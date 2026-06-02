@@ -128,15 +128,15 @@ async function curateSpecComments(
 
   try {
     const comments = await deps.fetchAndFilterComments(issue.uuid);
-    if (comments.length === 0) {
-      return '';
-    }
-
     sendSpecPhase(sender, {
       issueId: issue.id,
       phase: 'triaging',
       commentCount: comments.length,
     });
+
+    if (comments.length === 0) {
+      return '';
+    }
 
     return await deps.triageComments({
       issueTitle: issue.title,

@@ -322,6 +322,29 @@ describe('TriageDrawer', () => {
     expect(screen.getByText('Triaging 3 comment(s)…')).toBeTruthy();
   });
 
+  it('shows no-comment activity before brief content arrives', () => {
+    const writeMock = vi.fn();
+    setTriageApi(writeMock);
+
+    render(
+      <TriageDrawer
+        issue={issue}
+        tab="brief"
+        canGenerate={true}
+        isStreaming={true}
+        streaming=""
+        phase="triaging"
+        commentCount={0}
+        brief={null}
+        errorMessage={null}
+        onGenerate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('No comments to triage')).toBeTruthy();
+  });
+
   it('shows an unknown comment count while triaging before brief content arrives', () => {
     const writeMock = vi.fn();
     setTriageApi(writeMock);
