@@ -4,8 +4,12 @@ import { join } from 'node:path';
 import { IpcChannel } from '../../shared/ipc-channels';
 import { assertSafeIssueId, isSafeIssueId } from '../lib/issue-id';
 import type { ConfigStore } from '../services/config-store';
-import type { LinearComment } from '../services/comment-fetcher';
 import type { Issue, TriageBrief, TriageWriteResult } from '../../shared/types';
+import {
+  curateIssueCommentContext,
+  type FetchAndFilterCommentsFn,
+  type TriageCommentsFn,
+} from './comment-context';
 
 type TriageGenerateEventSender = {
   send: (channel: string, payload: unknown) => void;
@@ -33,13 +37,6 @@ type StreamTriageBrief = (input: {
   curatedComments?: string;
   onChunk: (delta: string) => void;
   onStatus?: (status: string) => void;
-}) => Promise<string>;
-
-type FetchAndFilterCommentsFn = (issueUuid: string) => Promise<LinearComment[]>;
-type TriageCommentsFn = (input: {
-  issueTitle: string;
-  issueDescription: string;
-  comments: LinearComment[];
 }) => Promise<string>;
 
 export interface TriageGenerateDeps {
@@ -115,31 +112,12 @@ async function curateTriageComments(
   sender: TriageGenerateEventSender,
   issue: Issue,
 ): Promise<string> {
-  if (!issue.uuid) {
-    return '';
-  }
-
-  try {
-    const comments = await deps.fetchAndFilterComments(issue.uuid);
-    sendTriagePhase(sender, {
-      issueId: issue.id,
-      phase: 'triaging',
-      commentCount: comments.length,
-    });
-
-    if (comments.length === 0) {
-      return '';
-    }
-
-    return await deps.triageComments({
-      issueTitle: issue.title,
-      issueDescription: issue.description,
-      comments,
-    });
-  } catch (err) {
-    console.warn('[triage] comment context failed, proceeding without curated comments:', err);
-    return '';
-  }
+  return curateIssueCommentContext({
+    deps,
+    issue,
+    emitPhase: (payload) => sendTriagePhase(sender, payload),
+    logPrefix: '[triage]',
+  });
 }
 
 export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerateDeps): void {

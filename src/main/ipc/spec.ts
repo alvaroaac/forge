@@ -7,9 +7,13 @@ import { assertSafeIssueId, isSafeIssueId } from '../lib/issue-id';
 import type { ConfigStore } from '../services/config-store';
 import type { IssuesCache } from '../services/issues-cache';
 import type { RepoContext } from '../services/repo-reader';
-import type { LinearComment } from '../services/comment-fetcher';
 import { buildSpecPrompt } from '../services/spec-prompt';
 import type { Issue, Spec, SpecReviewResult } from '../../shared/types';
+import {
+  curateIssueCommentContext,
+  type FetchAndFilterCommentsFn,
+  type TriageCommentsFn,
+} from './comment-context';
 
 type SpecGenerateEventSender = {
   send: (channel: string, payload: unknown) => void;
@@ -47,12 +51,6 @@ type StreamSpecFn = (input: {
 }) => Promise<string>;
 
 type PreflightClaudeRepoAccessFn = (input: { repoPath: string }) => Promise<void>;
-type FetchAndFilterCommentsFn = (issueUuid: string) => Promise<LinearComment[]>;
-type TriageCommentsFn = (input: {
-  issueTitle: string;
-  issueDescription: string;
-  comments: LinearComment[];
-}) => Promise<string>;
 
 export interface SpecGenerateDeps {
   store: ConfigStore;
@@ -122,31 +120,12 @@ async function curateSpecComments(
   sender: SpecGenerateEventSender,
   issue: Issue,
 ): Promise<string> {
-  if (!issue.uuid) {
-    return '';
-  }
-
-  try {
-    const comments = await deps.fetchAndFilterComments(issue.uuid);
-    sendSpecPhase(sender, {
-      issueId: issue.id,
-      phase: 'triaging',
-      commentCount: comments.length,
-    });
-
-    if (comments.length === 0) {
-      return '';
-    }
-
-    return await deps.triageComments({
-      issueTitle: issue.title,
-      issueDescription: issue.description,
-      comments,
-    });
-  } catch (err) {
-    console.warn('[spec] comment context failed, proceeding without curated comments:', err);
-    return '';
-  }
+  return curateIssueCommentContext({
+    deps,
+    issue,
+    emitPhase: (payload) => sendSpecPhase(sender, payload),
+    logPrefix: '[spec]',
+  });
 }
 
 function specRepoPath(cfg: { repoPath: string; computronRepoPath?: string }): string {
