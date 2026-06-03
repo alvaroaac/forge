@@ -490,6 +490,43 @@ describe('spec:generate', () => {
     expect(notifyDone).not.toHaveBeenCalled();
   });
 
+  it('does not fail generation when the success notification throws', async () => {
+    const issue: Issue = {
+      id: 'FUL-7',
+      title: 'Build UI',
+      description: 'Add streaming spec preview.',
+      ...issueTemplate,
+    };
+    const cache: IssuesCacheDouble = {
+      read: vi.fn().mockResolvedValue([issue]),
+      write: vi.fn(),
+    };
+    const readRepoContext = vi.fn().mockResolvedValue({ agentsMd: '', thoughts: [] });
+    const streamSpec = vi.fn(async (): Promise<string> => '# Spec');
+    const notifyDone = vi.fn(() => {
+      throw new Error('Notification failed');
+    });
+    const handler = createHandler({
+      store: createStore(dir),
+      cache,
+      readRepoContext,
+      streamSpec,
+      templateMd: 'TMPL',
+      notifyDone,
+    });
+    const event = { sender: { send: vi.fn() } };
+
+    await expect(handler(event, { issueId: 'FUL-7' })).resolves.toMatchObject({
+      issueId: 'FUL-7',
+      content: '# Spec',
+    });
+
+    expect(event.sender.send).not.toHaveBeenCalledWith(
+      IpcChannel.SpecGenerateError,
+      expect.anything(),
+    );
+  });
+
   it('emits triaging phase with commentCount, then generating phase, then streams', async () => {
     const issue: Issue = {
       id: 'FUL-77',

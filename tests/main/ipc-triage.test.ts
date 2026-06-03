@@ -223,6 +223,32 @@ describe('triage:generate handler', () => {
     expect(notifyDone).not.toHaveBeenCalled();
   });
 
+  it('does not fail generation when the success notification throws', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+    const notifyDone = vi.fn(() => {
+      throw new Error('Notification failed');
+    });
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: {
+        get: async () => baseTriageCfg,
+        set: async () => undefined,
+      } as never,
+      fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => [],
+      triageComments: async () => '',
+      streamTriageBrief: async () => 'brief',
+      notifyDone,
+    });
+
+    await expect(
+      ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: 'FUL-77' }),
+    ).resolves.toEqual({ issueId: 'FUL-77', content: 'brief' });
+
+    expect(event.sent.filter((s) => s.channel === IpcChannel.TriageGenerateError)).toHaveLength(0);
+  });
+
   it('emits an error event when computronRepoPath is empty', async () => {
     const ipc = fakeIpc();
     const event = fakeEvent();
