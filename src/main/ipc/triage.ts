@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { IpcChannel } from '../../shared/ipc-channels';
 import { assertSafeIssueId, isSafeIssueId } from '../lib/issue-id';
 import type { ConfigStore } from '../services/config-store';
+import { notifyDone } from '../services/notifications';
 import type { Issue, TriageBrief, TriageWriteResult } from '../../shared/types';
 import {
   curateIssueCommentContext,
@@ -38,6 +39,7 @@ type StreamTriageBrief = (input: {
   onChunk: (delta: string) => void;
   onStatus?: (status: string) => void;
 }) => Promise<string>;
+type NotifyDoneFn = (title: string, body: string) => void;
 
 export interface TriageGenerateDeps {
   store: ConfigStore;
@@ -45,6 +47,7 @@ export interface TriageGenerateDeps {
   streamTriageBrief: StreamTriageBrief;
   fetchAndFilterComments: FetchAndFilterCommentsFn;
   triageComments: TriageCommentsFn;
+  notifyDone?: NotifyDoneFn;
 }
 
 export interface TriageGetDeps {
@@ -147,6 +150,7 @@ export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerate
 
         sendTriageChunk(event.sender, payload.issueId, '', true);
         event.sender.send(IpcChannel.TriageGenerateDone, { issueId: payload.issueId });
+        (deps.notifyDone ?? notifyDone)('Brief ready', `${payload.issueId} finished generating.`);
         return { content, issueId: payload.issueId };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
