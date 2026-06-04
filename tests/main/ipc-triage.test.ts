@@ -175,6 +175,80 @@ describe('triage:generate handler', () => {
     expect(event.sent.some((s) => s.channel === IpcChannel.TriageGenerateDone)).toBe(true);
   });
 
+  it('notifies when brief generation succeeds', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+    const notifyDone = vi.fn();
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: {
+        get: async () => baseTriageCfg,
+        set: async () => undefined,
+      } as never,
+      fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => [],
+      triageComments: async () => '',
+      streamTriageBrief: async () => 'brief',
+      notifyDone,
+    });
+
+    await ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: 'FUL-77' });
+
+    expect(notifyDone).toHaveBeenCalledWith('Brief ready', 'FUL-77 finished generating.');
+  });
+
+  it('does not send a success notification when brief generation fails', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+    const notifyDone = vi.fn();
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: {
+        get: async () => baseTriageCfg,
+        set: async () => undefined,
+      } as never,
+      fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => [],
+      triageComments: async () => '',
+      streamTriageBrief: async () => {
+        throw new Error('Claude failed');
+      },
+      notifyDone,
+    });
+
+    await expect(
+      ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: 'FUL-77' }),
+    ).rejects.toThrow('Claude failed');
+
+    expect(notifyDone).not.toHaveBeenCalled();
+  });
+
+  it('does not fail generation when the success notification throws', async () => {
+    const ipc = fakeIpc();
+    const event = fakeEvent();
+    const notifyDone = vi.fn(() => {
+      throw new Error('Notification failed');
+    });
+
+    registerTriageGenerateHandler(ipc as never, {
+      store: {
+        get: async () => baseTriageCfg,
+        set: async () => undefined,
+      } as never,
+      fetchTriageList: async () => [triageIssue],
+      fetchAndFilterComments: async () => [],
+      triageComments: async () => '',
+      streamTriageBrief: async () => 'brief',
+      notifyDone,
+    });
+
+    await expect(
+      ipc.invoke(IpcChannel.TriageGenerate, event, { issueId: 'FUL-77' }),
+    ).resolves.toEqual({ issueId: 'FUL-77', content: 'brief' });
+
+    expect(event.sent.filter((s) => s.channel === IpcChannel.TriageGenerateError)).toHaveLength(0);
+  });
+
   it('emits an error event when computronRepoPath is empty', async () => {
     const ipc = fakeIpc();
     const event = fakeEvent();

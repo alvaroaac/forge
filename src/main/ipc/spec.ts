@@ -6,6 +6,7 @@ import { cleanSpecMarkdown } from '../../shared/spec-markdown';
 import { assertSafeIssueId, isSafeIssueId } from '../lib/issue-id';
 import type { ConfigStore } from '../services/config-store';
 import type { IssuesCache } from '../services/issues-cache';
+import { notifyDone, notifyDoneBestEffort, type NotifyDoneFn } from '../services/notifications';
 import type { RepoContext } from '../services/repo-reader';
 import { buildSpecPrompt } from '../services/spec-prompt';
 import type { Issue, Spec, SpecReviewResult } from '../../shared/types';
@@ -61,6 +62,7 @@ export interface SpecGenerateDeps {
   templateMd: string;
   fetchAndFilterComments: FetchAndFilterCommentsFn;
   triageComments: TriageCommentsFn;
+  notifyDone?: NotifyDoneFn;
 }
 
 export interface SpecWriteDeps {
@@ -196,6 +198,11 @@ export function registerSpecGenerateHandler(ipc: IpcMain, deps: SpecGenerateDeps
         );
         sendSpecChunk(event.sender, payload.issueId, '', true);
         event.sender.send(IpcChannel.SpecGenerateDone, { issueId: payload.issueId });
+        notifyDoneBestEffort(
+          deps.notifyDone ?? notifyDone,
+          'Spec ready',
+          `${payload.issueId} finished generating.`,
+        );
         return { content, issueId: payload.issueId };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

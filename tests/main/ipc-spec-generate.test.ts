@@ -45,6 +45,7 @@ interface StreamSpecInput {
 type StreamSpecDouble = (input: StreamSpecInput) => Promise<string>;
 type PreflightClaudeRepoAccessDouble = (input: { repoPath: string }) => Promise<void>;
 type FetchAndFilterCommentsDouble = (issueUuid: string) => Promise<LinearComment[]>;
+type NotifyDoneDouble = (title: string, body: string) => void;
 type TriageCommentsDouble = (input: {
   issueTitle: string;
   issueDescription: string;
@@ -60,6 +61,7 @@ interface SpecDeps {
   templateMd: string;
   fetchAndFilterComments: FetchAndFilterCommentsDouble;
   triageComments: TriageCommentsDouble;
+  notifyDone?: NotifyDoneDouble;
 }
 
 type SpecDepsInput = Omit<SpecDeps, 'fetchAndFilterComments' | 'triageComments'> &
@@ -426,6 +428,103 @@ describe('spec:generate', () => {
         channel === IpcChannel.SpecStreamChunk && isSpecChunk(payload) && payload.done,
     );
     expect(doneChunkCallIndex).toBeGreaterThan(-1);
+  });
+
+  it('notifies when spec generation succeeds', async () => {
+    const issue: Issue = {
+      id: 'FUL-7',
+      title: 'Build UI',
+      description: 'Add streaming spec preview.',
+      ...issueTemplate,
+    };
+    const cache: IssuesCacheDouble = {
+      read: vi.fn().mockResolvedValue([issue]),
+      write: vi.fn(),
+    };
+    const readRepoContext = vi.fn().mockResolvedValue({ agentsMd: '', thoughts: [] });
+    const streamSpec = vi.fn(async (): Promise<string> => '# Spec');
+    const notifyDone = vi.fn();
+    const handler = createHandler({
+      store: createStore(dir),
+      cache,
+      readRepoContext,
+      streamSpec,
+      templateMd: 'TMPL',
+      notifyDone,
+    });
+    const event = { sender: { send: vi.fn() } };
+
+    await handler(event, { issueId: 'FUL-7' });
+
+    expect(notifyDone).toHaveBeenCalledWith('Spec ready', 'FUL-7 finished generating.');
+  });
+
+  it('does not send a success notification when spec generation fails', async () => {
+    const issue: Issue = {
+      id: 'FUL-7',
+      title: 'Build UI',
+      description: 'Add streaming spec preview.',
+      ...issueTemplate,
+    };
+    const cache: IssuesCacheDouble = {
+      read: vi.fn().mockResolvedValue([issue]),
+      write: vi.fn(),
+    };
+    const readRepoContext = vi.fn().mockResolvedValue({ agentsMd: '', thoughts: [] });
+    const streamSpec = vi.fn(async (): Promise<string> => {
+      throw new Error('Claude failed');
+    });
+    const notifyDone = vi.fn();
+    const handler = createHandler({
+      store: createStore(dir),
+      cache,
+      readRepoContext,
+      streamSpec,
+      templateMd: 'TMPL',
+      notifyDone,
+    });
+    const event = { sender: { send: vi.fn() } };
+
+    await expect(handler(event, { issueId: 'FUL-7' })).rejects.toThrow('Claude failed');
+
+    expect(notifyDone).not.toHaveBeenCalled();
+  });
+
+  it('does not fail generation when the success notification throws', async () => {
+    const issue: Issue = {
+      id: 'FUL-7',
+      title: 'Build UI',
+      description: 'Add streaming spec preview.',
+      ...issueTemplate,
+    };
+    const cache: IssuesCacheDouble = {
+      read: vi.fn().mockResolvedValue([issue]),
+      write: vi.fn(),
+    };
+    const readRepoContext = vi.fn().mockResolvedValue({ agentsMd: '', thoughts: [] });
+    const streamSpec = vi.fn(async (): Promise<string> => '# Spec');
+    const notifyDone = vi.fn(() => {
+      throw new Error('Notification failed');
+    });
+    const handler = createHandler({
+      store: createStore(dir),
+      cache,
+      readRepoContext,
+      streamSpec,
+      templateMd: 'TMPL',
+      notifyDone,
+    });
+    const event = { sender: { send: vi.fn() } };
+
+    await expect(handler(event, { issueId: 'FUL-7' })).resolves.toMatchObject({
+      issueId: 'FUL-7',
+      content: '# Spec',
+    });
+
+    expect(event.sender.send).not.toHaveBeenCalledWith(
+      IpcChannel.SpecGenerateError,
+      expect.anything(),
+    );
   });
 
   it('emits triaging phase with commentCount, then generating phase, then streams', async () => {
