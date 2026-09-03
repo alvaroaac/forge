@@ -146,10 +146,10 @@ function addHalos(svgEl, commentedSet) {
   return { retry };
 }
 
-// Find node center coords in viewport-relative px for placing pins
-function findNodePositions(svgEl, ids) {
-  if (!svgEl) return {};
-  const svgRect = svgEl.getBoundingClientRect();
+// Find node center coords in viewport scroll-space px for placing pins
+function findNodePositions(svgEl, viewportEl, ids) {
+  if (!svgEl || !viewportEl) return {};
+  const viewportRect = viewportEl.getBoundingClientRect();
   const positions = {};
   svgEl.querySelectorAll('g.node').forEach(g => {
     let bbox;
@@ -160,8 +160,8 @@ function findNodePositions(svgEl, ids) {
       if (positions[id]) continue;
       if (idFrags.includes(id) || labelText.toLowerCase().includes(id.toLowerCase().replace(/_/g, ' '))) {
         positions[id] = {
-          x: bbox.left - svgRect.left + bbox.width / 2,
-          y: bbox.top - svgRect.top + bbox.height / 2,
+          x: bbox.left - viewportRect.left + viewportEl.scrollLeft + bbox.width / 2,
+          y: bbox.top - viewportRect.top + viewportEl.scrollTop + bbox.height / 2,
           quote: labelText,
         };
       }
@@ -227,7 +227,7 @@ function MermaidBlock({
       // Compute pin positions for threads that have anchorId
       const ids = threads.filter(t => t.anchorId).map(t => t.anchorId);
       if (ids.length) {
-        const pos = findNodePositions(svgEl, ids);
+        const pos = findNodePositions(svgEl, viewportRef.current, ids);
         setPinPositions(pos);
       } else {
         setPinPositions({});
@@ -256,7 +256,7 @@ function MermaidBlock({
     const svgEl = surfaceRef.current.querySelector('svg');
     if (!svgEl) return;
     const ids = threads.filter(t => t.anchorId).map(t => t.anchorId);
-    if (ids.length) setPinPositions(findNodePositions(svgEl, ids));
+    if (ids.length) setPinPositions(findNodePositions(svgEl, viewportRef.current, ids));
   }, [zoom]);
 
   const copy = useCallback(() => {
@@ -308,12 +308,11 @@ function MermaidBlock({
         )}
         {pinsToRender.map(t => {
           const pos = pinPositions[t.anchorId];
-          // Adjust pos for surface scale (we stored unscaled px, surface scaled around center)
           return (
             <button
               key={t.id}
               className={`mm-pin ${t.resolved ? 'resolved' : ''}`}
-              style={{ left: pos.x * zoom, top: pos.y * zoom, transform: 'translate(-50%, -50%)' }}
+              style={{ left: pos.x, top: pos.y, transform: 'translate(-50%, -50%)' }}
               onClick={(e) => { e.stopPropagation(); onPinClick?.(t.id); }}
               title={`Comment by ${t.comments[0]?.author}`}
             >

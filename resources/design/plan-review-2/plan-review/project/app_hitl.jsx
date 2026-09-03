@@ -676,7 +676,7 @@ function App() {
       if (t.id !== tid || !t.draftReply) return t;
       return {
         ...t,
-        comments: [...t.comments, { author: 'Mira', kind: 'agent', ts: Date.now(), body: t.draftReply.body }],
+        comments: [...t.comments, { author: 'you', ts: Date.now(), body: t.draftReply.body }],
         draftReply: null,
       };
     }));
