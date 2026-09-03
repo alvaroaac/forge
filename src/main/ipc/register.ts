@@ -12,11 +12,11 @@ import { readRepoContext } from '../services/repo-reader';
 import { streamClaude, streamSpec } from '../services/spec-generator';
 import { launchSpecReview } from '../services/spec-review-bridge';
 import { reviseSpecWithReview } from '../services/spec-review-revision';
-import { streamTriageBrief } from '../services/triage-generator';
+import { streamBrief } from '../services/brief-generator';
 import { fetchAndFilterComments } from '../services/comment-fetcher';
 import type { CommentsClient, RawLinearComment } from '../services/comment-fetcher';
 import { triageComments } from '../services/comment-triager';
-import { writeTriageBrief } from '../services/triage-writer';
+import { writeBrief } from '../services/brief-writer';
 import { writeSpec } from '../services/spec-writer';
 import { checkRepoAccess } from '../services/repo-access-checker';
 import { configPath, issuesCachePath } from '../lib/paths';
@@ -25,10 +25,10 @@ import { registerCommentsFetchHandler, registerCommentsGenerateSummaryHandler } 
 import { registerConfigHandlers } from './config';
 import { registerLinearHandlers } from './linear';
 import {
-  registerTriageGenerateHandler,
-  registerTriageGetHandler,
-  registerTriageWriteHandler,
-} from './triage';
+  registerBriefGenerateHandler,
+  registerBriefGetHandler,
+  registerBriefWriteHandler,
+} from './brief';
 import {
   registerSpecGenerateHandler,
   registerSpecGetHandler,
@@ -139,15 +139,15 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
         },
       ),
   });
-  registerTriageGenerateHandler(ipc, {
+  registerBriefGenerateHandler(ipc, {
     store,
     fetchTriageList: () => fetchTriage(client as LinearClient),
     fetchAndFilterComments: (issueUuid) =>
       fetchAndFilterComments(client as CommentsClient, issueUuid),
     triageComments: ({ issueTitle, issueDescription, comments }) =>
       triageComments({ issueTitle, issueDescription, comments, streamClaude }),
-    streamTriageBrief: ({ issue, computronRepoPath, model, curatedComments, onChunk, onStatus }) =>
-      streamTriageBrief({
+    streamBrief: ({ issue, computronRepoPath, model, curatedComments, onChunk, onStatus }) =>
+      streamBrief({
         issue,
         computronRepoPath,
         model,
@@ -157,6 +157,6 @@ export async function registerAll(ipc: IpcMain, appRoot: string): Promise<void> 
         streamClaude,
       }),
   });
-  registerTriageGetHandler(ipc, { store });
-  registerTriageWriteHandler(ipc, { store, writeTriageBrief });
+  registerBriefGetHandler(ipc, { store });
+  registerBriefWriteHandler(ipc, { store, writeBrief });
 }

@@ -1,7 +1,7 @@
 import type { Issue } from '../../shared/types';
-import { buildTriagePrompt } from './triage-prompt';
+import { buildBriefPrompt } from './brief-prompt';
 
-export interface StreamTriageBriefInput {
+export interface StreamBriefInput {
   issue: Issue;
   computronRepoPath: string;
   model: string;
@@ -20,8 +20,8 @@ export interface StreamTriageBriefInput {
   }) => Promise<string>;
 }
 
-export async function streamTriageBrief(input: StreamTriageBriefInput): Promise<string> {
-  const { system, user } = buildTriagePrompt({ issue: input.issue });
+export async function streamBrief(input: StreamBriefInput): Promise<string> {
+  const { system, user } = buildBriefPrompt({ issue: input.issue });
   return input.streamClaude({
     model: input.model,
     system,

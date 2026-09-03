@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
 import type { Issue } from '../../src/shared/types';
-import { TriageDrawer } from '../../src/renderer/components/triage-drawer';
+import { BriefDrawer } from '../../src/renderer/components/brief-drawer';
 
 vi.mock('../../src/renderer/components/detail-tab', () => ({
   DetailTab: () => <div data-testid="detail-body">detail body</div>,
@@ -57,7 +57,7 @@ function setForgeCommentsApi(fetch: ReturnType<typeof vi.fn>) {
       onError: vi.fn(),
       onPhase: vi.fn(() => vi.fn()),
     },
-    triage: {
+    brief: {
       get: vi.fn(),
       generate: vi.fn(),
       write: vi.fn(),
@@ -75,7 +75,7 @@ function setForgeCommentsApi(fetch: ReturnType<typeof vi.fn>) {
 
 function renderCommentsTab() {
   render(
-    <TriageDrawer
+    <BriefDrawer
       issue={issue}
       tab="comments"
       canGenerate={true}
@@ -94,7 +94,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('TriageDrawer comments tab', () => {
+describe('BriefDrawer comments tab', () => {
   it('fetches comments when opened, shows the loading spinner, then renders arriving comments', async () => {
     const fetchDone = createDeferred<{
       issueId: string;
@@ -111,7 +111,7 @@ describe('TriageDrawer comments tab', () => {
     setForgeCommentsApi(fetch);
 
     const { container } = render(
-      <TriageDrawer
+      <BriefDrawer
         issue={issue}
         tab="comments"
         canGenerate={true}
@@ -135,7 +135,7 @@ describe('TriageDrawer comments tab', () => {
       comments: [
         {
           id: 'comment-1',
-          body: 'Raw triage comment.',
+          body: 'Raw issue comment.',
           createdAt: '2026-05-20T12:00:00.000Z',
           authorName: 'Alice',
           isBot: false,
@@ -144,7 +144,7 @@ describe('TriageDrawer comments tab', () => {
       commentCount: 1,
     });
 
-    expect(await screen.findByText('Raw triage comment.')).toBeTruthy();
+    expect(await screen.findByText('Raw issue comment.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Generate Comment Summary' }).hasAttribute('disabled')).toBe(
       false,
     );

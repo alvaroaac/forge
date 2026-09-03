@@ -3,18 +3,18 @@ import { useEffect, useRef, useState } from 'react';
 import type { Issue, SpecReviewSummary } from '../shared/types';
 import { RightPanel } from './components/right-panel';
 import { SpecDrawer, type DrawerTab } from './components/spec-drawer';
-import { TriageDrawer, type TriageDrawerTab } from './components/triage-drawer';
+import { BriefDrawer, type BriefDrawerTab } from './components/brief-drawer';
 import { TopBar } from './components/top-bar';
 import { IssueListPanel, type Tab } from './components/issue-list-panel';
 import { useAuthStatus } from './hooks/use-auth-status';
 import { useConfig } from './hooks/use-config';
 import { useIssues } from './hooks/use-issues';
 import { useSpecStream } from './hooks/use-spec-stream';
-import { useTriageStream } from './hooks/use-triage-stream';
+import { useBriefStream } from './hooks/use-brief-stream';
 
 const DEFAULT_CLAUDE_MODEL = 'claude-sonnet-4-6';
 
-function toTriageDrawerTab(tab: DrawerTab): TriageDrawerTab {
+function toBriefDrawerTab(tab: DrawerTab): BriefDrawerTab {
   if (tab === 'detail') {
     return 'detail';
   }
@@ -26,7 +26,7 @@ function toTriageDrawerTab(tab: DrawerTab): TriageDrawerTab {
   return 'brief';
 }
 
-function fromTriageDrawerTab(tab: TriageDrawerTab): DrawerTab {
+function fromBriefDrawerTab(tab: BriefDrawerTab): DrawerTab {
   if (tab === 'brief') {
     return 'spec';
   }
@@ -250,12 +250,12 @@ export function App() {
       </div>
 
       {drawer?.issue?.status === 'triage' ? (
-        <TriageDrawerContainer
+        <BriefDrawerContainer
           issue={drawer.issue}
-          tab={toTriageDrawerTab(drawer.tab)}
+          tab={toBriefDrawerTab(drawer.tab)}
           setTab={(nextTab) =>
             setDrawer((current) =>
-              current ? { ...current, tab: fromTriageDrawerTab(nextTab) } : current,
+              current ? { ...current, tab: fromBriefDrawerTab(nextTab) } : current,
             )
           }
           canGenerate={auth.computron}
@@ -292,21 +292,21 @@ export function App() {
   );
 }
 
-type TriageDrawerContainerProps = {
+type BriefDrawerContainerProps = {
   issue: Issue;
-  tab: TriageDrawerTab;
-  setTab: (tab: TriageDrawerTab) => void;
+  tab: BriefDrawerTab;
+  setTab: (tab: BriefDrawerTab) => void;
   canGenerate: boolean;
   onClose: () => void;
 };
 
-function TriageDrawerContainer({
+function BriefDrawerContainer({
   issue,
   tab,
   setTab,
   canGenerate,
   onClose,
-}: TriageDrawerContainerProps) {
+}: BriefDrawerContainerProps) {
   const {
     brief,
     streaming,
@@ -318,10 +318,10 @@ function TriageDrawerContainer({
     phase,
     commentCount,
     generate,
-  } = useTriageStream(issue.id);
+  } = useBriefStream(issue.id);
 
   return (
-    <TriageDrawer
+    <BriefDrawer
       issue={issue}
       tab={tab}
       setTab={setTab}

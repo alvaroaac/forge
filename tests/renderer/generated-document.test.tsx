@@ -29,7 +29,7 @@ describe('GeneratedDocument', () => {
   it('renders activity before content arrives', () => {
     const { container } = render(
       <GeneratedDocument
-        artifactPath="thoughts/tasks/FUL-7/triage-brief.md"
+        artifactPath="thoughts/tasks/FUL-7/brief.md"
         content=""
         isStreaming={true}
         streamStatus={['Starting Claude', 'Reading repository context']}

@@ -6,11 +6,11 @@ import type {
   AuthStatus,
   IssueStatus,
   Priority,
-  TriageBrief,
-  TriageGenerateDone,
-  TriageGenerateError,
-  TriageStreamChunk,
-  TriageWriteResult,
+  GeneratedBrief,
+  BriefGenerateDone,
+  BriefGenerateError,
+  BriefStreamChunk,
+  BriefWriteResult,
   SpecReviewSummary,
   SpecReviewResult,
   CommentFetchResult,
@@ -73,8 +73,8 @@ describe('shared types', () => {
     expect(status).toBe('triage');
   });
 
-  it('supports triage stream chunk payload', () => {
-    expectTypeOf<TriageStreamChunk>().toEqualTypeOf<{
+  it('supports brief stream chunk payload', () => {
+    expectTypeOf<BriefStreamChunk>().toEqualTypeOf<{
       issueId: string;
       delta: string;
       done: boolean;
@@ -82,29 +82,29 @@ describe('shared types', () => {
     }>();
   });
 
-  it('supports triage generate-done payload', () => {
-    expectTypeOf<TriageGenerateDone>().toEqualTypeOf<{
+  it('supports brief generate-done payload', () => {
+    expectTypeOf<BriefGenerateDone>().toEqualTypeOf<{
       issueId: string;
     }>();
   });
 
-  it('supports triage generate-error payload', () => {
-    expectTypeOf<TriageGenerateError>().toEqualTypeOf<{
+  it('supports brief generate-error payload', () => {
+    expectTypeOf<BriefGenerateError>().toEqualTypeOf<{
       issueId: string;
       message: string;
     }>();
   });
 
-  it('supports triage brief payload', () => {
-    expectTypeOf<TriageBrief>().toEqualTypeOf<{
+  it('supports generated brief payload', () => {
+    expectTypeOf<GeneratedBrief>().toEqualTypeOf<{
       issueId: string;
       content: string;
       generatedAt: string;
     }>();
   });
 
-  it('supports triage write-result payload', () => {
-    expectTypeOf<TriageWriteResult>().toEqualTypeOf<{
+  it('supports brief write-result payload', () => {
+    expectTypeOf<BriefWriteResult>().toEqualTypeOf<{
       issueId: string;
       path: string;
       written: boolean;

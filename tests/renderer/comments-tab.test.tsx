@@ -73,7 +73,7 @@ function setCommentsApi({
       onError: vi.fn(),
       onPhase: vi.fn(() => vi.fn()),
     },
-    triage: {
+    brief: {
       get: vi.fn(),
       generate: vi.fn(),
       write: vi.fn(),

@@ -68,7 +68,7 @@ function setForge(options: {
       onError: options.onError ?? vi.fn(() => vi.fn()),
       onPhase: options.onPhase ?? vi.fn(() => vi.fn()),
     },
-    triage: {
+    brief: {
       get: vi.fn(),
       generate: vi.fn(),
       write: vi.fn(),

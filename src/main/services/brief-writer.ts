@@ -2,7 +2,7 @@ import { access, mkdir, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join } from 'node:path';
 
-type TriageWriteMode = 'create' | 'overwrite';
+type BriefWriteMode = 'create' | 'overwrite';
 
 type WriteResult = {
   path: string;
@@ -19,14 +19,14 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
-export async function writeTriageBrief(opts: {
+export async function writeBrief(opts: {
   repoPath: string;
   issueId: string;
   content: string;
-  mode: TriageWriteMode;
+  mode: BriefWriteMode;
 }): Promise<WriteResult> {
   const dir = join(opts.repoPath, 'thoughts', 'tasks', opts.issueId);
-  const target = join(dir, 'triage-brief.md');
+  const target = join(dir, 'brief.md');
   const preExists = await exists(target);
 
   if (opts.mode === 'create' && preExists) {

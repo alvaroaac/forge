@@ -59,29 +59,29 @@ export interface SpecGenerateError {
   message: string;
 }
 
-export interface TriageStreamChunk {
+export interface BriefStreamChunk {
   issueId: string;
   delta: string;
   done: boolean;
   status?: string;
 }
 
-export interface TriageGenerateDone {
+export interface BriefGenerateDone {
   issueId: string;
 }
 
-export interface TriageGenerateError {
+export interface BriefGenerateError {
   issueId: string;
   message: string;
 }
 
-export interface TriageBrief {
+export interface GeneratedBrief {
   issueId: string;
   content: string;
   generatedAt: string;
 }
 
-export interface TriageWriteResult {
+export interface BriefWriteResult {
   issueId: string;
   path: string;
   written: boolean;
@@ -134,7 +134,7 @@ export interface SpecPhaseEvent {
   commentCount?: number;
 }
 
-export interface TriagePhaseEvent {
+export interface BriefPhaseEvent {
   issueId: string;
   phase: 'triaging' | 'generating';
   commentCount?: number;

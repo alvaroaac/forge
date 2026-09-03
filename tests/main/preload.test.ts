@@ -64,24 +64,24 @@ describe('preload API', () => {
     expect(invoke).toHaveBeenCalledWith(IpcChannel.LinearGetViewerId);
   });
 
-  it('calls triage.generate through IpcChannel.TriageGenerate with issueId and optional model', async () => {
+  it('calls brief.generate through IpcChannel.BriefGenerate with issueId and optional model', async () => {
     const forge = getForgeApi();
-    await forge.triage.generate('FUL-7');
-    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGenerate, {
+    await forge.brief.generate('FUL-7');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.BriefGenerate, {
       issueId: 'FUL-7',
       model: undefined,
     });
-    await forge.triage.generate('FUL-7', 'opus');
-    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGenerate, {
+    await forge.brief.generate('FUL-7', 'opus');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.BriefGenerate, {
       issueId: 'FUL-7',
       model: 'opus',
     });
   });
 
-  it('calls triage.get through IpcChannel.TriageGet with issueId', async () => {
+  it('calls brief.get through IpcChannel.BriefGet with issueId', async () => {
     const forge = getForgeApi();
-    await forge.triage.get('FUL-7');
-    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageGet, { issueId: 'FUL-7' });
+    await forge.brief.get('FUL-7');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.BriefGet, { issueId: 'FUL-7' });
   });
 
   it('calls comments.generateSummary through IpcChannel.CommentsGenerateSummary with issueId', async () => {
@@ -100,47 +100,47 @@ describe('preload API', () => {
     });
   });
 
-  it('calls triage.write through IpcChannel.TriageWrite with overwrite default false', async () => {
+  it('calls brief.write through IpcChannel.BriefWrite with overwrite default false', async () => {
     const forge = getForgeApi();
-    await forge.triage.write('FUL-7', 'hello');
-    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageWrite, {
+    await forge.brief.write('FUL-7', 'hello');
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.BriefWrite, {
       issueId: 'FUL-7',
       content: 'hello',
       overwrite: false,
     });
-    await forge.triage.write('FUL-7', 'hello', { overwrite: true });
-    expect(invoke).toHaveBeenCalledWith(IpcChannel.TriageWrite, {
+    await forge.brief.write('FUL-7', 'hello', { overwrite: true });
+    expect(invoke).toHaveBeenCalledWith(IpcChannel.BriefWrite, {
       issueId: 'FUL-7',
       content: 'hello',
       overwrite: true,
     });
   });
 
-  it('subscribes to triage stream/done/error channels and unsubscribes', () => {
+  it('subscribes to brief stream/done/error channels and unsubscribes', () => {
     const forge = getForgeApi();
     const onChunk = vi.fn();
     const onDone = vi.fn();
     const onError = vi.fn();
 
-    const unsubscribeChunk = forge.triage.onChunk(onChunk);
-    const unsubscribeDone = forge.triage.onDone(onDone);
-    const unsubscribeError = forge.triage.onError(onError);
+    const unsubscribeChunk = forge.brief.onChunk(onChunk);
+    const unsubscribeDone = forge.brief.onDone(onDone);
+    const unsubscribeError = forge.brief.onError(onError);
 
     const chunkHandler = on.mock.calls[0][1];
     const doneHandler = on.mock.calls[1][1];
     const errorHandler = on.mock.calls[2][1];
 
-    expect(on).toHaveBeenNthCalledWith(1, IpcChannel.TriageStreamChunk, chunkHandler);
-    expect(on).toHaveBeenNthCalledWith(2, IpcChannel.TriageGenerateDone, doneHandler);
-    expect(on).toHaveBeenNthCalledWith(3, IpcChannel.TriageGenerateError, errorHandler);
+    expect(on).toHaveBeenNthCalledWith(1, IpcChannel.BriefStreamChunk, chunkHandler);
+    expect(on).toHaveBeenNthCalledWith(2, IpcChannel.BriefGenerateDone, doneHandler);
+    expect(on).toHaveBeenNthCalledWith(3, IpcChannel.BriefGenerateError, errorHandler);
 
     unsubscribeChunk();
     unsubscribeDone();
     unsubscribeError();
 
-    expect(off).toHaveBeenCalledWith(IpcChannel.TriageStreamChunk, chunkHandler);
-    expect(off).toHaveBeenCalledWith(IpcChannel.TriageGenerateDone, doneHandler);
-    expect(off).toHaveBeenCalledWith(IpcChannel.TriageGenerateError, errorHandler);
+    expect(off).toHaveBeenCalledWith(IpcChannel.BriefStreamChunk, chunkHandler);
+    expect(off).toHaveBeenCalledWith(IpcChannel.BriefGenerateDone, doneHandler);
+    expect(off).toHaveBeenCalledWith(IpcChannel.BriefGenerateError, errorHandler);
   });
 
   it('exposes spec.onPhase as a function returning an unsubscribe', () => {
@@ -158,18 +158,18 @@ describe('preload API', () => {
     expect(off).toHaveBeenCalledWith(IpcChannel.SpecPhase, phaseHandler);
   });
 
-  it('exposes triage.onPhase as a function returning an unsubscribe', () => {
+  it('exposes brief.onPhase as a function returning an unsubscribe', () => {
     const forge = getForgeApi();
 
-    expect(typeof forge.triage.onPhase).toBe('function');
-    const unsubscribe = forge.triage.onPhase(() => undefined);
+    expect(typeof forge.brief.onPhase).toBe('function');
+    const unsubscribe = forge.brief.onPhase(() => undefined);
     const phaseHandler = on.mock.calls[0][1];
 
     expect(typeof unsubscribe).toBe('function');
-    expect(on).toHaveBeenCalledWith(IpcChannel.TriagePhase, phaseHandler);
+    expect(on).toHaveBeenCalledWith(IpcChannel.BriefPhase, phaseHandler);
 
     unsubscribe();
 
-    expect(off).toHaveBeenCalledWith(IpcChannel.TriagePhase, phaseHandler);
+    expect(off).toHaveBeenCalledWith(IpcChannel.BriefPhase, phaseHandler);
   });
 });
