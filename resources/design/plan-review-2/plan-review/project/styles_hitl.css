@@ -1,0 +1,836 @@
+/* ────────────────────────────────────────────────────────────────
+   HITL additions — layered on top of styles_v3.css
+   ──────────────────────────────────────────────────────────────── */
+
+:root {
+  --agent:        oklch(0.55 0.16 295);
+  --agent-soft:   oklch(0.94 0.05 295);
+  --agent-ink:    oklch(0.42 0.16 295);
+  --agent-glow:   oklch(0.55 0.16 295 / 0.18);
+
+  --diff-add:     oklch(0.94 0.07 145);
+  --diff-add-ink: oklch(0.42 0.13 145);
+  --diff-rem:     oklch(0.94 0.06 25);
+  --diff-rem-ink: oklch(0.50 0.14 25);
+
+  --decision:     oklch(0.55 0.16 255);
+  --decision-soft:oklch(0.93 0.05 255);
+}
+
+/* ── Topbar tweaks for HITL: agent identity ─────────────────────── */
+.tb-agent {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--rule-2);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.tb-agent .ava {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, oklch(0.65 0.16 295), oklch(0.55 0.18 240));
+  color: white;
+  font-weight: 700;
+  display: grid; place-items: center;
+  font-size: 10px;
+  letter-spacing: -0.01em;
+  position: relative;
+}
+.tb-agent .ava::after {
+  content: "";
+  position: absolute;
+  width: 7px; height: 7px;
+  background: oklch(0.62 0.18 145);
+  border-radius: 50%;
+  bottom: -1px; right: -1px;
+  border: 1.5px solid var(--surface);
+}
+.tb-agent b { color: var(--ink); font-weight: 600; }
+.tb-agent .role {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--agent-ink);
+  background: var(--agent-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* ── Decisions banner above doc ─────────────────────────────────── */
+.decisions-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px;
+  background: linear-gradient(90deg, var(--decision-soft), transparent 70%);
+  border-bottom: 1px solid var(--rule);
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.decisions-bar .dot {
+  width: 8px; height: 8px;
+  background: var(--decision);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--decision) 25%, transparent);
+  flex-shrink: 0;
+}
+.decisions-bar b { color: var(--ink); font-weight: 600; }
+.decisions-bar .spacer { flex: 1; }
+.decisions-bar button {
+  background: var(--surface);
+  border: 1px solid var(--rule-2);
+  color: var(--ink-2);
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.decisions-bar button:hover { border-color: var(--ink-4); }
+.decisions-bar button.primary {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.decisions-bar button svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* ── Agent byline above title ───────────────────────────────────── */
+.agent-byline {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  margin-bottom: 28px;
+  position: relative;
+}
+.agent-byline::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--agent), oklch(0.55 0.18 240));
+  border-radius: 12px 0 0 12px;
+}
+.agent-byline .ava {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, oklch(0.65 0.16 295), oklch(0.55 0.18 240));
+  color: white;
+  font-weight: 700;
+  display: grid; place-items: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.agent-byline .who {
+  font-size: 13.5px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.agent-byline .who .role {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--agent-ink);
+  background: var(--agent-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+.agent-byline .sub {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+.agent-byline .sub a {
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--ink-5);
+}
+.agent-byline .sub a:hover { color: var(--ink); border-bottom-color: var(--ink-4); }
+.agent-byline .spacer { flex: 1; }
+.agent-byline .stat {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  padding: 4px 9px;
+  background: var(--bg-2);
+  border-radius: 999px;
+}
+.agent-byline .stat b { color: var(--ink); font-weight: 600; }
+.agent-byline .regen {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 7px;
+  background: var(--surface);
+  border: 1px solid var(--rule-2);
+  font-size: 12px;
+  color: var(--ink-2);
+  font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.agent-byline .regen:hover { background: var(--bg); border-color: var(--ink-4); }
+.agent-byline .regen svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+/* ── Inline decision marker (within prose) ──────────────────────── */
+.decision-marker {
+  background: var(--decision-soft);
+  border-bottom: 2px dashed var(--decision);
+  padding: 0 2px 1px;
+  cursor: pointer;
+  position: relative;
+  transition: background .12s;
+}
+.decision-marker::after {
+  content: "?";
+  display: inline-block;
+  width: 16px; height: 16px;
+  background: var(--decision);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 50%;
+  margin-left: 4px;
+  text-align: center;
+  line-height: 16px;
+  vertical-align: 0.18em;
+  box-shadow: 0 0 0 3px var(--decision-soft);
+  font-family: var(--font-mono);
+}
+.decision-marker:hover { background: oklch(0.90 0.07 255); }
+.decision-marker.resolved {
+  background: transparent;
+  border-bottom: 1px dotted var(--ink-5);
+  color: var(--ink-3);
+}
+.decision-marker.resolved::after {
+  content: "✓";
+  background: var(--sage);
+  box-shadow: 0 0 0 3px var(--sage-soft);
+}
+
+/* ── Citation superscript ───────────────────────────────────────── */
+.cite {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--agent-ink);
+  background: var(--agent-soft);
+  padding: 0 4px;
+  border-radius: 4px;
+  margin-left: 1px;
+  vertical-align: 0.45em;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background .12s;
+  text-decoration: none;
+}
+.cite:hover { background: oklch(0.88 0.08 295); }
+
+/* ── Inline suggestion (diff) card ──────────────────────────────── */
+.suggestion {
+  margin: 22px 0;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+  position: relative;
+}
+.suggestion::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--agent);
+}
+.suggestion .sg-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--rule);
+}
+.suggestion .sg-head .ava {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, oklch(0.65 0.16 295), oklch(0.55 0.18 240));
+  color: white;
+  display: grid; place-items: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.suggestion .sg-head .tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--agent-ink);
+  font-weight: 700;
+}
+.suggestion .sg-head .what {
+  font-size: 12.5px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.suggestion .sg-head .what b { font-weight: 600; }
+.suggestion .sg-head .conf {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+}
+.suggestion .sg-body {
+  padding: 0;
+}
+.suggestion .diff-line {
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 4px 14px 4px 0;
+  border-left: 3px solid transparent;
+}
+.suggestion .diff-line .marker {
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--ink-4);
+  user-select: none;
+}
+.suggestion .diff-line.add { background: var(--diff-add); }
+.suggestion .diff-line.add .marker { color: var(--diff-add-ink); }
+.suggestion .diff-line.rem { background: var(--diff-rem); text-decoration: line-through; text-decoration-color: var(--diff-rem-ink); text-decoration-thickness: 1px; opacity: 0.85; }
+.suggestion .diff-line.rem .marker { color: var(--diff-rem-ink); text-decoration: none; }
+.suggestion .diff-prose {
+  padding: 12px 14px;
+  font-family: var(--font-serif);
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.suggestion .diff-prose .add { background: var(--diff-add); padding: 1px 3px; border-radius: 3px; }
+.suggestion .diff-prose .rem { background: var(--diff-rem); text-decoration: line-through; padding: 1px 3px; border-radius: 3px; color: oklch(0.45 0.10 25); }
+.suggestion .sg-foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--rule);
+  background: var(--surface-2);
+}
+.suggestion .sg-foot .rationale {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-style: italic;
+  font-family: var(--font-serif);
+  flex: 1;
+}
+.suggestion .sg-foot button {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--rule-2);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.suggestion .sg-foot button svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+.suggestion .sg-foot button.accept {
+  background: var(--diff-add);
+  border-color: color-mix(in srgb, var(--diff-add-ink) 35%, var(--rule));
+  color: var(--diff-add-ink);
+}
+.suggestion .sg-foot button.accept:hover { background: oklch(0.90 0.10 145); }
+.suggestion .sg-foot button.reject {
+  background: var(--surface);
+  color: var(--ink-3);
+}
+.suggestion .sg-foot button.reject:hover { background: var(--diff-rem); color: var(--diff-rem-ink); }
+.suggestion .sg-foot button.discuss { color: var(--agent-ink); }
+.suggestion .sg-foot button.discuss:hover { background: var(--agent-soft); }
+
+.suggestion.accepted {
+  background: var(--surface-2);
+  opacity: 0.85;
+}
+.suggestion.accepted .sg-head .tag::after { content: " · accepted"; color: var(--diff-add-ink); }
+.suggestion.rejected .sg-head .tag::after { content: " · dismissed"; color: var(--ink-4); }
+.suggestion.rejected { opacity: 0.6; }
+.suggestion.rejected .diff-line.add, .suggestion.rejected .diff-prose .add { text-decoration: line-through; }
+
+/* ── Risk/confidence callout — used inline with prose ───────────── */
+.conf-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.conf-dot.low { background: oklch(0.65 0.16 25); box-shadow: 0 0 0 2px oklch(0.94 0.06 25); }
+.conf-dot.mid { background: oklch(0.68 0.14 75); box-shadow: 0 0 0 2px oklch(0.95 0.08 75); }
+.conf-dot.high { background: var(--sage); box-shadow: 0 0 0 2px var(--sage-soft); }
+
+/* ── Right rail — HITL tabs ─────────────────────────────────────── */
+.rail-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface);
+}
+.rail-tabs button {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  padding: 12px 8px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  font-weight: 500;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  position: relative;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.rail-tabs button .pip {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: var(--bg-2);
+  color: var(--ink-3);
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.rail-tabs button.on {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.rail-tabs button.on .pip { background: var(--ink); color: var(--bg); }
+.rail-tabs button.on.decisions { border-bottom-color: var(--decision); }
+.rail-tabs button.on.decisions .pip { background: var(--decision); }
+.rail-tabs button.on.activity { border-bottom-color: var(--agent); }
+.rail-tabs button.on.activity .pip { background: var(--agent); }
+
+/* ── Decision card in rail ──────────────────────────────────────── */
+.decision-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--decision);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  transition: box-shadow .12s, border-color .12s;
+}
+.decision-card.is-focus {
+  box-shadow: 0 0 0 3px var(--decision-soft);
+  border-color: var(--decision);
+}
+.decision-card.resolved {
+  border-left-color: var(--sage);
+  background: var(--surface-2);
+}
+.decision-card .dc-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px;
+}
+.decision-card .dc-head .label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--decision);
+  font-weight: 700;
+}
+.decision-card.resolved .dc-head .label { color: var(--sage); }
+.decision-card .dc-head .loc {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: var(--bg-2);
+  color: var(--ink-2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.decision-card .dc-head .ago {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+.decision-card .dc-question {
+  font-family: var(--font-serif);
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.decision-card .dc-context {
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  padding-left: 8px;
+  border-left: 2px solid var(--rule);
+}
+.decision-card .dc-options {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.decision-card .dc-options button {
+  display: flex; align-items: flex-start; gap: 8px;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.decision-card .dc-options button:hover {
+  background: var(--decision-soft);
+  border-color: var(--decision);
+  color: var(--ink);
+}
+.decision-card .dc-options button .key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.decision-card .dc-options button.recommended {
+  border-color: color-mix(in srgb, var(--decision) 25%, var(--rule));
+  background: color-mix(in srgb, var(--decision-soft) 65%, var(--surface-2));
+}
+.decision-card .dc-options button.recommended .badge {
+  margin-left: auto;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--decision);
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--decision) 25%, var(--rule));
+}
+.decision-card .dc-options button.custom {
+  font-style: italic;
+  color: var(--ink-3);
+}
+.decision-card.resolved .dc-options { display: none; }
+.decision-card .dc-resolved {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: var(--sage-soft);
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: oklch(0.42 0.13 145);
+}
+.decision-card .dc-resolved svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.4; flex-shrink: 0; }
+.decision-card .dc-resolved b { color: var(--ink); font-weight: 600; }
+
+/* ── Activity timeline ──────────────────────────────────────────── */
+.timeline { padding: 4px 4px 40px 4px; }
+.tl-item {
+  display: flex; gap: 12px;
+  padding: 10px 0;
+  position: relative;
+}
+.tl-item .tl-rail {
+  position: absolute;
+  left: 13px; top: 28px; bottom: -10px;
+  width: 1px;
+  background: var(--rule);
+}
+.tl-item:last-child .tl-rail { display: none; }
+.tl-item .tl-ico {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--rule-2);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  position: relative;
+  z-index: 1;
+}
+.tl-item .tl-ico svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+.tl-item.agent .tl-ico {
+  background: linear-gradient(135deg, oklch(0.65 0.16 295), oklch(0.55 0.18 240));
+  color: white;
+  border: 0;
+  font-weight: 700;
+}
+.tl-item.you .tl-ico { background: var(--ink); color: var(--bg); border: 0; }
+.tl-item.system .tl-ico { background: var(--bg-2); }
+.tl-item .tl-body { flex: 1; min-width: 0; padding-top: 3px; }
+.tl-item .tl-who {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+.tl-item .tl-who b { color: var(--ink); font-weight: 600; }
+.tl-item .tl-who time { font-size: 11px; color: var(--ink-4); }
+.tl-item .tl-what {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.tl-item .tl-what a { color: var(--ink); text-decoration: none; border-bottom: 1px dashed var(--ink-5); }
+.tl-item .tl-what a:hover { border-bottom-color: var(--ink-2); }
+.tl-item .tl-what .sources {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-top: 6px;
+}
+.tl-item .tl-what .src {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  background: var(--bg-2);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.tl-item .tl-what .src svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* ── Empty/pending states ───────────────────────────────────────── */
+.pending-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  margin: 14px 0;
+  background: var(--agent-soft);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--agent-ink);
+}
+.pending-banner .spinner {
+  width: 14px; height: 14px;
+  border: 2px solid color-mix(in srgb, var(--agent) 30%, transparent);
+  border-top-color: var(--agent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.pending-banner b { color: var(--ink); font-weight: 600; }
+
+/* ── Source popover on cite hover ───────────────────────────────── */
+.cite-pop {
+  position: absolute;
+  z-index: 25;
+  background: var(--ink);
+  color: var(--bg);
+  padding: 8px 11px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  box-shadow: var(--shadow-md);
+  max-width: 280px;
+  pointer-events: none;
+}
+.cite-pop .src-line { display: flex; align-items: center; gap: 6px; }
+.cite-pop .src-line svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.8; opacity: 0.7; }
+.cite-pop .src-line b { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; }
+.cite-pop .src-snippet {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: oklch(0.75 0.02 80);
+  font-style: italic;
+  line-height: 1.45;
+  font-family: var(--font-serif);
+}
+
+/* ── HITL signature: a soft AI glow around the doc when reviewing ─ */
+body.hitl .doc-scroll {
+  background:
+    radial-gradient(800px 200px at 50% 0%, var(--agent-glow), transparent 70%),
+    var(--bg);
+}
+
+/* ── Status pills extensions ────────────────────────────────────── */
+.tb-status.drafted {
+  background: var(--agent-soft);
+  color: var(--agent-ink);
+}
+
+/* ── Comment from agent (auto-drafted reply) ────────────────────── */
+.comment-row.agent .avatar {
+  background: linear-gradient(135deg, oklch(0.65 0.16 295), oklch(0.55 0.18 240)) !important;
+  position: relative;
+}
+.comment-row.agent .who b::after {
+  content: "AI";
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--agent-ink);
+  background: var(--agent-soft);
+  padding: 0 4px;
+  border-radius: 3px;
+  margin-left: 5px;
+  vertical-align: 1px;
+}
+.comment-row.agent .comment-text {
+  border-left: 2px solid var(--agent-soft);
+  padding-left: 8px;
+  font-style: normal;
+}
+.comment-row.draft .who::after {
+  content: "draft";
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--agent-ink);
+  background: var(--agent-soft);
+  padding: 0 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.comment-row.draft .comment-text {
+  background: var(--agent-soft);
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-style: normal;
+}
+.comment-row.draft .draft-actions {
+  margin-top: 6px;
+  display: flex; gap: 6px;
+}
+.comment-row.draft .draft-actions button {
+  font-size: 11.5px;
+  padding: 4px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--rule-2);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-weight: 500;
+  cursor: pointer;
+}
+.comment-row.draft .draft-actions button.send {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+/* ──────────────── HITL dark mode overrides ──────────────── */
+body.dark {
+  --agent:        oklch(0.72 0.16 295);
+  --agent-soft:   oklch(0.32 0.10 295);
+  --agent-ink:    oklch(0.82 0.13 295);
+  --agent-glow:   oklch(0.55 0.16 295 / 0.10);
+
+  --diff-add:     color-mix(in srgb, oklch(0.65 0.13 145) 22%, var(--surface));
+  --diff-add-ink: oklch(0.78 0.13 145);
+  --diff-rem:     color-mix(in srgb, oklch(0.68 0.16 25) 22%, var(--surface));
+  --diff-rem-ink: oklch(0.78 0.14 25);
+
+  --decision:     oklch(0.72 0.16 255);
+  --decision-soft:oklch(0.30 0.10 255);
+}
+
+/* Diff lines on dark need explicit text colors for the strike-through to read */
+body.dark .suggestion .diff-line.rem { color: var(--ink-3); }
+body.dark .suggestion .diff-line.rem .marker { color: var(--diff-rem-ink); }
+body.dark .suggestion .diff-line.add .marker { color: var(--diff-add-ink); }
+body.dark .suggestion .diff-prose .add { color: var(--ink); }
+body.dark .suggestion .diff-prose .rem { color: var(--ink-4); }
+
+/* Accept button on dark — keep the green tint but lift contrast */
+body.dark .suggestion .sg-foot button.accept {
+  background: color-mix(in srgb, var(--sage) 30%, var(--surface));
+  color: var(--sage);
+  border-color: color-mix(in srgb, var(--sage) 35%, var(--rule));
+}
+body.dark .suggestion .sg-foot button.accept:hover {
+  background: color-mix(in srgb, var(--sage) 45%, var(--surface));
+}
+body.dark .suggestion .sg-foot button.reject:hover {
+  background: color-mix(in srgb, var(--rose) 25%, var(--surface));
+  color: var(--rose);
+}
+
+/* Decision options on dark — recommended option reads as a tinted card */
+body.dark .decision-card .dc-options button.recommended {
+  background: color-mix(in srgb, var(--decision) 22%, var(--surface));
+  border-color: color-mix(in srgb, var(--decision) 35%, var(--rule));
+}
+body.dark .decision-card .dc-options button.recommended .badge {
+  background: var(--surface-2);
+  color: var(--decision);
+  border-color: color-mix(in srgb, var(--decision) 35%, var(--rule));
+}
+body.dark .decision-card .dc-options button:hover {
+  background: color-mix(in srgb, var(--decision) 22%, var(--surface));
+  border-color: var(--decision);
+}
+body.dark .decision-card .dc-options button .key {
+  background: var(--bg);
+  border-color: var(--rule-2);
+}
+
+/* Agent byline gradient still works; just brighten the role pill text */
+body.dark .agent-byline .who .role,
+body.dark .tb-agent .role {
+  color: var(--agent-ink);
+  background: var(--agent-soft);
+}
+body.dark .agent-byline .sub a { color: var(--ink-3); border-bottom-color: var(--ink-5); }
+body.dark .agent-byline .sub a:hover { color: var(--ink); border-bottom-color: var(--ink-3); }
+
+/* Decisions banner on dark: subtle indigo tint */
+body.dark .decisions-bar {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--decision) 20%, var(--surface)), transparent 70%);
+}
+
+/* Citation chip on dark */
+body.dark .cite {
+  background: var(--agent-soft);
+  color: var(--agent-ink);
+}
+body.dark .cite:hover { background: color-mix(in srgb, var(--agent) 35%, var(--surface)); }
+
+/* Inline decision marker on dark — keep the dashed underline visible */
+body.dark .decision-marker {
+  background: color-mix(in srgb, var(--decision) 18%, transparent);
+  border-bottom-color: var(--decision);
+}
+body.dark .decision-marker:hover {
+  background: color-mix(in srgb, var(--decision) 30%, transparent);
+}
+
+/* Suggestion accepted state — slightly muted on dark */
+body.dark .suggestion.accepted { background: var(--bg-2); }
+
+/* Activity timeline icons on dark */
+body.dark .tl-item .tl-ico { background: var(--surface); border-color: var(--rule-2); }
+body.dark .tl-item.you .tl-ico { background: var(--ink); color: var(--bg); }
+body.dark .tl-item.system .tl-ico { background: var(--bg-2); color: var(--ink-3); }
+
+/* Cite popover on dark: invert (the popover bg is var(--ink), so it's already light text on dark surface in light mode → dark text on light surface in dark mode — flip it) */
+body.dark .cite-pop {
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--rule-2);
+}
+body.dark .cite-pop .src-snippet { color: var(--ink-3); }
+
+/* Pending banner on dark */
+body.dark .pending-banner { background: var(--agent-soft); color: var(--ink); }
+
+/* Comment-from-agent label chip stays bright */
+body.dark .comment-row.agent .who b::after,
+body.dark .comment-row.draft .who::after {
+  background: var(--agent-soft);
+  color: var(--agent-ink);
+}
+body.dark .comment-row.draft .comment-text {
+  background: color-mix(in srgb, var(--agent) 18%, var(--surface));
+}
