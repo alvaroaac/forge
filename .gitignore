@@ -30,3 +30,4 @@ npm-debug.log*
 
 # Forge runtime (lives outside repo, but belt-and-braces)
 ~/.forge
+.pr-review/

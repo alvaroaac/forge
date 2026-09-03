@@ -1,393 +1,154 @@
-# Spec: embed-plan-review — Embedded review experience inside Forge drawers
+# Spec: embed-plan-review — In-window plan-review inside Forge
 
-> **Status:** Draft v3 (post-design, HTML render pipeline)
-> **Generated:** 2026-05-22
-> **Branch:** TBD (off latest stable)
-> **Supersedes:** initial-spec.md v1 (paused awaiting design files)
-> **Design source:** `resources/design/plan-review-2/plan-review/project/Plan Review HITL.html` (+ `app_hitl.jsx`, `comments_v3.jsx`, `mermaid_block_v3.jsx`, `styles_v3.css`, `styles_hitl.css`)
-> **Companion package work:** `~/desenv/personal/plan-review/` — `@plan-review/core` + `@plan-review/react` (consumed from npm)
+> **Status:** Approved (2026-09-02, v4 — embed existing plan-review browser-app)
+> **Generated:** 2026-09-02
+> **Draft:** v4 — supersedes v3 (2026-05-22)
+> **Review that forced the rewrite:** `thoughts/tasks/embed-plan-review/spec-review.md` (BLOCK: 3 blockers, 10 majors)
+> **Companion repo:** `~/desenv/personal/plan-review` (upstream changes listed below)
+
+## Changes from v3
+
+v3 proposed a five-phase Forge-native rewrite of plan-review: own markdown→HTML pipeline, own anchoring, own comment model, own draft store, own review UI. The review blocked it — the central data contract was undefined, the human verdict disappeared, and the build-vs-reuse decision rested on a comparison table that was factually wrong about the tool being replaced.
+
+v4 accepts the review's recommendation. Forge does not reimplement plan-review. It embeds the existing browser UI in-window, keeps the existing round-trip contract byte-for-byte, and owns integration only. The new HITL design in `resources/design/plan-review-2/` is not cancelled — it moves to the plan-review monorepo, where core, browser-app, the CLI and the VS Code extension already share one parsing/anchoring/submission implementation. Forge phases 2+ are headings only; they are deliberately not designed here.
 
 ---
 
 ## Task Summary
 
-Replace Forge's CLI shell-out for plan-review (`spec-review-bridge.ts` + sibling modules) with an embedded review experience that lives inside the Forge window as a **Review** tab in `SpecDrawer` and `TriageDrawer`. The new design from `plan-review-2` is substantially richer than the original `spec-review` CLI: text-quote anchoring, mermaid blocks with node-anchored threads, structured decisions, inline AI-suggestion diffs, citations, activity log, AI-drafted replies. Ship it incrementally — each phase removes pain or adds capability on its own.
-
-**Persona note.** The design uses a named AI persona ("Mira") and multi-author avatars. Forge is single-user. Strip the persona and multi-author scaffolding. Where the design says "Mira", call it "Agent" or omit. Multi-author colors are unused — author is always `you` or `agent`. Functionality first, polish later.
-
-**Render pipeline note.** Reviewable artifacts (spec / brief / plan) stay **markdown on disk** — generators unchanged, repo-grep unchanged, git diffs stay readable. Inside the Review tab, markdown is converted to **HTML in memory** at load time, and the HTML tree is what we anchor decisions / suggestions / mermaid blocks / quote highlights against. Save flow does HTML→markdown for the reviewable; the saved review file is markdown with HTML islands embedded for elements that can't round-trip (mermaid, decision blocks, suggestion diffs). A later phase adds a "Print HTML" button that dumps the fully-rendered HTML as an export artifact. Performance is a non-issue — artifacts are kilobytes, `marked`/`markdown-it` parses in single-digit ms, parsed HTML cached in renderer state for the drawer lifetime.
+Reviewing a Forge-generated spec today means leaving the app: `spec-review-bridge.ts` spawns the `plan-review` CLI, which opens the system browser and hands the review back as a file. The pain is the context switch, not missing capability — the CLI already delivers line-anchored comments, full markdown with mermaid and KaTeX, plan-outline navigation, autosave and resume. Phase 1 removes the context switch and nothing else: Forge starts the same CLI, points an Electron `WebContentsView` at the local HTTP server it already runs, and consumes the same output file it consumes today. The approval gate, `reviseWithReview`, `SpecReviewSummary` and every renderer path downstream stay exactly as they are.
 
 ---
 
 ## Context
 
 ### What exists today
-- `src/main/services/spec-review-bridge.ts` spawns the external `plan-review` CLI as a child process, hands it a spec markdown, waits for the user to finish reviewing in the browser UI, parses the resulting review markdown back, and surfaces it in Forge.
-- `src/main/services/spec-review-revision.ts` + `spec-review-revision-prompt.ts` + `spec-review-response-parser.ts` already implement the "send review back to Claude, get revised spec" pipeline.
-- Renderer has a button somewhere in `spec-drawer.tsx` (and parallel for triage) that triggers the CLI flow.
 
-### Why replace
-- Context-switching cost: the browser CLI UI is detached from the issue context (Linear ticket, repo, sibling artifacts).
-- The CLI cannot evolve quickly because it is a separate distributable.
-- The new design pulls in capabilities the CLI cannot easily deliver: mermaid awareness, structured decisions, suggestion diffs.
+- `src/main/services/spec-review-bridge.ts` — `launchSpecReview()` cleans the spec with `cleanSpecMarkdown`, writes it to a temp `review-input.md`, spawns `plan-review <input> --fresh --split-by heading -o file --output-file <output>` (`planReviewArgs`), waits for exit 0, reads the output file as `reviewFeedback`, and calls `reviseWithReview`.
+- `src/main/services/spec-review-revision.ts` → `spec-review-revision-prompt.ts` → `spec-review-response-parser.ts` produce `SpecReviewResult { content, summary: SpecReviewSummary }` (`src/shared/types.ts`).
+- IPC: `IpcChannel.SpecLaunchReview` (`spec:launch-review`), handler in `src/main/ipc/spec.ts`, wired in `src/main/ipc/register.ts`.
+- Renderer: `spec-tab.tsx` "Launch Review" passes in-memory `content` to `onLaunchReview`; `app.tsx` guards stale completions with `activeReviewIssueId` / `currentDrawerIssueId` and sets `reviewedContent` + `reviewSummary`.
+- Triage has no review path at all today — no handler, no state in `triage-drawer.tsx`.
 
-### What the new design adds (vs. the original CLI)
-| Feature | CLI today | Design |
+### What plan-review already provides
+
+`runBrowserReview` (`packages/cli/src/browser-review.ts`) boots an `HttpTransport` on an ephemeral port, prints `Review server running at <url>` to stderr, `spawnSync`s the OS opener, and resolves when the browser posts a submission. The server (`packages/cli/src/server/routes.ts`) exposes `GET /`, `GET /api/doc`, `POST /api/review`, `PUT /api/session`, `POST /api/heartbeat`, `POST /api/pause`, `POST /api/cancel`, and `GET /_assets/*`. `@plan-review/browser-app` (Preact) drives it: 5s heartbeats while visible, pause on hidden, `sendBeacon('/api/cancel')` on unload, autosave via `PUT /api/session`, verdict + summary via `SubmitReviewPanel`. On submit the CLI runs `formatReview(doc, {verdict, summary})` and writes it to `--output-file`, then exits 0.
+
+Mermaid and KaTeX lazy-load from jsdelivr inside that page; offline they degrade to plain source. That is upstream behaviour and stays upstream behaviour.
+
+### Why embed rather than rebuild
+
+Everything Forge's v3 Phase 1 would have built exists and is better. Rebuilding creates a second renderer, a second anchoring model and a second session store, and orphans the CLI and the VS Code extension. Embedding is days, not weeks, and loses no capability. `@plan-review/browser-app` cannot be imported as components — it is private, Preact, and would need `preact/compat` inside Forge's React 18 renderer. Embed it as a page, not a component tree.
+
+---
+
+## Suggested Approach
+
+### Phase 1 — in-window review (the whole of this spec)
+
+1. **Dedicated review surface, not a drawer pane.** On "Launch Review", main creates a `WebContentsView` sized to the window content area below the topbar and adds it to the window's content view. The drawer stays mounted underneath; Forge's topbar stays visible above with a "Close review" affordance. Escape closes it.
+2. **Launch.** Keep `launchSpecReview`'s temp-file input and argv exactly as today, adding `--no-open` and `--print-url` (see upstream). Main reads the announced URL from the CLI's stdout and loads it into the view.
+3. **Close / cancel.** Closing the surface POSTs `/api/cancel` to the review server before destroying the view. The CLI exits with `Review cancelled: …`; Forge surfaces that as a neutral status, not an error. The existing 30-minute idle ceiling and heartbeat watchdog keep working unchanged — the embedded page fires the same heartbeats a browser tab does.
+4. **Submit.** Unchanged from today: the CLI writes `formatReview` output to `--output-file` and exits 0; `launchSpecReview` reads it and calls `reviseWithReview`. Main destroys the view and resolves the existing IPC invoke. `app.tsx` sets `reviewedContent` + `reviewSummary` through the same stale-guard it already has.
+5. **Preflight.** Before spawning, verify the installed `plan-review` supports `--print-url` and fail with an actionable message ("update plan-review to ≥ x.y.z"). Matches AGENTS.md's "verify CLI state and surface errors" rule.
+
+Spec only in Phase 1 — that is parity with today. Triage review is a later phase.
+
+### Round-trip contract (exact, unchanged from today)
+
+| Step | Shape | Owner |
 |---|---|---|
-| Section-anchored comments | ✓ | ✓ |
-| Text-quote anchoring (highlight specific phrase) | ✗ | ✓ |
-| Mermaid diagram rendering | ✗ | ✓ |
-| Node-anchored threads (click a diagram node to comment) | ✗ | ✓ |
-| Structured decisions w/ option picker | ✗ | ✓ |
-| Inline AI suggestion diffs (accept/reject) | ✗ (free-form revise only) | ✓ |
-| Citations w/ source popovers | ✗ | ✓ |
-| Activity timeline | ✗ | ✓ |
-| Drafted-reply HITL flow | ✗ | ✓ |
-| Plan-outline TOC (milestones/tasks) | ✗ | ✓ |
-| Linear writeback of comments | ✗ | (still ✗ — out of scope) |
+| In | `cleanSpecMarkdown(content)` written to temp `review-input.md` | Forge |
+| Argv | `[input, '--fresh', '--split-by', 'heading', '-o', 'file', '--output-file', output, '--no-open', '--print-url']` | Forge |
+| Ready | one JSON line on stdout: `{"event":"review-server-ready","url":"http://127.0.0.1:<port>"}` | plan-review |
+| Document | `GET /api/doc` → `{ document: PlanDocument, initialState }` | plan-review |
+| Session | `PUT /api/session` → `FileSessionStore` in `~/.plan-review/sessions/` | plan-review |
+| Submit | `POST /api/review` → `ReviewSubmission { comments: ReviewComment[]; verdict: 'approved' \| null; summary: string }` (`packages/core/src/types.ts`) | browser-app |
+| Feedback | `formatReview(doc, { verdict, summary })` markdown → `--output-file`, exit 0 | plan-review |
+| Revise | `reviseSpecWithReview({ model, originalSpecMarkdown, reviewFeedback })` → `parseSpecReviewResponse` | Forge |
+| Result | `SpecReviewResult { content; summary: SpecReviewSummary }` over `IpcChannel.SpecLaunchReview` | Forge |
 
----
+Nothing downstream of the output file changes. `spec-review-response-parser.ts`, `spec-review-tags.ts` and `SpecReviewSummary` are kept, not deleted. The `**Verdict:** Approved|Comment` line that satisfies the approval gate keeps coming from `SubmitReviewPanel` via `formatReview`.
 
-## Phasing strategy
+### Deliberate calls
 
-Five phases. Each is shippable and adds substantial value on its own. Stop after any phase if priorities shift — no half-built features left dangling.
+- **`WebContentsView`, not `<iframe>` or `<webview>`.** `<webview>` is discouraged by Electron and needs `webviewTag: true` — rejected. An `<iframe>` is genuinely simpler (layout follows the drawer for free) but runs the page in Forge's renderer process, shares its future CSP, and would block the mermaid/KaTeX CDN loads the review UI depends on. `WebContentsView` gets its own `webPreferences` (`sandbox: true`, `contextIsolation: true`, no preload, no node) and its own session partition. Electron is pinned at 33.4.11; `WebContentsView` landed in 30.
+- **Dedicated full-window surface, not a pane inside the drawer.** The drawer is 55% of a 1240px minimum window — about 682px for three panels. A dedicated surface also removes the bounds-sync problem entirely: the view's bounds are the window content area, so there is no chasing the drawer's 220ms transform or its scrim/modal z-order.
+- **Local HTTP, not `file://`.** The review UI is an HTTP client of its own server — `/api/doc`, `/api/review`, session, heartbeat. `file://` cannot serve it. This is the transport the tool already uses.
+- **Supervision stays as it is.** One child process per review, owned by the existing `launchSpecReview` promise, killed via `/api/cancel` on close and reaped on window close. No pool, no long-lived daemon, no PID file.
+- **Security premise, corrected.** Forge's renderer runs `contextIsolation: true`, `nodeIntegration: false`, `sandbox: false`, and has no CSP (`src/main/index.ts`, `src/renderer/index.html`). v3 stated this wrongly. v4 adds no markdown rendering and no `dangerouslySetInnerHTML` to that renderer at all — the review page runs in a separate, sandboxed `WebContentsView`. Forge's own sandbox and CSP posture is unchanged and out of scope here.
 
-```
-Phase 1: Embedded review MVP            ← removes CLI dependency
-Phase 2: Rich anchoring (quote + mermaid + nodes)
-Phase 3: Structured decisions + inline suggestion diffs
-Phase 4: Citations + activity log + drafted replies
-Phase 5: Plan-outline TOC + Linear writeback
-```
+### Upstream changes needed in `~/desenv/personal/plan-review`
 
----
+Three, all small. Each is a standalone PR against the CLI.
 
-## Phase 1 — Embedded review MVP (replace the CLI shell-out)
+1. **`--no-open`** — skip the `spawnSync(open, url)` in `runBrowserReview`. Without it every embedded review also opens a system browser tab that competes for heartbeats and can submit a second time.
+2. **`--print-url`** — emit one JSON line on stdout when the server is listening. Forge needs the ephemeral port and today it exists only inside a human-readable stderr line. *Interim:* Forge can regex `Review server running at (\S+)` from stderr to unblock the spike before this ships.
+3. **Bind to loopback** — `startServer` calls `server.listen(port)` with no host, so the review server is reachable from the LAN. `listen(port, '127.0.0.1')` is correct for the CLI too, not just for Forge.
 
-**Goal.** No more child-process shell-out. Reviewing a spec or triage brief happens inside the drawer.
+**Explicitly not needed.** A long-lived serve mode: the one-shot process already lives exactly one review, writes the file Forge names, and exits — which is Forge's existing contract. A submit-callback URL: `--output-file` already is the callback. A session id: one drawer, one review, one process.
 
-**Scope.**
-- New `Review` tab in `SpecDrawer` and `TriageDrawer` next to existing Spec/Brief tabs.
-- Three-pane layout inside the Review tab: TOC (sections of the artifact) | rendered doc | comment rail.
-- **md→HTML render pipeline.** On Review-tab open, read markdown from `thoughts/tasks/<id>/initial-spec.md` (or `triage-brief.md`), parse to HTML via `markdown-it` + DOMPurify, inject `data-section` + `data-line` attributes on block-level nodes during parse (custom plugin walks token stream). Cache HTML in renderer state. Re-parse only on revise-stream completion.
-- Comment granularity: **section-only**. Click a section heading or its body → composer opens → comment attached to that section. No text-quote anchoring yet (Phase 2).
-- Comment rail tabs: just `Comments` (no Decisions/Activity tabs yet — placeholders).
-- Actions: **Save to File** (writes `thoughts/tasks/<id>/<kind>-review.md` — markdown w/ HTML islands for unconvertible elements; Phase 1 has none, so pure markdown), **Send to Claude** (revise pipeline streams revised markdown back into the Spec/Brief tab; renderer re-parses md→HTML), **Discard** (clears draft).
-- Autosave drafts to `~/.forge/review-drafts/<sha256(forge:<issueId>:<kind>).slice(0,16)>.json` via core's `FileSessionStore`. Draft stores comments keyed by `{section, line}` only — not by DOM node id (DOM ids are render-time, not stable).
-- Revise pipeline: lift `reviseWithReview` out of `spec-review-bridge.ts` into artifact-agnostic `src/main/services/review-revise.ts`; kind-keyed system prompts in `src/main/services/review-prompts.ts`.
+**Later, not now.** A `--session-key` so resume keys on the Forge artifact identity rather than a temp path — only worth it when Phase 2 wants resume.
 
-**Out of scope for Phase 1.**
-- Mermaid rendering. Mermaid code blocks render as plain ```mermaid``` code blocks for now.
-- Text-quote highlighting / DOM selection.
-- Structured decisions, suggestion diffs, citations, activity log, drafted replies.
-- Linear writeback.
-- Diff view of revised artifact (Send-to-Claude replaces tab content; no inline diff).
-- Plan as a reviewable artifact (plan-generation feature not yet built).
+### Resolution of review findings
 
-**Deliverables.**
-- Tab visible in both drawers.
-- End-to-end loop: open issue → Review tab → add section comments → Save to File → see file on disk → Send to Claude → revised spec streams into Spec tab.
-- All Phase-1 tests passing; old `spec-review-bridge.ts` + its IPC channels + its renderer button **deleted**.
+| # | Severity | How v4 handles it |
+|---|---|---|
+| 1 | BLOCKER | Resolved — the contract is the existing one: `ReviewSubmission` → `formatReview` → output file → `reviseWithReview`. Nothing new invented. |
+| 2 | BLOCKER | Resolved — verdict comes from `SubmitReviewPanel`; `SpecReviewSummary` and the parser are kept, not deleted. Approval gate unaffected. |
+| 3 | BLOCKER | Resolved — the comparison table is deleted and the reuse path is the design. |
+| 4 | MAJOR | Resolved — no capability is lost; the same UI ships. |
+| 5 | MAJOR | Resolved — no new npm deps. `@plan-review/core` and `/react` are not consumed; only the `plan-review` CLI, version bumped for the flags above. |
+| 6 | MAJOR | Resolved — the revise pipeline is untouched. No streaming, no new channels, no triage path in Phase 1. |
+| 7 | MAJOR | Moved upstream — sessions are the CLI's `FileSessionStore` + `computeContentHash`. Forge stores no drafts. (`--fresh` on a temp file means no resume, same as today.) |
+| 8 | MAJOR | Not applicable — no Forge autosave. browser-app autosaves via `PUT /api/session`. |
+| 9 | MAJOR | Resolved — unchanged: the in-memory tab content is written to the temp input, as today. No write-before-review requirement. |
+| 10 | MAJOR | Resolved — premise corrected above; no markdown rendering is added to Forge's renderer, and the review page is sandboxed in its own `WebContentsView`. |
+| 11 | MAJOR | Resolved — phases 2+ are headings only; the HITL design moves to the plan-review monorepo. |
+| 12 | MAJOR | Moved upstream — theming and accessibility of the review UI belong to browser-app. Forge owns only the close affordance, Escape, and focus return. |
+| 13 | MAJOR | Resolved — dedicated full-window surface instead of three panels in a 682px drawer. |
+| 14 | MINOR | Not applicable — no Forge markdown pipeline. |
+| 15 | MINOR | Moved upstream — mermaid node anchoring is a plan-review concern. |
+| 16 | MINOR | Resolved — acceptance list below covers cancel, crash, missing CLI, port failure. |
+| 17 | MINOR | Resolved — state table below. |
+| 18 | NIT | Resolved — `IpcChannel.SpecLaunchReview` is kept; any addition (e.g. `SpecCancelReview`) is a property of the same object. |
 
-**Removals at end of Phase 1.**
-- `src/main/services/spec-review-bridge.ts`
-- `src/main/services/spec-review-response-parser.ts` (if unused after lift)
-- `src/main/services/spec-review-tags.ts` (if CLI-specific)
-- IPC channels driving the CLI shell-out (locate during impl).
-- Renderer button(s) that triggered the CLI flow.
-- All tests around the above (rewrite under new locations).
+### States and copy
 
-**Done when.** Reviewing a spec or brief never spawns an external CLI. Drafts survive drawer close. Saved review markdown lands at the documented path.
+| State | Surface shows | Actions |
+|---|---|---|
+| Starting | "Starting review…" overlay on the surface | Cancel |
+| Ready | the review page | Close |
+| CLI missing / too old | error in the Spec tab naming the required version | none |
+| Server never announced (timeout) | "Review server did not start" | Retry |
+| Cancelled by user or closed window | neutral status in the Spec tab, no error styling | Launch Review |
+| Submitted, revising | existing "Review in progress…" in the Spec tab | none |
+| Revise failed | existing `reviewErrorMessage` path | Launch Review |
 
----
+### Done when
 
-## Phase 2 — Rich anchoring (text-quote + mermaid + node)
+- Launching a review for a spec never opens a system browser tab, and the review UI appears inside the Forge window with line anchors, mermaid, KaTeX and the submit panel intact.
+- Submitting produces the same `SpecReviewResult` the CLI flow produces today, with `verdict` and `commentCount` populated, rendered by the untouched `spec-tab.tsx` summary UI.
+- Closing the surface mid-review cancels cleanly: no orphan process, no orphan port, neutral status.
+- Killing the CLI process, an unavailable CLI, and a failed server start each surface a distinct actionable message rather than hanging.
+- Closing the Forge window during a review terminates the child process.
+- The stale-completion guard in `app.tsx` still discards a result whose drawer has moved on.
 
-**Goal.** Comments can pin to a specific phrase or a specific mermaid node, not just a section.
+### Later phases (not designed here)
 
-**Scope.**
-- **Text-quote anchoring.** User selects text in the rendered HTML doc → composer opens with selected quote → comment stored as `{anchor: {kind: 'quote', section, line, quote}}`. On every render, post-parse pass walks the HTML, finds the quote text inside the matching section's DOM subtree via TreeWalker (mirrors `app_hitl.jsx` lines 571–590), wraps it in `<span class="comment-range" data-thread-id=…>`. If not found (stale), fall back to whole-section highlight + visible "anchor stale" indicator in the rail.
-- **Mermaid rendering.** `MermaidBlock` component (port from `mermaid_block_v3.jsx`). markdown-it plugin detects ```mermaid``` fences and emits `<div class="mermaid-block" data-source="…">` placeholders; renderer replaces them with React-mounted `MermaidBlock` after HTML inject. Mermaid renders source to SVG in renderer. Click a node → composer opens → comment stored as `{anchor: {kind: 'node', section, line, diagramId, nodeId, label}}`. Pins overlay diagram showing thread count per node.
-- **Anchor-staleness handling.** Both quote and node anchors best-effort. Show staleness when source changes invalidate them. No auto-reanchoring magic — clear UI only.
-- **Highlight overlays.** Inline `<span class="comment-range">` wraps anchored text; clicking focuses rail thread. Resolved threads dim highlight.
+- **Phase 2 — triage briefs.** Give `triage-drawer.tsx` the same launch path. Needs a handler and review state it does not have today; otherwise identical plumbing.
+- **Phase 3 — session identity.** Pass the real artifact path or a `--session-key` so resume works across drawer closes, once Phase 1 shows resume is actually wanted.
+- **Phase 4 — HITL features.** Decisions, suggestion diffs, node-anchored mermaid threads, drafted replies. Built in the plan-review monorepo, consumed by Forge for free. Out of scope for Forge entirely.
+- **Phase 5 — Linear writeback.** Push resolved threads to the originating issue via `.agents/skills/linear/`.
 
-**Out of scope.**
-- Multi-quote per comment.
-- Line-number-precise anchoring (we anchor by quote text within a section, not by absolute line number, because revise rewrites lines).
-- Selection across paragraphs.
+### Out of scope
 
-**Done when.** A user can comment on the word "PKCE" inside paragraph X, the highlight survives a Send-to-Claude round-trip iff that word still appears in that section, and node-anchored mermaid threads work end-to-end.
-
----
-
-## Phase 3 — Structured decisions + inline suggestion diffs
-
-**Goal.** The artifact can declare decisions the human must resolve, and the agent can propose specific inline edits the human accepts/rejects.
-
-**Scope.**
-- **Decision markers in markdown.** Since reviewable stays markdown on disk but renders as HTML, use HTML islands directly in the markdown: `<span data-decision="d1">…wrapped phrase…</span>` plus a trailing fenced ```json decisions``` block carrying `{id, question, context, options: [{key, text, recommended?, custom?}]}`. markdown-it passes HTML through; renderer parses the decisions block out of HTML, removes it from displayed doc, mounts `DecisionMarker` React components on the spans. HTML→md save preserves both verbatim.
-- **Decisions rail tab.** Lists open + resolved decisions. Clicking an option resolves the decision (writes back to the draft). "Tell me a different option…" opens a free-form composer. **No "Approve all recommended" bulk action in Phase 3** — defer to Phase 5 polish.
-- **Inline suggestion diffs.** Revise pipeline emits, alongside revised markdown, structured suggestions: `{id, anchor, title, rationale, kind: 'replace'|'insert'|'delete', before, after, conf}`. Embedded in markdown as `<div data-suggestion="s1"></div>` placeholders + trailing fenced ```json suggestions``` block. Renderer mounts `Suggestion` cards at placeholders. Accept = mutate in-memory draft markdown (suggestion JSON updated w/ `state:'accepted'`, placeholder replaced by `after` content on save). Reject = mark `state:'rejected'`, placeholder removed on save. Discuss = opens composer producing comment on suggestion's anchor.
-- **Prompt changes.** `review-prompts.ts` gains an optional structured-output mode that asks Claude to return JSON with `{revisedMarkdown, suggestions[], decisions[]}` rather than just bulk markdown. Old free-form revise remains as fallback when JSON parse fails.
-
-**Out of scope.**
-- AI-generated decisions from the spec generator itself (only the revise step emits them).
-- Multi-step decisions (e.g. decision B depends on decision A).
-- Persistent decision history across multiple revise rounds.
-
-**Done when.** A revise round can return 2 decisions + 3 suggestions; user picks options + accepts/rejects suggestions in-place; final saved review reflects the resolutions.
-
----
-
-## Phase 4 — Citations + activity log + drafted replies
-
-**Goal.** The agent's reasoning is auditable, and the agent can propose replies to specific human comments for HITL approval.
-
-**Scope.**
-- **Citations.** Revise pipeline output includes a `citations: {[n]: {ref, src, snippet}}` block. Renderer wraps inline `[n]` markers as hover-popover footnotes (port from `Cite` + `CitePopover`). Sources: linear, file, rfc, doc, incident — extensible.
-- **Activity timeline.** New `Activity` rail tab. Records: spec drafted, revise round started/finished, decisions flagged, suggestions drafted, user resolved comment, draft-reply created. Persisted in the same draft file as the comments.
-- **AI-drafted replies.** A `Draft reply` button on each open comment thread calls Claude with the thread + surrounding context; Claude returns a draft. UI shows the draft inline with **Edit / Discard / Send as you** controls. Sending it appends the (user-attributed) reply to the thread. No reply is ever sent without explicit human action.
-- **Tweaks panel.** Minimal: just `Auto-draft replies on/off`. Theme + agent-tone are out of scope (theme already global in Forge; tone is persona-flavor).
-
-**Out of scope.**
-- Citation editing (citations are read-only artifacts from the agent).
-- Auto-generated draft replies for every new comment without explicit user request.
-- Activity log persistence beyond the current draft (no cross-session history view).
-
-**Done when.** A user can ask the agent to draft a reply to alvaro's comment, review the draft, edit it, and send it as their own — all without leaving the rail.
-
----
-
-## Phase 5 — Plan-outline TOC + Linear writeback (+ polish)
-
-**Goal.** The reviewer scales beyond a single spec — it understands plans (milestones + tasks) and pushes resolved threads back to Linear.
-
-**Scope.**
-- **Plan-outline TOC.** When reviewable is a plan (not spec/brief), render left pane as milestone/task hierarchy from `app_hitl.jsx`'s `TOC` component. Task states: `approved`, `needs-input`, `drafted`, `queued`. Click task → swap doc + rail to that task's review state. Gated on plan-generation feature.
-- **Linear writeback.** Optional "Push to Linear" action posts each resolved thread (or all comments) as single comment on originating Linear issue. Uses Linear skill at `.agents/skills/linear/`. Confirmation modal lists exactly what will be sent.
-- **Print HTML export.** Button in Review tab toolbar: dumps current rendered HTML (mermaid SVG inlined, decisions resolved, suggestions applied, comments stripped) to `thoughts/tasks/<id>/<kind>-review.html`. One-way export — not reloadable. Useful for sharing fully-styled review w/o running Forge.
-- **Polish.** "Approve all recommended" bulk action for decisions. Anchor-staleness recovery suggestions ("did you mean: …?"). Filter rail by `Open / All / Mine / Resolved` (from `RailFilters`).
-
-**Out of scope.**
-- Multi-task review in a single drawer instance (each task review is its own drawer state).
-- Linear thread sync (writes only, no reads — Linear comments stay in Linear).
-- Plan generation itself (separate feature).
-
-**Done when.** A multi-task plan can be reviewed task-by-task, and the resolved review can be one-click published as a Linear comment.
-
----
-
-## Cross-phase technical decisions
-
-These hold across all phases unless a phase explicitly revisits one.
-
-### Library boundary
-- Forge consumes `@plan-review/core` ^0.1.0 and `@plan-review/react` ^0.1.0 from npm (delivered by the parallel core refactor).
-- From core: `types` (incl. `LineAnchor`, `SessionData`, `ReviewComment`), `FileSessionStore`, `SessionStore` interface, `createAutosave`. **`parser` + `formatter` not used by Forge's renderer** — we use `markdown-it` for md→HTML and a custom HTML→md serializer for save. Core's parser may still be used by main-process services if needed for line-mapping utilities.
-- From react: `useAutosave`, `useAutosaveSnapshot`, `useFlushOnUnload`.
-- **UI components live in Forge.** Packages export no UI.
-
-### Render pipeline (md ↔ HTML)
-- **Load**: read md from disk → `markdown-it` parse with custom plugin emitting `data-section` (slugified heading) + `data-line` (source-line number) on every block-level node → DOMPurify sanitize (allow `data-*`, `<span data-decision>`, `<div data-suggestion>`, `<div class="mermaid-block">`) → assign to `dangerouslySetInnerHTML` on `<article ref={docRef}>`.
-- **Post-parse pass** (useLayoutEffect, after each render): walk DOM, inject comment-range highlights for quote anchors, mount React portals for mermaid placeholders, mount `DecisionMarker` on `[data-decision]` spans, mount `Suggestion` cards on `[data-suggestion]` divs.
-- **Revise**: streamed markdown replaces in-memory source; re-run load step.
-- **Save**: serialize current in-memory markdown source (which already contains accepted-suggestion mutations + decision-resolution updates applied as text edits) to `thoughts/tasks/<id>/<kind>-review.md`. No HTML→md conversion needed for Phase 1–2; Phase 3+ mutations apply to source markdown directly, not to the rendered DOM.
-- **Print HTML** (Phase 5): serialize current rendered HTML to a standalone `.html` file with inlined CSS + mermaid SVGs.
-
-### Anchor model
-- Comments persist with `{section, line}` plus kind-specific extras. `line` comes from the markdown source (the `data-line` attr we injected at parse).
-- Phase 1: `{kind: 'section', line, section}`.
-- Phase 2: `{kind: 'quote', line, section, quote}`, `{kind: 'node', line, section, diagramId, nodeId, label}`.
-- Re-anchor on every parse: match by `quote` / `nodeId` inside section subtree; fall back to section-only; mark stale if section itself vanished.
-- Compatible w/ core's `LineAnchor` (just a line number); extras live in a sidecar field on `ReviewComment`.
-
-### UI ownership (extraction discipline)
-- All review components live under `src/renderer/components/review/`.
-- Components are pure: props in, callbacks out. No IPC, no Forge tokens, no Forge utility imports.
-- All Forge glue (IPC, autosave wiring, draft loading, revise stream subscription) lives in `src/renderer/hooks/use-review.ts`.
-- Lint rule: no relative imports from inside `review/` going above `review/`. Mechanical extraction to `@plan-review/react-ui` stays viable.
-
-### Process split (Electron)
-- **Renderer owns:** md→HTML via `markdown-it` + DOMPurify, holding comment + decision + suggestion state, rendering UI, debouncing autosave via react hooks, mermaid rendering (mermaid runs in renderer), HTML export (Phase 5).
-- **Main owns:** `FileSessionStore` writes to `~/.forge/review-drafts/`, file I/O for saved review markdown + HTML export, Claude spawn for revise + draft-reply.
-
-### Disk layout
-- Drafts: `~/.forge/review-drafts/<sha256(forge:<issueId>:<kind>).slice(0,16)>.json`. Uses `FileSessionStore` with `dir = ~/.forge/review-drafts/`. Add `reviewDraftsDir()` to `src/main/lib/paths.ts`.
-- Saved review markdown: `thoughts/tasks/<issueId>/<kind>-review.md`.
-
-### IPC contracts (Phase 1 baseline, expanded per phase)
-
-`src/shared/ipc-channels.ts`:
-
-```ts
-// Phase 1
-export const REVIEW_LOAD_DRAFT  = 'review:load-draft';
-export const REVIEW_SAVE_DRAFT  = 'review:save-draft';
-export const REVIEW_CLEAR_DRAFT = 'review:clear-draft';
-export const REVIEW_SAVE_FINAL  = 'review:save-final';
-export const REVIEW_REVISE      = 'review:revise';
-export const REVIEW_REVISE_CHUNK = 'review:revise-chunk';
-export const REVIEW_REVISE_DONE  = 'review:revise-done';
-export const REVIEW_REVISE_ERROR = 'review:revise-error';
-
-// Phase 4
-export const REVIEW_DRAFT_REPLY        = 'review:draft-reply';
-export const REVIEW_DRAFT_REPLY_CHUNK  = 'review:draft-reply-chunk';
-export const REVIEW_DRAFT_REPLY_DONE   = 'review:draft-reply-done';
-export const REVIEW_DRAFT_REPLY_ERROR  = 'review:draft-reply-error';
-
-// Phase 5
-export const REVIEW_PUSH_TO_LINEAR     = 'review:push-to-linear';
-export const REVIEW_EXPORT_HTML        = 'review:export-html';
-```
-
-Preload bridge `window.forge.review` mirrors the channels as a typed namespace. Stream handlers return unsubscribe functions.
-
-### Shared types (additions to `src/shared/types.ts`, expanded per phase)
-
-```ts
-// Phase 1
-export type ReviewableKind = 'spec' | 'brief' | 'plan'; // plan reserved for Phase 5
-export interface ReviewArtifact { issueId: string; kind: ReviewableKind; }
-export interface ReviewSaveInput extends ReviewArtifact { markdown: string; overwrite?: boolean; }
-export interface ReviewSaveResult { written: boolean; path: string; exists?: boolean; }
-export interface ReviewReviseInput extends ReviewArtifact {
-  originalMarkdown: string;
-  reviewFeedback: string;
-  model: string;
-  structured?: boolean; // Phase 3
-}
-export interface ReviewReviseResult { revisedMarkdown: string; }
-
-// Phase 2
-export type ReviewAnchor =
-  | { kind: 'section'; line: number; section: string }
-  | { kind: 'quote';   line: number; section: string; quote: string }
-  | { kind: 'node';    line: number; diagramId: string; nodeId: string; label: string };
-
-// Phase 3
-export interface ReviewDecision {
-  id: string;
-  anchor: ReviewAnchor;
-  question: string;
-  context?: string;
-  options: { key: string; text: string; recommended?: boolean; custom?: boolean }[];
-  resolved: boolean;
-  decidedAs?: string;
-}
-export interface ReviewSuggestion {
-  id: string;
-  anchor: ReviewAnchor;
-  title: string;
-  rationale: string;
-  kind: 'replace' | 'insert' | 'delete';
-  before?: string;
-  after?: string;
-  conf?: string;
-  state?: 'accepted' | 'rejected';
-}
-
-// Phase 4
-export interface ReviewCitation { ref: string; src: 'linear'|'file'|'rfc'|'doc'|'incident'; snippet: string; }
-export interface ReviewActivityItem {
-  ts: number;
-  kind: 'agent' | 'you' | 'system';
-  what: 'agent-draft' | 'flagged' | 'suggestion' | 'reply-draft' | 'shared' | 'resolved';
-  body: string;
-  sources?: { k: string; label: string }[];
-}
-export interface ReviewDraftReplyInput extends ReviewArtifact {
-  threadId: string;
-  threadContext: string;
-  model: string;
-}
-```
-
-### Revise prompts
-
-`src/main/services/review-prompts.ts` keys system prompts by `kind`. Phase 1: free-form markdown revise (spec + brief). Phase 3: optional structured mode keyed off `structured: true` in input — prompt asks for `{revisedMarkdown, suggestions[], decisions[], citations?}` JSON. Phase 4: separate `draftReply(kind, threadContext)` prompt.
-
-### File structure
-
-```
-src/main/
-├── services/
-│   ├── review-store.ts          # wraps FileSessionStore w/ key namespacing
-│   ├── review-writer.ts         # writes thoughts/tasks/<id>/<kind>-review.md
-│   ├── review-revise.ts         # artifact-agnostic revise (lifted from spec-review-bridge)
-│   ├── review-prompts.ts        # kind-keyed system prompts
-│   └── review-draft-reply.ts    # Phase 4
-├── ipc/
-│   └── review.ts                # registers review:* handlers
-└── lib/paths.ts                 # add reviewDraftsDir()
-
-src/renderer/
-├── hooks/
-│   └── use-review.ts            # state machine + IPC glue
-└── components/review/
-    ├── review-panel.tsx         # three-pane layout
-    ├── review-toc.tsx           # left pane (sections or milestones)
-    ├── review-doc.tsx           # rendered artifact (md → HTML w/ anchor injection)
-    ├── review-rail.tsx          # right pane w/ tabs
-    ├── review-comments.tsx      # comments tab content
-    ├── review-decisions.tsx     # Phase 3
-    ├── review-activity.tsx      # Phase 4
-    ├── thread-card.tsx
-    ├── composer.tsx
-    ├── mermaid-block.tsx        # Phase 2
-    ├── decision-marker.tsx      # Phase 3
-    ├── suggestion-card.tsx      # Phase 3
-    ├── citation.tsx             # Phase 4
-    ├── tokens.css               # local CSS vars; do not pull from Forge tokens
-    └── md/
-        ├── md-to-html.ts        # markdown-it instance + section/line plugin + DOMPurify config
-        ├── inject-anchors.ts    # post-parse DOM walker for quote/decision/suggestion mounts
-        └── html-export.ts       # Phase 5 standalone HTML serializer
-
-Modified:
-├── src/shared/types.ts                       # ReviewableKind, anchors, decisions, suggestions
-├── src/shared/ipc-channels.ts                # REVIEW_* constants
-├── src/shared/forge-api.ts                   # review.* namespace
-├── src/main/preload.ts                       # bridge review.* channels
-├── src/main/ipc/register.ts                  # wire review handlers
-├── src/renderer/components/spec-drawer.tsx   # add "Review" tab
-├── src/renderer/components/triage-drawer.tsx # add "Review" tab
-└── package.json                              # add @plan-review/core + @plan-review/react + markdown-it + dompurify
-```
+Rewriting any part of plan-review inside Forge. New review capabilities of any kind. Streaming the revise step. Multi-artifact or concurrent review. Changing Forge's renderer sandbox or CSP posture.
 
 ---
 
 ## Open Questions
 
-1. **markdown-it vs marked vs remark** (Phase 1). markdown-it picked in strawman for its plugin API (easy `data-line` injection) + speed. Lock during Phase 1 planning.
-2. **Decision/suggestion markers as inline HTML** (Phase 3). Spec uses `<span data-decision="d1">` + trailing ```json decisions``` block. Risks: generator must emit valid HTML inside markdown; round-tripping HTML through markdown-it preserves it but DOMPurify must allowlist these attrs. Verify w/ small prototype before Phase 3.
-3. **Suggestion application semantics** (Phase 3). Accept = mutate in-memory markdown source immediately, vs hold as pending overlay until save. Lean immediate-mutate since source is single source of truth and undo = re-load.
-4. **Mermaid security** (Phase 2). Mermaid runs in renderer context. Confirm Forge CSP allows it without weakening — Electron's contextIsolation + sandbox both apply. Verify before Phase 2 starts.
-5. **Plan-outline data source** (Phase 5). Where do milestones + tasks come from? Frontmatter in plan markdown? Sidecar `<plan-slug>.outline.json`? Out of scope until plan-generation lands but worth flagging.
-6. **Linear writeback formatting** (Phase 5). One comment per resolved thread, vs single rolled-up comment with all resolutions? Lean rolled-up — Linear comments get noisy fast.
-7. **Print HTML scope** (Phase 5). Standalone single-file `.html` (inline CSS + base64 SVGs)? Or directory w/ assets? Lean single-file for shareability.
-
----
-
-## Out of scope (all phases)
-
-- **Plan generation feature** itself — a separate effort. Review of plans is gated on it (Phase 5).
-- **Real-time multi-user review** — single user, single machine.
-- **Multi-artifact concurrent review** — one drawer, one review at a time.
-- **Linear thread sync** (read direction) — writes only.
-- **Mira / agent persona styling** — keep agent neutral, no "AI personality" branding.
-- **Theme + tone toggles** from the design's tweaks panel — Forge's existing theme is enough; tone is persona polish.
-- **Multi-author rail** — Forge is single-user; author is always `you` or `agent`.
-
----
-
-## Approval gate
-
-Before any implementation work begins:
-1. User reviews this spec (e.g. via plan-review on it).
-2. Spec is explicitly approved.
-3. User picks a phase to plan first (default: Phase 1).
-4. Run `superpowers:writing-plans` for that single phase, producing `thoughts/tasks/embed-plan-review/plans/<plan-slug>.md`.
-5. Approve plan, then execute.
-
-Do not generate plans for multiple phases at once — each phase's plan should be informed by what was learned in the previous one.
+- [ ] Should the review surface cover the whole window, or leave the issue list visible on the left as orientation? Full-window is simpler and is the assumption above.
+- [ ] Do the three upstream flags ship as one release of `plan-review`, or does Forge run against a local `npm link` during Phase 1 and pin a published version at the end?
+- [ ] Should Forge continue to pass `--fresh`? Keeping it preserves today's behaviour exactly; dropping it does nothing useful until Phase 3 gives sessions a stable key.
