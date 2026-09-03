@@ -1,13 +1,13 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { useTriageStream } from '../../src/renderer/hooks/use-triage-stream';
+import { useBriefStream } from '../../src/renderer/hooks/use-brief-stream';
 import type {
-  TriageBrief,
-  TriageGenerateDone,
-  TriageGenerateError,
-  TriagePhaseEvent,
-  TriageStreamChunk,
+  GeneratedBrief,
+  BriefGenerateDone,
+  BriefGenerateError,
+  BriefPhaseEvent,
+  BriefStreamChunk,
 } from '../../src/shared/types';
 
 type Deferred<T> = {
@@ -16,10 +16,10 @@ type Deferred<T> = {
   reject: (reason?: unknown) => void;
 };
 
-type ChunkHandler = (chunk: TriageStreamChunk) => void;
-type DoneHandler = (payload: TriageGenerateDone) => void;
-type ErrorHandler = (payload: TriageGenerateError) => void;
-type PhaseHandler = (payload: TriagePhaseEvent) => void;
+type ChunkHandler = (chunk: BriefStreamChunk) => void;
+type DoneHandler = (payload: BriefGenerateDone) => void;
+type ErrorHandler = (payload: BriefGenerateError) => void;
+type PhaseHandler = (payload: BriefPhaseEvent) => void;
 
 function createDeferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
@@ -32,7 +32,7 @@ function createDeferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-function createBrief(issueId: string, content: string): TriageBrief {
+function createBrief(issueId: string, content: string): GeneratedBrief {
   return {
     issueId,
     content,
@@ -41,8 +41,8 @@ function createBrief(issueId: string, content: string): TriageBrief {
 }
 
 function setForge(options: {
-  get?: (issueId: string) => Promise<TriageBrief | null>;
-  generate: (issueId: string, model?: string) => Promise<TriageBrief>;
+  get?: (issueId: string) => Promise<GeneratedBrief | null>;
+  generate: (issueId: string, model?: string) => Promise<GeneratedBrief>;
   onChunk: (handler: ChunkHandler) => () => void;
   onDone?: (handler: DoneHandler) => () => void;
   onError?: (handler: ErrorHandler) => () => void;
@@ -68,7 +68,7 @@ function setForge(options: {
       onError: vi.fn(),
       onPhase: vi.fn(() => vi.fn()),
     },
-    triage: {
+    brief: {
       get: options.get ?? vi.fn().mockResolvedValue(null),
       generate: options.generate,
       write: vi.fn(),
@@ -114,8 +114,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('useTriageStream', () => {
-  it('loads a persisted triage brief for the active issue', async () => {
+describe('useBriefStream', () => {
+  it('loads a persisted brief for the active issue', async () => {
     const persisted = createBrief('FUL-7', '# saved brief');
     const get = vi.fn().mockResolvedValue(persisted);
     const generate = vi.fn().mockResolvedValue(createBrief('FUL-7', '# generated'));
@@ -123,7 +123,7 @@ describe('useTriageStream', () => {
 
     setForge({ get, generate, onChunk });
 
-    const { result } = renderHook(() => useTriageStream('FUL-7'));
+    const { result } = renderHook(() => useBriefStream('FUL-7'));
 
     await waitFor(() => {
       expect(result.current.brief).toEqual(persisted);
@@ -133,7 +133,7 @@ describe('useTriageStream', () => {
   });
 
   it('accumulates deltas and marks streaming complete on done', async () => {
-    const generation = createDeferred<TriageBrief>();
+    const generation = createDeferred<GeneratedBrief>();
     const generate = vi.fn(() => generation.promise);
     const chunks: ChunkHandler[] = [];
     const doneHandlers: DoneHandler[] = [];
@@ -148,7 +148,7 @@ describe('useTriageStream', () => {
 
     setForge({ generate, onChunk, onDone });
 
-    const { result } = renderHook(() => useTriageStream('FUL-7'));
+    const { result } = renderHook(() => useBriefStream('FUL-7'));
 
     expect(result.current).toEqual({
       brief: null,
@@ -221,8 +221,8 @@ describe('useTriageStream', () => {
     });
   });
 
-  it('populates error message from triage error event', async () => {
-    const generation = createDeferred<TriageBrief>();
+  it('populates error message from brief error event', async () => {
+    const generation = createDeferred<GeneratedBrief>();
     const generate = vi.fn(() => generation.promise);
     const onChunk = vi.fn(() => vi.fn());
     const errorHandlers: ErrorHandler[] = [];
@@ -233,7 +233,7 @@ describe('useTriageStream', () => {
 
     setForge({ generate, onChunk, onError });
 
-    const { result } = renderHook(() => useTriageStream('FUL-7'));
+    const { result } = renderHook(() => useBriefStream('FUL-7'));
 
     await act(async () => {
       void result.current.generate();
@@ -267,7 +267,7 @@ describe('useTriageStream', () => {
 
     setForge({ generate, onChunk });
 
-    const { result, rerender } = renderHook(({ issueId }) => useTriageStream(issueId), {
+    const { result, rerender } = renderHook(({ issueId }) => useBriefStream(issueId), {
       initialProps: { issueId: 'FUL-7' as string | null },
     });
 
@@ -302,8 +302,8 @@ describe('useTriageStream', () => {
   });
 
   it('ignores stale events for a non-current run', async () => {
-    const generationA = createDeferred<TriageBrief>();
-    const generationB = createDeferred<TriageBrief>();
+    const generationA = createDeferred<GeneratedBrief>();
+    const generationB = createDeferred<GeneratedBrief>();
     const getGenerate = vi.fn((issueId: string) =>
       issueId === 'FUL-7' ? generationA.promise : generationB.promise,
     );
@@ -315,7 +315,7 @@ describe('useTriageStream', () => {
 
     setForge({ generate: getGenerate, onChunk });
 
-    const { result, rerender } = renderHook(({ issueId }) => useTriageStream(issueId), {
+    const { result, rerender } = renderHook(({ issueId }) => useBriefStream(issueId), {
       initialProps: { issueId: 'FUL-7' as string | null },
     });
 
@@ -357,8 +357,8 @@ describe('useTriageStream', () => {
     expect(result.current.streaming).toBe('active');
   });
 
-  it('keeps rejected triage generation from surfacing unhandled rejections', async () => {
-    const generateDeferred = createDeferred<TriageBrief>();
+  it('keeps rejected brief generation from surfacing unhandled rejections', async () => {
+    const generateDeferred = createDeferred<GeneratedBrief>();
     const generate = vi.fn(() => generateDeferred.promise);
     const onChunk = vi.fn(() => vi.fn());
     const unhandledRejection = vi.fn((event: PromiseRejectionEvent) => {
@@ -369,7 +369,7 @@ describe('useTriageStream', () => {
     window.addEventListener('unhandledrejection', unhandledRejection);
 
     try {
-      const { result } = renderHook(() => useTriageStream('FUL-7'));
+      const { result } = renderHook(() => useBriefStream('FUL-7'));
 
       let generatePromise: Promise<void> | undefined;
 
@@ -394,9 +394,9 @@ describe('useTriageStream', () => {
   });
 
   it('ignores stale rejected generations after navigation and returns to a newer setup', async () => {
-    const generationA = createDeferred<TriageBrief>();
-    const generationB = createDeferred<TriageBrief>();
-    const generationC = createDeferred<TriageBrief>();
+    const generationA = createDeferred<GeneratedBrief>();
+    const generationB = createDeferred<GeneratedBrief>();
+    const generationC = createDeferred<GeneratedBrief>();
     let ful7Count = 0;
     const generate = vi.fn((issueId: string) => {
       if (issueId === 'FUL-8') {
@@ -415,7 +415,7 @@ describe('useTriageStream', () => {
 
     setForge({ generate, onChunk });
 
-    const { result, rerender } = renderHook(({ issueId }) => useTriageStream(issueId), {
+    const { result, rerender } = renderHook(({ issueId }) => useBriefStream(issueId), {
       initialProps: { issueId: 'FUL-7' as string | null },
     });
 
@@ -460,15 +460,15 @@ describe('useTriageStream', () => {
     );
   });
 
-  it('does not transition to done when triage generation rejects', async () => {
-    const generateDeferred = createDeferred<TriageBrief>();
+  it('does not transition to done when brief generation rejects', async () => {
+    const generateDeferred = createDeferred<GeneratedBrief>();
     const generate = vi.fn(() => generateDeferred.promise);
     const onChunk = vi.fn(() => vi.fn());
-    const phase = createHandlerRegistry<TriagePhaseEvent>();
+    const phase = createHandlerRegistry<BriefPhaseEvent>();
 
     setForge({ generate, onChunk, onPhase: phase.subscribe });
 
-    const { result } = renderHook(() => useTriageStream('FUL-7'));
+    const { result } = renderHook(() => useBriefStream('FUL-7'));
 
     await act(async () => {
       void result.current.generate();
@@ -496,7 +496,7 @@ describe('useTriageStream', () => {
 
       setForge({ generate, onChunk });
 
-      const { result } = renderHook(() => useTriageStream('FUL-77'));
+      const { result } = renderHook(() => useBriefStream('FUL-77'));
 
       expect(result.current.phase).toBe('idle');
       expect(result.current.commentCount).toBeUndefined();
@@ -505,11 +505,11 @@ describe('useTriageStream', () => {
     it('transitions to triaging with commentCount on a matching triaging phase event', () => {
       const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
       const onChunk = vi.fn(() => vi.fn());
-      const phase = createHandlerRegistry<TriagePhaseEvent>();
+      const phase = createHandlerRegistry<BriefPhaseEvent>();
 
       setForge({ generate, onChunk, onPhase: phase.subscribe });
 
-      const { result } = renderHook(() => useTriageStream('FUL-77'));
+      const { result } = renderHook(() => useBriefStream('FUL-77'));
 
       act(() => {
         phase.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 3 });
@@ -522,11 +522,11 @@ describe('useTriageStream', () => {
     it('transitions to generating after a generating phase event', () => {
       const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
       const onChunk = vi.fn(() => vi.fn());
-      const phase = createHandlerRegistry<TriagePhaseEvent>();
+      const phase = createHandlerRegistry<BriefPhaseEvent>();
 
       setForge({ generate, onChunk, onPhase: phase.subscribe });
 
-      const { result } = renderHook(() => useTriageStream('FUL-77'));
+      const { result } = renderHook(() => useBriefStream('FUL-77'));
 
       act(() => {
         phase.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 1 });
@@ -540,12 +540,12 @@ describe('useTriageStream', () => {
     it('transitions to done on the done event', () => {
       const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
       const onChunk = vi.fn(() => vi.fn());
-      const phase = createHandlerRegistry<TriagePhaseEvent>();
-      const done = createHandlerRegistry<TriageGenerateDone>();
+      const phase = createHandlerRegistry<BriefPhaseEvent>();
+      const done = createHandlerRegistry<BriefGenerateDone>();
 
       setForge({ generate, onChunk, onDone: done.subscribe, onPhase: phase.subscribe });
 
-      const { result } = renderHook(() => useTriageStream('FUL-77'));
+      const { result } = renderHook(() => useBriefStream('FUL-77'));
 
       act(() => {
         phase.emit({ issueId: 'FUL-77', phase: 'generating' });
@@ -558,12 +558,12 @@ describe('useTriageStream', () => {
     it('leaves phase as-is on the error event', () => {
       const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
       const onChunk = vi.fn(() => vi.fn());
-      const phase = createHandlerRegistry<TriagePhaseEvent>();
-      const error = createHandlerRegistry<TriageGenerateError>();
+      const phase = createHandlerRegistry<BriefPhaseEvent>();
+      const error = createHandlerRegistry<BriefGenerateError>();
 
       setForge({ generate, onChunk, onError: error.subscribe, onPhase: phase.subscribe });
 
-      const { result } = renderHook(() => useTriageStream('FUL-77'));
+      const { result } = renderHook(() => useBriefStream('FUL-77'));
 
       act(() => {
         phase.emit({ issueId: 'FUL-77', phase: 'triaging', commentCount: 4 });
@@ -577,11 +577,11 @@ describe('useTriageStream', () => {
     it('ignores phase events for a different issue id', () => {
       const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
       const onChunk = vi.fn(() => vi.fn());
-      const phase = createHandlerRegistry<TriagePhaseEvent>();
+      const phase = createHandlerRegistry<BriefPhaseEvent>();
 
       setForge({ generate, onChunk, onPhase: phase.subscribe });
 
-      const { result } = renderHook(() => useTriageStream('FUL-77'));
+      const { result } = renderHook(() => useBriefStream('FUL-77'));
 
       act(() => {
         phase.emit({ issueId: 'FUL-99', phase: 'triaging', commentCount: 5 });
@@ -594,11 +594,11 @@ describe('useTriageStream', () => {
     it('ignores phase events from a stale setup after issue switch', () => {
       const generate = vi.fn().mockResolvedValue(createBrief('FUL-77', '# generated'));
       const onChunk = vi.fn(() => vi.fn());
-      const phase = createHandlerRegistry<TriagePhaseEvent>();
+      const phase = createHandlerRegistry<BriefPhaseEvent>();
 
       setForge({ generate, onChunk, onPhase: phase.subscribe });
 
-      const { result, rerender } = renderHook(({ issueId }) => useTriageStream(issueId), {
+      const { result, rerender } = renderHook(({ issueId }) => useBriefStream(issueId), {
         initialProps: { issueId: 'FUL-77' as string | null },
       });
 

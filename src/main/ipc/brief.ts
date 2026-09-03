@@ -5,33 +5,33 @@ import { IpcChannel } from '../../shared/ipc-channels';
 import { assertSafeIssueId, isSafeIssueId } from '../lib/issue-id';
 import type { ConfigStore } from '../services/config-store';
 import { notifyDone, notifyDoneBestEffort, type NotifyDoneFn } from '../services/notifications';
-import type { Issue, TriageBrief, TriageWriteResult } from '../../shared/types';
+import type { Issue, GeneratedBrief, BriefWriteResult } from '../../shared/types';
 import {
   curateIssueCommentContext,
   type FetchAndFilterCommentsFn,
   type TriageCommentsFn,
 } from './comment-context';
 
-type TriageGenerateEventSender = {
+type BriefGenerateEventSender = {
   send: (channel: string, payload: unknown) => void;
 };
 
-type TriageGenerateEvent = {
-  sender: TriageGenerateEventSender;
+type BriefGenerateEvent = {
+  sender: BriefGenerateEventSender;
 };
 
-type TriageGeneratePayload = {
+type BriefGeneratePayload = {
   issueId: string;
   model?: string;
 };
 
-type TriageWritePayload = {
+type BriefWritePayload = {
   issueId: string;
   content: string;
   overwrite?: boolean;
 };
 
-type StreamTriageBrief = (input: {
+type StreamBrief = (input: {
   issue: Issue;
   computronRepoPath: string;
   model: string;
@@ -40,65 +40,65 @@ type StreamTriageBrief = (input: {
   onStatus?: (status: string) => void;
 }) => Promise<string>;
 
-export interface TriageGenerateDeps {
+export interface BriefGenerateDeps {
   store: ConfigStore;
   fetchTriageList: () => Promise<Issue[]>;
-  streamTriageBrief: StreamTriageBrief;
+  streamBrief: StreamBrief;
   fetchAndFilterComments: FetchAndFilterCommentsFn;
   triageComments: TriageCommentsFn;
   notifyDone?: NotifyDoneFn;
 }
 
-export interface TriageGetDeps {
+export interface BriefGetDeps {
   store: ConfigStore;
 }
 
-export interface TriageWriteDeps {
+export interface BriefWriteDeps {
   store: ConfigStore;
-  writeTriageBrief: (input: {
+  writeBrief: (input: {
     repoPath: string;
     issueId: string;
     content: string;
     mode: 'create' | 'overwrite';
-  }) => Promise<Omit<TriageWriteResult, 'issueId'>>;
+  }) => Promise<Omit<BriefWriteResult, 'issueId'>>;
 }
 
-function triageBriefPath(repoPath: string, issueId: string): string | null {
+function briefFilePath(repoPath: string, issueId: string): string | null {
   if (!isSafeIssueId(issueId)) {
     return null;
   }
 
-  return join(repoPath, 'thoughts', 'tasks', issueId, 'triage-brief.md');
+  return join(repoPath, 'thoughts', 'tasks', issueId, 'brief.md');
 }
 
-function findTriageIssue(issues: Issue[], issueId: string): Issue {
+function findBriefIssue(issues: Issue[], issueId: string): Issue {
   if (!isSafeIssueId(issueId)) {
-    throw new Error(`Triage issue not found: ${issueId}`);
+    throw new Error(`Brief issue not found: ${issueId}`);
   }
 
   const found = issues.find((issue) => issue.id === issueId);
   if (!found) {
-    throw new Error(`Triage issue not found: ${issueId}`);
+    throw new Error(`Brief issue not found: ${issueId}`);
   }
 
   return found;
 }
 
-function sendTriageChunk(
-  sender: TriageGenerateEventSender,
+function sendBriefChunk(
+  sender: BriefGenerateEventSender,
   issueId: string,
   delta: string,
   done: boolean,
   status?: string,
 ): void {
-  sender.send(IpcChannel.TriageStreamChunk, { issueId, delta, done, status });
+  sender.send(IpcChannel.BriefStreamChunk, { issueId, delta, done, status });
 }
 
-function sendTriagePhase(
-  sender: TriageGenerateEventSender,
+function sendBriefPhase(
+  sender: BriefGenerateEventSender,
   payload: { issueId: string; phase: 'triaging' | 'generating'; commentCount?: number },
 ): void {
-  sender.send(IpcChannel.TriagePhase, payload);
+  sender.send(IpcChannel.BriefPhase, payload);
 }
 
 function toBriefStatus(status: string): string {
@@ -109,23 +109,23 @@ function toBriefStatus(status: string): string {
   return status;
 }
 
-async function curateTriageComments(
-  deps: Pick<TriageGenerateDeps, 'fetchAndFilterComments' | 'triageComments'>,
-  sender: TriageGenerateEventSender,
+async function curateBriefComments(
+  deps: Pick<BriefGenerateDeps, 'fetchAndFilterComments' | 'triageComments'>,
+  sender: BriefGenerateEventSender,
   issue: Issue,
 ): Promise<string> {
   return curateIssueCommentContext({
     deps,
     issue,
-    emitPhase: (payload) => sendTriagePhase(sender, payload),
-    logPrefix: '[triage]',
+    emitPhase: (payload) => sendBriefPhase(sender, payload),
+    logPrefix: '[brief]',
   });
 }
 
-export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerateDeps): void {
+export function registerBriefGenerateHandler(ipc: IpcMain, deps: BriefGenerateDeps): void {
   ipc.handle(
-    IpcChannel.TriageGenerate,
-    async (event: TriageGenerateEvent, payload: TriageGeneratePayload) => {
+    IpcChannel.BriefGenerate,
+    async (event: BriefGenerateEvent, payload: BriefGeneratePayload) => {
       try {
         const cfg = await deps.store.get();
         if (!cfg.computronRepoPath) {
@@ -133,22 +133,22 @@ export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerate
         }
 
         const issues = await deps.fetchTriageList();
-        const issue = findTriageIssue(issues, payload.issueId);
+        const issue = findBriefIssue(issues, payload.issueId);
         const model = payload.model?.trim() || cfg.claudeModel;
-        const curated = await curateTriageComments(deps, event.sender, issue);
-        sendTriagePhase(event.sender, { issueId: payload.issueId, phase: 'generating' });
-        const content = await deps.streamTriageBrief({
+        const curated = await curateBriefComments(deps, event.sender, issue);
+        sendBriefPhase(event.sender, { issueId: payload.issueId, phase: 'generating' });
+        const content = await deps.streamBrief({
           issue,
           computronRepoPath: cfg.computronRepoPath,
           model,
           curatedComments: curated,
-          onChunk: (delta) => sendTriageChunk(event.sender, payload.issueId, delta, false),
+          onChunk: (delta) => sendBriefChunk(event.sender, payload.issueId, delta, false),
           onStatus: (status) =>
-            sendTriageChunk(event.sender, payload.issueId, '', false, toBriefStatus(status)),
+            sendBriefChunk(event.sender, payload.issueId, '', false, toBriefStatus(status)),
         });
 
-        sendTriageChunk(event.sender, payload.issueId, '', true);
-        event.sender.send(IpcChannel.TriageGenerateDone, { issueId: payload.issueId });
+        sendBriefChunk(event.sender, payload.issueId, '', true);
+        event.sender.send(IpcChannel.BriefGenerateDone, { issueId: payload.issueId });
         notifyDoneBestEffort(
           deps.notifyDone ?? notifyDone,
           'Brief ready',
@@ -157,19 +157,19 @@ export function registerTriageGenerateHandler(ipc: IpcMain, deps: TriageGenerate
         return { content, issueId: payload.issueId };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        event.sender.send(IpcChannel.TriageGenerateError, { issueId: payload.issueId, message });
+        event.sender.send(IpcChannel.BriefGenerateError, { issueId: payload.issueId, message });
         throw error;
       }
     },
   );
 }
 
-export function registerTriageGetHandler(ipc: IpcMain, deps: TriageGetDeps): void {
+export function registerBriefGetHandler(ipc: IpcMain, deps: BriefGetDeps): void {
   ipc.handle(
-    IpcChannel.TriageGet,
-    async (_event, payload: { issueId: string }): Promise<TriageBrief | null> => {
+    IpcChannel.BriefGet,
+    async (_event, payload: { issueId: string }): Promise<GeneratedBrief | null> => {
       const cfg = await deps.store.get();
-      const target = triageBriefPath(cfg.repoPath, payload.issueId);
+      const target = briefFilePath(cfg.repoPath, payload.issueId);
       if (!target) {
         return null;
       }
@@ -193,12 +193,12 @@ export function registerTriageGetHandler(ipc: IpcMain, deps: TriageGetDeps): voi
   );
 }
 
-export function registerTriageWriteHandler(ipc: IpcMain, deps: TriageWriteDeps): void {
-  ipc.handle(IpcChannel.TriageWrite, async (_event, payload: TriageWritePayload) => {
+export function registerBriefWriteHandler(ipc: IpcMain, deps: BriefWriteDeps): void {
+  ipc.handle(IpcChannel.BriefWrite, async (_event, payload: BriefWritePayload) => {
     assertSafeIssueId(payload.issueId);
 
     const cfg = await deps.store.get();
-    const result = await deps.writeTriageBrief({
+    const result = await deps.writeBrief({
       repoPath: cfg.repoPath,
       issueId: payload.issueId,
       content: payload.content,

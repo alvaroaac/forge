@@ -6,10 +6,10 @@ import type {
   SpecGenerateError,
   SpecPhaseEvent,
   SpecStreamChunk,
-  TriageGenerateDone,
-  TriageGenerateError,
-  TriagePhaseEvent,
-  TriageStreamChunk,
+  BriefGenerateDone,
+  BriefGenerateError,
+  BriefPhaseEvent,
+  BriefStreamChunk,
 } from '../shared/types';
 
 function subscribe<T>(channel: string, handler: (payload: T) => void): () => void {
@@ -47,21 +47,21 @@ const api: ForgeApi = {
     },
     onPhase: (handler) => subscribe<SpecPhaseEvent>(IpcChannel.SpecPhase, handler),
   },
-  triage: {
-    get: (issueId) => ipcRenderer.invoke(IpcChannel.TriageGet, { issueId }),
-    generate: (issueId, model) => ipcRenderer.invoke(IpcChannel.TriageGenerate, { issueId, model }),
+  brief: {
+    get: (issueId) => ipcRenderer.invoke(IpcChannel.BriefGet, { issueId }),
+    generate: (issueId, model) => ipcRenderer.invoke(IpcChannel.BriefGenerate, { issueId, model }),
     write: (issueId, content, opts) =>
-      ipcRenderer.invoke(IpcChannel.TriageWrite, {
+      ipcRenderer.invoke(IpcChannel.BriefWrite, {
         issueId,
         content,
         overwrite: opts?.overwrite ?? false,
       }),
-    onChunk: (handler) => subscribe<TriageStreamChunk>(IpcChannel.TriageStreamChunk, handler),
-    onDone: (handler) => subscribe<TriageGenerateDone>(IpcChannel.TriageGenerateDone, handler),
+    onChunk: (handler) => subscribe<BriefStreamChunk>(IpcChannel.BriefStreamChunk, handler),
+    onDone: (handler) => subscribe<BriefGenerateDone>(IpcChannel.BriefGenerateDone, handler),
     onError: (handler) => {
-      return subscribe<TriageGenerateError>(IpcChannel.TriageGenerateError, handler);
+      return subscribe<BriefGenerateError>(IpcChannel.BriefGenerateError, handler);
     },
-    onPhase: (handler) => subscribe<TriagePhaseEvent>(IpcChannel.TriagePhase, handler),
+    onPhase: (handler) => subscribe<BriefPhaseEvent>(IpcChannel.BriefPhase, handler),
   },
   comments: {
     fetch: (issueId) => ipcRenderer.invoke(IpcChannel.CommentsFetch, { issueId }),

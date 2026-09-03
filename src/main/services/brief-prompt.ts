@@ -28,7 +28,7 @@ function formatLabels(labels: string[]): string {
   return labels.length > 0 ? labels.join(', ') : '(none)';
 }
 
-export function buildTriagePrompt(input: { issue: Issue }): { system: string; user: string } {
+export function buildBriefPrompt(input: { issue: Issue }): { system: string; user: string } {
   const { issue } = input;
 
   const user = [

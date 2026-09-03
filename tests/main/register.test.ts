@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import type { IpcMain } from 'electron';
 import { registerAll } from '../../src/main/ipc/register';
 import type { SpecGenerateDeps } from '../../src/main/ipc/spec';
-import type { TriageGenerateDeps } from '../../src/main/ipc/triage';
+import type { BriefGenerateDeps } from '../../src/main/ipc/brief';
 import type { RawLinearComment } from '../../src/main/services/comment-fetcher';
 
 const mocks = vi.hoisted(() => ({
@@ -18,9 +18,9 @@ const mocks = vi.hoisted(() => ({
   registerSpecGetHandler: vi.fn(),
   registerSpecLaunchReviewHandler: vi.fn(),
   registerSpecWriteHandler: vi.fn(),
-  registerTriageGenerateHandler: vi.fn(),
-  registerTriageGetHandler: vi.fn(),
-  registerTriageWriteHandler: vi.fn(),
+  registerBriefGenerateHandler: vi.fn(),
+  registerBriefGetHandler: vi.fn(),
+  registerBriefWriteHandler: vi.fn(),
   streamClaude: vi.fn().mockResolvedValue('curated comments'),
 }));
 
@@ -48,10 +48,10 @@ vi.mock('../../src/main/ipc/spec', () => ({
   registerSpecWriteHandler: mocks.registerSpecWriteHandler,
 }));
 
-vi.mock('../../src/main/ipc/triage', () => ({
-  registerTriageGenerateHandler: mocks.registerTriageGenerateHandler,
-  registerTriageGetHandler: mocks.registerTriageGetHandler,
-  registerTriageWriteHandler: mocks.registerTriageWriteHandler,
+vi.mock('../../src/main/ipc/brief', () => ({
+  registerBriefGenerateHandler: mocks.registerBriefGenerateHandler,
+  registerBriefGetHandler: mocks.registerBriefGetHandler,
+  registerBriefWriteHandler: mocks.registerBriefWriteHandler,
 }));
 
 vi.mock('../../src/main/services/config-store', () => ({
@@ -142,7 +142,7 @@ describe('registerAll comment context wiring', () => {
     await registerWithClient(makeLinearClient(fetchIssueComments));
 
     const specDeps = mocks.registerSpecGenerateHandler.mock.calls[0]?.[1] as SpecGenerateDeps;
-    const triageDeps = mocks.registerTriageGenerateHandler.mock.calls[0]?.[1] as TriageGenerateDeps;
+    const briefDeps = mocks.registerBriefGenerateHandler.mock.calls[0]?.[1] as BriefGenerateDeps;
     const commentsDeps = mocks.registerCommentsGenerateSummaryHandler.mock.calls[0]?.[1] as {
       fetchAndFilterComments: SpecGenerateDeps['fetchAndFilterComments'];
       triageComments: SpecGenerateDeps['triageComments'];
@@ -160,7 +160,7 @@ describe('registerAll comment context wiring', () => {
         isBot: false,
       },
     ]);
-    await triageDeps.fetchAndFilterComments('uuid-def');
+    await briefDeps.fetchAndFilterComments('uuid-def');
     await commentsDeps.fetchAndFilterComments('uuid-ghi');
     await commentsFetchDeps.fetchAndFilterComments('uuid-jkl');
 
@@ -176,7 +176,7 @@ describe('registerAll comment context wiring', () => {
       }),
     ).resolves.toBe('');
     await expect(
-      triageDeps.triageComments({
+      briefDeps.triageComments({
         issueTitle: 'Title',
         issueDescription: 'Description',
         comments: [],

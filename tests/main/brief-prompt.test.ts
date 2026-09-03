@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { buildTriagePrompt } from '../../src/main/services/triage-prompt';
+import { buildBriefPrompt } from '../../src/main/services/brief-prompt';
 import type { Issue } from '../../src/shared/types';
 
-describe('buildTriagePrompt', () => {
+describe('buildBriefPrompt', () => {
   const issue: Issue = {
     id: 'FUL-77',
     uuid: 'uuid-test-fixture',
@@ -17,8 +17,8 @@ describe('buildTriagePrompt', () => {
     assigneeId: null,
   };
 
-  it('builds system and user prompts for triage brief', () => {
-    const prompt = buildTriagePrompt({ issue });
+  it('builds system and user prompts for a brief', () => {
+    const prompt = buildBriefPrompt({ issue });
 
     const expectedOrder = [
       '**What the user likely wants**',

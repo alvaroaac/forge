@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 
-import type { GenerationPhase, Issue, TriageBrief } from '../../shared/types';
+import type { GenerationPhase, Issue, GeneratedBrief } from '../../shared/types';
 import { CommentsTab } from './comments-tab';
 import { DetailTab } from './detail-tab';
 import { GeneratedDocument } from './generated-document';
 import { IssueDrawerShell } from './issue-drawer-shell';
 
 type WriteState = 'idle' | 'saving' | 'saved';
-export type TriageDrawerTab = 'detail' | 'comments' | 'brief';
+export type BriefDrawerTab = 'detail' | 'comments' | 'brief';
 
-type TriageDrawerProps = {
+type BriefDrawerProps = {
   issue: Issue | null;
-  tab?: TriageDrawerTab;
-  setTab?: (tab: TriageDrawerTab) => void;
+  tab?: BriefDrawerTab;
+  setTab?: (tab: BriefDrawerTab) => void;
   canGenerate: boolean;
   isStreaming: boolean;
   streaming: string;
@@ -21,22 +21,22 @@ type TriageDrawerProps = {
   commentCount?: number;
   isBriefPersisted?: boolean;
   isBriefLoading?: boolean;
-  brief: TriageBrief | null;
+  brief: GeneratedBrief | null;
   errorMessage: string | null;
   onGenerate: () => void;
   onClose: () => void;
 };
 
-type GenerateButtonProps = Pick<TriageDrawerProps, 'canGenerate' | 'isStreaming' | 'onGenerate'>;
+type GenerateButtonProps = Pick<BriefDrawerProps, 'canGenerate' | 'isStreaming' | 'onGenerate'>;
 
-type TriageActionsProps = GenerateButtonProps & {
-  brief: TriageBrief | null;
+type BriefActionsProps = GenerateButtonProps & {
+  brief: GeneratedBrief | null;
   content: string;
   isInitiallySaved: boolean;
   onWrite: () => Promise<boolean> | boolean;
 };
 
-function pickBriefContent(brief: TriageBrief | null, streaming: string): string {
+function pickBriefContent(brief: GeneratedBrief | null, streaming: string): string {
   return streaming ? streaming : (brief?.content ?? '');
 }
 
@@ -76,7 +76,7 @@ function pickActivityStatus(
 }
 
 async function writeBriefWithOverwrite(issueId: string, content: string): Promise<boolean> {
-  const first = await window.forge.triage.write(issueId, content);
+  const first = await window.forge.brief.write(issueId, content);
 
   if (first.written) {
     return true;
@@ -86,11 +86,11 @@ async function writeBriefWithOverwrite(issueId: string, content: string): Promis
     return false;
   }
 
-  if (!window.confirm('Overwrite existing triage-brief.md?')) {
+  if (!window.confirm('Overwrite existing brief.md?')) {
     return false;
   }
 
-  const second = await window.forge.triage.write(issueId, content, { overwrite: true });
+  const second = await window.forge.brief.write(issueId, content, { overwrite: true });
   return second.written;
 }
 
@@ -119,7 +119,7 @@ function pickWriteLabel(writeState: WriteState): string {
   return 'Write to file';
 }
 
-function TriageActions({
+function BriefActions({
   brief,
   content,
   isInitiallySaved,
@@ -127,7 +127,7 @@ function TriageActions({
   isStreaming,
   onGenerate,
   onWrite,
-}: TriageActionsProps) {
+}: BriefActionsProps) {
   const [writeState, setWriteState] = useState<WriteState>(isInitiallySaved ? 'saved' : 'idle');
   const isWriteDisabled = writeState !== 'idle';
 
@@ -167,7 +167,7 @@ function TriageActions({
   );
 }
 
-function TriageConfigHint({ canGenerate }: Pick<TriageDrawerProps, 'canGenerate'>) {
+function BriefConfigHint({ canGenerate }: Pick<BriefDrawerProps, 'canGenerate'>) {
   if (canGenerate) {
     return null;
   }
@@ -175,7 +175,7 @@ function TriageConfigHint({ canGenerate }: Pick<TriageDrawerProps, 'canGenerate'
   return <p className="hint">Set computronRepoPath (a valid git repo) to generate a brief.</p>;
 }
 
-export function TriageDrawer({
+export function BriefDrawer({
   issue,
   tab = 'detail',
   setTab = () => undefined,
@@ -191,7 +191,7 @@ export function TriageDrawer({
   errorMessage,
   onGenerate,
   onClose,
-}: TriageDrawerProps) {
+}: BriefDrawerProps) {
   if (!issue) {
     return null;
   }
@@ -209,7 +209,7 @@ export function TriageDrawer({
     />
   );
   const actions = (
-    <TriageActions
+    <BriefActions
       brief={brief}
       content={content}
       isInitiallySaved={isBriefPersisted}
@@ -248,18 +248,18 @@ export function TriageDrawer({
         },
       ]}
     >
-      <TriageConfigHint canGenerate={canGenerate} />
+      <BriefConfigHint canGenerate={canGenerate} />
       {tab === 'detail' ? <DetailTab issue={issue} /> : null}
       {tab === 'comments' ? <CommentsTab issue={issue} /> : null}
       {tab === 'brief' ? (
         <GeneratedDocument
           artifactName="Brief"
-          artifactPath={`thoughts/tasks/${issue.id}/triage-brief.md`}
+          artifactPath={`thoughts/tasks/${issue.id}/brief.md`}
           content={content}
           isStreaming={isStreaming || isCheckingBrief}
           streamStatus={
             isCheckingBrief
-              ? ['Checking triage-brief.md']
+              ? ['Checking brief.md']
               : pickActivityStatus(streamStatus, phase, commentCount)
           }
           errorMessage={errorMessage}

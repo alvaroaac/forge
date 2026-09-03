@@ -55,7 +55,7 @@ function createLinearApi() {
   };
 }
 
-function createTriageApi() {
+function createBriefApi() {
   return {
     get: vi.fn(),
     generate: vi.fn(),
@@ -76,7 +76,7 @@ describe('useAuthStatus', () => {
       auth: { check },
       config: { get: vi.fn(), set: vi.fn() },
       linear: createLinearApi(),
-      triage: createTriageApi(),
+      brief: createBriefApi(),
       spec: createSpecApi(),
     };
 
@@ -119,7 +119,7 @@ describe('useAuthStatus', () => {
       auth: { check },
       config: { get: vi.fn(), set: vi.fn() },
       linear: createLinearApi(),
-      triage: createTriageApi(),
+      brief: createBriefApi(),
       spec: createSpecApi(),
     };
 
@@ -162,7 +162,7 @@ describe('useConfig', () => {
       auth: { check: vi.fn() },
       config: { get, set: vi.fn() },
       linear: createLinearApi(),
-      triage: createTriageApi(),
+      brief: createBriefApi(),
       spec: createSpecApi(),
     };
 
@@ -202,7 +202,7 @@ describe('useConfig', () => {
       auth: { check: vi.fn() },
       config: { get, set: vi.fn() },
       linear: createLinearApi(),
-      triage: createTriageApi(),
+      brief: createBriefApi(),
       spec: createSpecApi(),
     };
 

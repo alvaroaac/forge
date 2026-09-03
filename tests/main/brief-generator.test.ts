@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { streamTriageBrief } from '../../src/main/services/triage-generator';
+import { streamBrief } from '../../src/main/services/brief-generator';
 import type { Issue } from '../../src/shared/types';
 
 const issue: Issue = {
@@ -16,13 +16,13 @@ const issue: Issue = {
   assigneeId: null,
 };
 
-describe('streamTriageBrief', () => {
+describe('streamBrief', () => {
   it('calls streamClaude with --add-dir <computronRepoPath> and Read/Glob/Grep tools', async () => {
     const stream = vi.fn().mockResolvedValue('# brief');
     const chunks: string[] = [];
     const onStatus = vi.fn();
 
-    const out = await streamTriageBrief({
+    const out = await streamBrief({
       issue,
       computronRepoPath: '/tmp/computron',
       model: 'claude-sonnet-4-6',
@@ -48,10 +48,10 @@ describe('streamTriageBrief', () => {
   });
 });
 
-describe('streamTriageBrief — curatedComments passthrough', () => {
+describe('streamBrief — curatedComments passthrough', () => {
   it('forwards curatedComments to streamClaude when provided', async () => {
     const calls: Array<{ user: string; curatedComments?: string }> = [];
-    await streamTriageBrief({
+    await streamBrief({
       issue,
       computronRepoPath: '/tmp/cmp',
       model: 'claude-sonnet-4-6',
@@ -67,7 +67,7 @@ describe('streamTriageBrief — curatedComments passthrough', () => {
 
   it('omits curatedComments when not provided', async () => {
     const calls: Array<{ curatedComments?: string }> = [];
-    await streamTriageBrief({
+    await streamBrief({
       issue,
       computronRepoPath: '/tmp/cmp',
       model: 'claude-sonnet-4-6',

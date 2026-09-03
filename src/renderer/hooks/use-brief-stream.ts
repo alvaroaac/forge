@@ -2,14 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
   GenerationPhase,
-  TriageBrief,
-  TriageGenerateDone,
-  TriageGenerateError,
-  TriagePhaseEvent,
-  TriageStreamChunk,
+  GeneratedBrief,
+  BriefGenerateDone,
+  BriefGenerateError,
+  BriefPhaseEvent,
+  BriefStreamChunk,
 } from '../../shared/types';
 
-function toGeneratedBrief(issueId: string, content: string): TriageBrief {
+function toGeneratedBrief(issueId: string, content: string): GeneratedBrief {
   return {
     issueId,
     content,
@@ -17,8 +17,8 @@ function toGeneratedBrief(issueId: string, content: string): TriageBrief {
   };
 }
 
-export function useTriageStream(issueId: string | null) {
-  const [brief, setBrief] = useState<TriageBrief | null>(null);
+export function useBriefStream(issueId: string | null) {
+  const [brief, setBrief] = useState<GeneratedBrief | null>(null);
   const [streaming, setStreaming] = useState('');
   const [streamStatus, setStreamStatus] = useState<string[]>([]);
   const [isBriefPersisted, setIsBriefPersisted] = useState(false);
@@ -90,7 +90,7 @@ export function useTriageStream(issueId: string | null) {
   );
 
   const handleChunk = useCallback(
-    (targetIssueId: string, setupVersion: number, chunk: TriageStreamChunk): void => {
+    (targetIssueId: string, setupVersion: number, chunk: BriefStreamChunk): void => {
       if (chunk.issueId !== targetIssueId) {
         return;
       }
@@ -124,7 +124,7 @@ export function useTriageStream(issueId: string | null) {
   );
 
   const handleDone = useCallback(
-    (targetIssueId: string, setupVersion: number, payload: TriageGenerateDone): void => {
+    (targetIssueId: string, setupVersion: number, payload: BriefGenerateDone): void => {
       if (payload.issueId !== targetIssueId) {
         return;
       }
@@ -135,7 +135,7 @@ export function useTriageStream(issueId: string | null) {
   );
 
   const handleError = useCallback(
-    (targetIssueId: string, setupVersion: number, payload: TriageGenerateError): void => {
+    (targetIssueId: string, setupVersion: number, payload: BriefGenerateError): void => {
       if (payload.issueId !== targetIssueId) {
         return;
       }
@@ -146,7 +146,7 @@ export function useTriageStream(issueId: string | null) {
   );
 
   const handlePhase = useCallback(
-    (targetIssueId: string, setupVersion: number, payload: TriagePhaseEvent): void => {
+    (targetIssueId: string, setupVersion: number, payload: BriefPhaseEvent): void => {
       if (payload.issueId !== targetIssueId) {
         return;
       }
@@ -179,7 +179,7 @@ export function useTriageStream(issueId: string | null) {
     resetStreamState();
     setIsBriefLoading(true);
 
-    void window.forge.triage
+    void window.forge.brief
       .get(issueId)
       .then((nextBrief) => {
         if (cancelled || !isCurrentRun(issueId, setupVersion)) {
@@ -200,19 +200,19 @@ export function useTriageStream(issueId: string | null) {
         setIsBriefLoading(false);
       });
 
-    const unsubscribe = window.forge.triage.onChunk((chunk: TriageStreamChunk) => {
+    const unsubscribe = window.forge.brief.onChunk((chunk: BriefStreamChunk) => {
       handleChunk(issueId, setupVersion, chunk);
     });
 
-    const unsubscribeDone = window.forge.triage.onDone((payload: TriageGenerateDone) => {
+    const unsubscribeDone = window.forge.brief.onDone((payload: BriefGenerateDone) => {
       handleDone(issueId, setupVersion, payload);
     });
 
-    const unsubscribeError = window.forge.triage.onError((payload: TriageGenerateError) => {
+    const unsubscribeError = window.forge.brief.onError((payload: BriefGenerateError) => {
       handleError(issueId, setupVersion, payload);
     });
 
-    const unsubscribePhase = window.forge.triage.onPhase((payload: TriagePhaseEvent) => {
+    const unsubscribePhase = window.forge.brief.onPhase((payload: BriefPhaseEvent) => {
       handlePhase(issueId, setupVersion, payload);
     });
 
@@ -250,8 +250,8 @@ export function useTriageStream(issueId: string | null) {
 
       try {
         const result = model
-          ? await window.forge.triage.generate(issueId, model)
-          : await window.forge.triage.generate(issueId);
+          ? await window.forge.brief.generate(issueId, model)
+          : await window.forge.brief.generate(issueId);
 
         commitGeneratedBrief(issueId, setupVersion, result.content);
       } catch (error) {

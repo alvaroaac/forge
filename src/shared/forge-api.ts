@@ -7,12 +7,12 @@ import type {
   SpecGenerateError,
   SpecPhaseEvent,
   SpecStreamChunk,
-  TriageBrief,
-  TriageGenerateDone,
-  TriageGenerateError,
-  TriagePhaseEvent,
-  TriageStreamChunk,
-  TriageWriteResult,
+  GeneratedBrief,
+  BriefGenerateDone,
+  BriefGenerateError,
+  BriefPhaseEvent,
+  BriefStreamChunk,
+  BriefWriteResult,
   SpecReviewResult,
   CommentFetchResult,
   CommentSummaryResult,
@@ -39,18 +39,18 @@ export interface ForgeApi {
     onError: (handler: (payload: SpecGenerateError) => void) => () => void;
     onPhase: (handler: (event: SpecPhaseEvent) => void) => () => void;
   };
-  triage: {
-    get: (issueId: string) => Promise<TriageBrief | null>;
-    generate: (issueId: string, model?: string) => Promise<TriageBrief>;
+  brief: {
+    get: (issueId: string) => Promise<GeneratedBrief | null>;
+    generate: (issueId: string, model?: string) => Promise<GeneratedBrief>;
     write: (
       issueId: string,
       content: string,
       opts?: { overwrite?: boolean },
-    ) => Promise<TriageWriteResult>;
-    onChunk: (handler: (chunk: TriageStreamChunk) => void) => () => void;
-    onDone: (handler: (payload: TriageGenerateDone) => void) => () => void;
-    onError: (handler: (payload: TriageGenerateError) => void) => () => void;
-    onPhase: (handler: (event: TriagePhaseEvent) => void) => () => void;
+    ) => Promise<BriefWriteResult>;
+    onChunk: (handler: (chunk: BriefStreamChunk) => void) => () => void;
+    onDone: (handler: (payload: BriefGenerateDone) => void) => () => void;
+    onError: (handler: (payload: BriefGenerateError) => void) => () => void;
+    onPhase: (handler: (event: BriefPhaseEvent) => void) => () => void;
   };
   comments?: {
     fetch: (issueId: string) => Promise<CommentFetchResult>;
