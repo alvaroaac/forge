@@ -96,10 +96,7 @@ export function CommentsTab({ issue }: CommentsTabProps) {
       }
 
       const nextResult = await window.forge.comments.generateSummary(requestIssueId);
-      if (
-        currentIssueIdRef.current !== requestIssueId ||
-        nextResult.issueId !== requestIssueId
-      ) {
+      if (currentIssueIdRef.current !== requestIssueId || nextResult.issueId !== requestIssueId) {
         return;
       }
 
@@ -167,7 +164,9 @@ export function CommentsTab({ issue }: CommentsTabProps) {
         }
         errorMessage={fetchState === 'error' || summaryState === 'error' ? errorMessage : null}
         statusMessage={
-          fetchState === 'loaded' || summaryState === 'loaded' ? skippedMessage ?? errorMessage : null
+          fetchState === 'loaded' || summaryState === 'loaded'
+            ? (skippedMessage ?? errorMessage)
+            : null
         }
         emptyTitle="No comment summary generated yet."
         emptyDescription="Generate one from the current Linear comments."

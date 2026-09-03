@@ -93,7 +93,9 @@ vi.mock('../../src/renderer/components/right-panel', () => ({
 }));
 
 vi.mock('../../src/renderer/components/issue-list-panel', () => ({
-  IssueListPanel: (props: { onOpen: (issue: Issue, which: 'detail' | 'spec' | 'comments') => void }) => {
+  IssueListPanel: (props: {
+    onOpen: (issue: Issue, which: 'detail' | 'spec' | 'comments') => void;
+  }) => {
     renderState.issueListPanelProps = props;
     return <div data-testid="issue-list-panel" />;
   },
@@ -306,9 +308,9 @@ describe('App detail drawer refresh', () => {
     });
 
     await waitFor(() => {
-    expect(renderState.specDrawerIssue?.description).toBe('Fresh description from detail query');
-    expect(renderState.specDrawerProps?.tab).toBe('detail');
-  });
+      expect(renderState.specDrawerIssue?.description).toBe('Fresh description from detail query');
+      expect(renderState.specDrawerProps?.tab).toBe('detail');
+    });
   });
 
   it('does not replace drawer issue when an older detail request resolves after selection changes', async () => {

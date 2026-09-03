@@ -185,9 +185,7 @@ describe('BriefDrawer', () => {
 
     expect(setTab).toHaveBeenCalledWith('detail');
     expect(setTab).toHaveBeenCalledWith('comments');
-    expect(screen.getByRole('button', { name: 'Brief' }).className).toContain(
-      'drawer-tab-active',
-    );
+    expect(screen.getByRole('button', { name: 'Brief' }).className).toContain('drawer-tab-active');
 
     rerender(
       <BriefDrawer
@@ -476,10 +474,7 @@ describe('BriefDrawer', () => {
     fireEvent.click(screen.getByRole('button', { name: /write to file/i }));
 
     await waitFor(() => {
-      expect(writeMock).toHaveBeenCalledWith(
-        'FUL-77',
-        '## New brief\n\nFresh streamed context.',
-      );
+      expect(writeMock).toHaveBeenCalledWith('FUL-77', '## New brief\n\nFresh streamed context.');
     });
   });
 

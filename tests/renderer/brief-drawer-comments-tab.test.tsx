@@ -125,9 +125,9 @@ describe('BriefDrawer comments tab', () => {
     );
 
     expect(fetch).toHaveBeenCalledWith('FUL-77');
-    expect(screen.getByRole('button', { name: 'Checking comments...' }).hasAttribute('disabled')).toBe(
-      true,
-    );
+    expect(
+      screen.getByRole('button', { name: 'Checking comments...' }).hasAttribute('disabled'),
+    ).toBe(true);
     expect(container.querySelector('.stream-spinner')).toBeTruthy();
 
     fetchDone.resolve({
@@ -145,9 +145,9 @@ describe('BriefDrawer comments tab', () => {
     });
 
     expect(await screen.findByText('Raw issue comment.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Generate Comment Summary' }).hasAttribute('disabled')).toBe(
-      false,
-    );
+    expect(
+      screen.getByRole('button', { name: 'Generate Comment Summary' }).hasAttribute('disabled'),
+    ).toBe(false);
   });
 
   it('disables summary generation when the comment fetch returns no comments', async () => {
@@ -162,9 +162,9 @@ describe('BriefDrawer comments tab', () => {
     renderCommentsTab();
 
     expect(await screen.findByText('No human comments found for this issue.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'No comments to summarize' }).hasAttribute('disabled')).toBe(
-      true,
-    );
+    expect(
+      screen.getByRole('button', { name: 'No comments to summarize' }).hasAttribute('disabled'),
+    ).toBe(true);
     expect(screen.getByText('0 comment(s)')).toBeTruthy();
   });
 });

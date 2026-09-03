@@ -154,9 +154,9 @@ describe('CommentsTab', () => {
     });
 
     await screen.findByText('No human comments found for this issue.');
-    expect(screen.getByRole('button', { name: 'No comments to summarize' }).hasAttribute('disabled')).toBe(
-      true,
-    );
+    expect(
+      screen.getByRole('button', { name: 'No comments to summarize' }).hasAttribute('disabled'),
+    ).toBe(true);
     expect(screen.getByText('0 comment(s)')).toBeTruthy();
     expect(generateSummary).not.toHaveBeenCalled();
   });
@@ -180,9 +180,9 @@ describe('CommentsTab', () => {
     render(<CommentsTab issue={issueA} />);
 
     expect(await screen.findByText('Visible before summary.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Generate Comment Summary' }).hasAttribute('disabled')).toBe(
-      false,
-    );
+    expect(
+      screen.getByRole('button', { name: 'Generate Comment Summary' }).hasAttribute('disabled'),
+    ).toBe(false);
     expect(screen.getByText('1 comment(s)')).toBeTruthy();
     expect(screen.getByText('No comment summary generated yet.')).toBeTruthy();
   });

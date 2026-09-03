@@ -70,7 +70,8 @@ In `.agents/skills/linear/reference/linear.mjs`, add:
  * }>>}
  */
 async function fetchIssueComments(issueId) {
-  const data = await linearRequest(`
+  const data = await linearRequest(
+    `
     query($issueId: String!) {
       issue(id: $issueId) {
         comments(first: 250) {
@@ -84,7 +85,9 @@ async function fetchIssueComments(issueId) {
         }
       }
     }
-  `, { issueId });
+  `,
+    { issueId },
+  );
   return data.issue?.comments?.nodes ?? [];
 }
 ```
@@ -101,8 +104,8 @@ export type LinearComment = {
   id: string;
   body: string;
   createdAt: string;
-  authorName: string;        // user.name OR botActor.name
-  isBot: boolean;            // botActor !== null
+  authorName: string; // user.name OR botActor.name
+  isBot: boolean; // botActor !== null
 };
 
 export async function fetchIssueComments(

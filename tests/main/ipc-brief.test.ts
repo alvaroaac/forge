@@ -117,9 +117,7 @@ describe('brief:get handler', () => {
     });
 
     await expect(ipc.invoke(IpcChannel.BriefGet, {}, { issueId: 'FUL-77' })).resolves.toBeNull();
-    await expect(
-      ipc.invoke(IpcChannel.BriefGet, {}, { issueId: '../FUL-77' }),
-    ).resolves.toBeNull();
+    await expect(ipc.invoke(IpcChannel.BriefGet, {}, { issueId: '../FUL-77' })).resolves.toBeNull();
   });
 });
 
