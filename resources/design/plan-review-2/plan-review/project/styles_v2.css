@@ -1,0 +1,872 @@
+:root {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #0f3460;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-dim: #6b7a93;
+  --accent: #00adb5;
+  --accent-hover: #00ccd3;
+  --border: #2a2a4a;
+  --border-strong: #3a3a5a;
+  --danger: #e74c3c;
+  --success: #2ecc71;
+
+  /* Node role palette — same chroma, different hues */
+  --role-start:    oklch(0.72 0.12 200); /* teal */
+  --role-process:  oklch(0.72 0.05 260); /* slate */
+  --role-decision: oklch(0.78 0.14 75);  /* amber */
+  --role-end:      oklch(0.72 0.14 150); /* green */
+  --role-error:    oklch(0.68 0.17 25);  /* red */
+  --role-io:       oklch(0.72 0.12 290); /* violet */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow: hidden;
+}
+
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.top-bar h1 { font-size: 15px; flex: 1; font-weight: 600; letter-spacing: -0.01em; }
+.top-bar h1 span { color: var(--text-secondary); font-weight: 400; }
+
+.mode-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--bg-tertiary);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.comment-count { font-size: 13px; color: var(--text-secondary); }
+
+.submit-btn {
+  padding: 7px 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+.submit-btn:hover { background: var(--accent-hover); }
+
+.panels { display: flex; flex: 1; overflow: hidden; }
+
+/* ── TOC ─────────────────────────────────────────── */
+.toc-panel {
+  width: 230px;
+  padding: 18px 14px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.toc-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  padding-left: 8px;
+}
+.toc-milestone h3 {
+  font-size: 12px;
+  color: var(--accent);
+  margin: 16px 0 6px;
+  padding-left: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.toc-panel ul { list-style: none; }
+.toc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  border-left: 2px solid transparent;
+}
+.toc-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.toc-item.active { background: var(--bg-tertiary); border-left-color: var(--accent); color: var(--text-primary); }
+.toc-item.commented .toc-marker { color: var(--success); }
+.toc-marker { font-size: 10px; width: 10px; color: var(--border-strong); }
+.toc-id { color: var(--text-dim); font-family: 'SF Mono', Menlo, monospace; font-size: 11px; }
+
+/* ── Content ─────────────────────────────────────── */
+.content-area {
+  flex: 1;
+  padding: 28px 36px;
+  overflow-y: auto;
+  max-width: 100%;
+}
+
+.section-view {
+  margin: 0 auto 28px;
+  max-width: 860px;
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-secondary) 40%, transparent);
+}
+.section-view.active { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.section-view h2 {
+  font-size: 17px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.section-crumb {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.section-meta {
+  margin: 10px 0 16px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 12px;
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.section-meta span { color: var(--text-secondary); }
+.section-meta b { color: var(--text-primary); font-weight: 500; margin-right: 4px; }
+
+.line-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 2px 0 2px 4px;
+  border-left: 2px solid transparent;
+}
+.line-block:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); border-left-color: var(--accent); }
+.line-gutter {
+  width: 20px;
+  flex-shrink: 0;
+  padding-top: 4px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--border-strong);
+  font-family: 'SF Mono', Menlo, monospace;
+  cursor: pointer;
+  user-select: none;
+}
+.line-block:hover .line-gutter { color: var(--accent); }
+.line-inner { flex: 1; min-width: 0; font-size: 14px; line-height: 1.7; }
+.line-inner p { margin: 0; }
+.line-inner code { background: var(--bg-secondary); padding: 1px 6px; border-radius: 3px; font-size: 12.5px; font-family: 'SF Mono', Menlo, monospace; }
+.line-inner pre:not(.mermaid-source) { background: var(--bg-secondary); padding: 10px 12px; border-radius: 6px; overflow-x: auto; font-size: 12.5px; font-family: 'SF Mono', Menlo, monospace; }
+.line-inner h3 { font-size: 14px; margin: 4px 0; }
+.line-inner strong { color: var(--text-primary); font-weight: 600; }
+
+/* ── Sidebar ─────────────────────────────────────── */
+.comment-sidebar {
+  width: 320px;
+  padding: 18px 16px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+.comment-card {
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+}
+.comment-card .anchor-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.comment-card .anchor-quote {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  border-left: 2px solid var(--border-strong);
+  padding-left: 8px;
+  margin-bottom: 8px;
+  font-family: 'SF Mono', Menlo, monospace;
+  line-height: 1.5;
+}
+.comment-card .ctext { color: var(--text-primary); line-height: 1.5; }
+.comment-card .meta { margin-top: 6px; font-size: 11px; color: var(--text-dim); }
+
+/* ═════════════════════════════════════════════════════
+   MERMAID BLOCK — redesigned
+   ═════════════════════════════════════════════════════ */
+
+.mermaid-block {
+  margin: 14px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--bg-secondary) 50%, transparent) 0%,
+    color-mix(in srgb, var(--bg-primary) 80%, transparent) 100%);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.mermaid-block:hover { border-color: var(--border-strong); }
+.mermaid-block.expanded { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+
+/* --- Variant: minimal (default, chrome shows on hover) ---------- */
+.mermaid-block[data-chrome="minimal"] .mermaid-header {
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: auto;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  width: auto;
+}
+.mermaid-block[data-chrome="minimal"]:hover .mermaid-header,
+.mermaid-block[data-chrome="minimal"].source-open .mermaid-header {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.mermaid-block[data-chrome="minimal"] .mermaid-title,
+.mermaid-block[data-chrome="minimal"] .mermaid-kind-badge,
+.mermaid-block[data-chrome="minimal"] .mermaid-node-count { display: none; }
+.mermaid-block[data-chrome="minimal"] { position: relative; }
+
+/* --- Variant: labeled card (title bar, kind badge, toolbar) ------ */
+.mermaid-block[data-chrome="labeled"] .mermaid-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 14px;
+  background: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+/* --- Variant: terminal (matches code-block chrome) --------------- */
+.mermaid-block[data-chrome="terminal"] {
+  background: #0d1224;
+  border-color: #1f2a4a;
+}
+.mermaid-block[data-chrome="terminal"] .mermaid-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  background: #0a0f1e;
+  border-bottom: 1px solid #1f2a4a;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+}
+.mermaid-block[data-chrome="terminal"] .mermaid-title::before {
+  content: "◆ ";
+  color: var(--accent);
+}
+.mermaid-block[data-chrome="terminal"] .mermaid-kind-badge {
+  font-family: 'SF Mono', Menlo, monospace;
+  background: transparent;
+  border: 1px solid #1f2a4a;
+  color: var(--accent);
+}
+
+/* --- Common toolbar / header pieces ------------------------------ */
+.mermaid-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+.mermaid-kind-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.mermaid-node-count {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: 'SF Mono', Menlo, monospace;
+}
+.mermaid-toolbar {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: color-mix(in srgb, var(--bg-primary) 60%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.mermaid-block[data-chrome="minimal"] .mermaid-toolbar { background: var(--bg-secondary); }
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: background 0.12s, color 0.12s;
+}
+.tb-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.tb-btn.active { background: var(--accent); color: #0a0f1e; }
+.tb-btn.zoom-readout {
+  width: auto;
+  padding: 0 8px;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: default;
+}
+.tb-btn.zoom-readout:hover { background: transparent; color: var(--text-dim); }
+.tb-sep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; }
+
+.tb-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+/* --- Diagram viewport -------------------------------------------- */
+.mermaid-viewport {
+  position: relative;
+  overflow: auto;
+  padding: 18px 16px;
+  min-height: 120px;
+  background-image:
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--text-dim) 18%, transparent) 1px, transparent 0);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
+}
+.mermaid-viewport.fit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mermaid-surface {
+  display: inline-block;
+  transform-origin: center center;
+  transition: transform 0.18s cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
+}
+.mermaid-surface svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Legend strip — explains color coding, shown when there are
+   role-tagged nodes. */
+.mermaid-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-secondary) 40%, transparent);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.mermaid-legend .lg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.mermaid-legend .lg-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+}
+
+/* --- Source panel (toggle) --------------------------------------- */
+.mermaid-source {
+  border-top: 1px solid var(--border);
+  background: #0a0f1e;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+.mermaid-block.source-open .mermaid-source { max-height: 600px; overflow: auto; }
+.mermaid-source > div { min-height: 0; }
+.mermaid-source pre {
+  margin: 0;
+  padding: 14px 16px;
+  background: transparent !important;
+  font-family: 'SF Mono', Menlo, 'Liberation Mono', monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  color: #c5d3ef;
+  overflow-x: auto;
+}
+.mermaid-source .src-header {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+.mermaid-source .src-header button {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.mermaid-source .src-header button:hover { color: var(--text-primary); border-color: var(--accent); }
+
+/* Syntax-highlighted mermaid source */
+.mermaid-source .tk-kw      { color: #ff7b72; }
+.mermaid-source .tk-node    { color: #79c0ff; }
+.mermaid-source .tk-label   { color: #a5d6ff; }
+.mermaid-source .tk-arrow   { color: #d2a8ff; }
+.mermaid-source .tk-class   { color: #ffa657; }
+.mermaid-source .tk-comment { color: #6b7a93; font-style: italic; }
+
+/* --- Fullscreen modal -------------------------------------------- */
+.mermaid-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 20, 0.82);
+  backdrop-filter: blur(8px);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  animation: fade-in 0.18s ease;
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.mermaid-overlay .mo-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+.mermaid-overlay .mo-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.mermaid-overlay .mo-diagram {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 30px;
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--text-dim) 15%, transparent) 1px, transparent 0);
+  background-size: 26px 26px;
+}
+.mermaid-overlay .mo-source {
+  width: 400px;
+  border-left: 1px solid var(--border);
+  background: #0a0f1e;
+  display: flex;
+  flex-direction: column;
+}
+.mermaid-overlay .mo-source .sh {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+}
+.mermaid-overlay .mo-source .sh button {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.mermaid-overlay .mo-source pre {
+  flex: 1;
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #c5d3ef;
+  background: transparent;
+}
+
+/* --- Node role styling (applied post-render to mermaid svg) ------ */
+/* Mermaid renders nodes as <g class="node"> with inner .node > rect/polygon/path.
+   We tag <g> with data-role via mermaid's classDef mechanism, then paint here. */
+
+.mermaid-surface g.node[data-role="start"]    > * { fill: color-mix(in srgb, var(--role-start) 20%, var(--bg-primary)) !important; stroke: var(--role-start) !important; }
+.mermaid-surface g.node[data-role="process"]  > * { fill: color-mix(in srgb, var(--role-process) 18%, var(--bg-primary)) !important; stroke: var(--role-process) !important; }
+.mermaid-surface g.node[data-role="decision"] > * { fill: color-mix(in srgb, var(--role-decision) 22%, var(--bg-primary)) !important; stroke: var(--role-decision) !important; stroke-width: 2px !important; }
+.mermaid-surface g.node[data-role="end"]      > * { fill: color-mix(in srgb, var(--role-end) 20%, var(--bg-primary)) !important; stroke: var(--role-end) !important; }
+.mermaid-surface g.node[data-role="error"]    > * { fill: color-mix(in srgb, var(--role-error) 20%, var(--bg-primary)) !important; stroke: var(--role-error) !important; }
+.mermaid-surface g.node[data-role="io"]       > * { fill: color-mix(in srgb, var(--role-io) 20%, var(--bg-primary)) !important; stroke: var(--role-io) !important; }
+
+.mermaid-surface g.node foreignObject span,
+.mermaid-surface g.node text,
+.mermaid-surface g.node span { color: var(--text-primary) !important; fill: var(--text-primary) !important; font-weight: 500 !important; }
+
+.mermaid-surface g.node[data-role="decision"] foreignObject span,
+.mermaid-surface g.node[data-role="decision"] text { color: var(--role-decision) !important; fill: var(--role-decision) !important; font-weight: 600 !important; }
+
+/* Edge labels */
+.mermaid-surface .edgeLabel {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+.mermaid-surface .edgeLabel rect { fill: var(--bg-secondary) !important; }
+.mermaid-surface .edgeLabel foreignObject span { background: var(--bg-secondary) !important; color: var(--text-primary) !important; padding: 0 4px; border-radius: 3px; }
+.mermaid-surface .edgePath .path { stroke: var(--border-strong) !important; stroke-width: 1.5px !important; }
+.mermaid-surface marker path { fill: var(--border-strong) !important; stroke: var(--border-strong) !important; }
+
+/* Highlight edges going OUT of decision nodes — the branch lines */
+.mermaid-surface .edge-from-decision .path { stroke: var(--role-decision) !important; stroke-dasharray: 4 3; }
+.mermaid-surface .edge-from-decision marker path { fill: var(--role-decision) !important; stroke: var(--role-decision) !important; }
+
+/* ── Sequence diagrams — per-participant colors ──────────────── */
+/* Participants get one of 6 distinct hues assigned in order (data-actor-idx) */
+:root {
+  --actor-0: oklch(0.72 0.12 200); /* teal */
+  --actor-1: oklch(0.74 0.14 75);  /* amber */
+  --actor-2: oklch(0.72 0.14 150); /* green */
+  --actor-3: oklch(0.72 0.12 290); /* violet */
+  --actor-4: oklch(0.68 0.17 25);  /* red */
+  --actor-5: oklch(0.74 0.10 320); /* magenta */
+}
+.mermaid-surface g.actor[data-actor-idx="0"] rect, .mermaid-surface rect.actor[data-actor-idx="0"] { fill: color-mix(in srgb, var(--actor-0) 22%, var(--bg-primary)) !important; stroke: var(--actor-0) !important; stroke-width: 2px !important; }
+.mermaid-surface g.actor[data-actor-idx="1"] rect, .mermaid-surface rect.actor[data-actor-idx="1"] { fill: color-mix(in srgb, var(--actor-1) 22%, var(--bg-primary)) !important; stroke: var(--actor-1) !important; stroke-width: 2px !important; }
+.mermaid-surface g.actor[data-actor-idx="2"] rect, .mermaid-surface rect.actor[data-actor-idx="2"] { fill: color-mix(in srgb, var(--actor-2) 22%, var(--bg-primary)) !important; stroke: var(--actor-2) !important; stroke-width: 2px !important; }
+.mermaid-surface g.actor[data-actor-idx="3"] rect, .mermaid-surface rect.actor[data-actor-idx="3"] { fill: color-mix(in srgb, var(--actor-3) 22%, var(--bg-primary)) !important; stroke: var(--actor-3) !important; stroke-width: 2px !important; }
+.mermaid-surface g.actor[data-actor-idx="4"] rect, .mermaid-surface rect.actor[data-actor-idx="4"] { fill: color-mix(in srgb, var(--actor-4) 22%, var(--bg-primary)) !important; stroke: var(--actor-4) !important; stroke-width: 2px !important; }
+.mermaid-surface g.actor[data-actor-idx="5"] rect, .mermaid-surface rect.actor[data-actor-idx="5"] { fill: color-mix(in srgb, var(--actor-5) 22%, var(--bg-primary)) !important; stroke: var(--actor-5) !important; stroke-width: 2px !important; }
+
+/* Lifeline (vertical dashed line under each actor) matches actor color */
+.mermaid-surface line.actor-line[data-actor-idx="0"] { stroke: var(--actor-0) !important; stroke-opacity: 0.45; stroke-width: 1.5px !important; }
+.mermaid-surface line.actor-line[data-actor-idx="1"] { stroke: var(--actor-1) !important; stroke-opacity: 0.45; stroke-width: 1.5px !important; }
+.mermaid-surface line.actor-line[data-actor-idx="2"] { stroke: var(--actor-2) !important; stroke-opacity: 0.45; stroke-width: 1.5px !important; }
+.mermaid-surface line.actor-line[data-actor-idx="3"] { stroke: var(--actor-3) !important; stroke-opacity: 0.45; stroke-width: 1.5px !important; }
+.mermaid-surface line.actor-line[data-actor-idx="4"] { stroke: var(--actor-4) !important; stroke-opacity: 0.45; stroke-width: 1.5px !important; }
+.mermaid-surface line.actor-line[data-actor-idx="5"] { stroke: var(--actor-5) !important; stroke-opacity: 0.45; stroke-width: 1.5px !important; }
+
+.mermaid-surface text.actor, .mermaid-surface .actor-man text,
+.mermaid-surface g.actor text, .mermaid-surface g.actor foreignObject span {
+  fill: var(--text-primary) !important;
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+/* Message arrows — high contrast, visible on dark bg */
+.mermaid-surface .messageText {
+  fill: var(--text-primary) !important;
+  stroke: none !important;
+  font-weight: 500 !important;
+  paint-order: stroke;
+  stroke: var(--bg-primary);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.mermaid-surface .messageLine0,
+.mermaid-surface .messageLine1,
+.mermaid-surface path.messageLine0,
+.mermaid-surface path.messageLine1 {
+  stroke: #e0e7ff !important;
+  stroke-width: 1.75px !important;
+}
+.mermaid-surface .messageLine1 { stroke-dasharray: 4 3 !important; }
+.mermaid-surface defs marker path { fill: #e0e7ff !important; stroke: #e0e7ff !important; }
+
+/* ── YES / NO branch paths ───────────────────────────────────── */
+/* Mermaid renders edges as <path class="flowchart-link"> directly, so we
+   target both nested and flat forms. */
+.mermaid-surface path.edge-yes,
+.mermaid-surface .edge-yes path.flowchart-link,
+.mermaid-surface .edge-yes .path,
+.mermaid-surface g.edge-yes > path {
+  stroke: #f5f7ff !important;
+  stroke-width: 2.5px !important;
+  stroke-dasharray: none !important;
+  fill: none !important;
+}
+.mermaid-surface path.edge-no,
+.mermaid-surface .edge-no path.flowchart-link,
+.mermaid-surface .edge-no .path,
+.mermaid-surface g.edge-no > path {
+  stroke: #0a0a10 !important;
+  stroke-width: 2.5px !important;
+  stroke-dasharray: none !important;
+  fill: none !important;
+  filter: drop-shadow(0 0 0.6px rgba(255,255,255,0.6));
+}
+
+/* Edge-label chips echo the branch color */
+.mermaid-surface g.edgeLabel.edge-yes-label foreignObject span,
+.mermaid-surface g.edgeLabel.edge-yes-label rect { background: #f5f7ff !important; fill: #f5f7ff !important; }
+.mermaid-surface g.edgeLabel.edge-yes-label foreignObject span { color: #0a0a10 !important; font-weight: 700 !important; padding: 1px 8px !important; border-radius: 10px !important; box-shadow: 0 0 0 2px var(--bg-primary); }
+
+.mermaid-surface g.edgeLabel.edge-no-label foreignObject span,
+.mermaid-surface g.edgeLabel.edge-no-label rect { background: #0a0a10 !important; fill: #0a0a10 !important; }
+.mermaid-surface g.edgeLabel.edge-no-label foreignObject span { color: #f5f7ff !important; font-weight: 700 !important; padding: 1px 8px !important; border-radius: 10px !important; box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 3px #f5f7ff; }
+
+/* Arrowhead colors for branches */
+.mermaid-surface g.edge-yes marker path { fill: #f5f7ff !important; stroke: #f5f7ff !important; }
+.mermaid-surface g.edge-no marker path { fill: #0a0a10 !important; stroke: #f5f7ff !important; stroke-width: 0.5 !important; }
+
+/* ── Selectable / commentable nodes ──────────────────────────── */
+.mermaid-surface g.node {
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.mermaid-surface g.node:hover > *:not(.node-chrome) {
+  filter: brightness(1.18) saturate(1.1);
+}
+/* Hover chrome: a dashed outline around the node's bounding box + a small
+   comment bubble affordance in the top-right. Rendered by JS as an overlay
+   <g class="node-chrome"> inside each <g.node>. */
+.mermaid-surface g.node .node-chrome {
+  opacity: 0;
+  transition: opacity 0.12s;
+  pointer-events: none;
+}
+.mermaid-surface g.node:hover .node-chrome,
+.mermaid-surface g.node.node-commented .node-chrome,
+.mermaid-surface g.node.node-selected .node-chrome { opacity: 1; }
+
+.mermaid-surface g.node .node-chrome .node-outline {
+  fill: none !important;
+  stroke: var(--accent) !important;
+  stroke-dasharray: 3 3 !important;
+  stroke-width: 1.5 !important;
+}
+.mermaid-surface g.node.node-selected .node-chrome .node-outline {
+  stroke: var(--accent) !important;
+  stroke-dasharray: none !important;
+  stroke-width: 2.5 !important;
+}
+.mermaid-surface g.node.node-commented .node-chrome .node-outline {
+  stroke: #facc15 !important;
+  stroke-dasharray: none !important;
+  stroke-width: 2 !important;
+}
+.mermaid-surface g.node .node-chrome .comment-pill {
+  fill: var(--accent) !important;
+  stroke: var(--bg-primary) !important;
+  stroke-width: 2 !important;
+}
+.mermaid-surface g.node.node-commented .node-chrome .comment-pill { fill: #facc15 !important; }
+.mermaid-surface g.node .node-chrome .comment-pill-glyph {
+  fill: #0a0f1e !important;
+  stroke: none !important;
+  font-family: -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* Popover anchored to clicked node */
+.node-popover {
+  position: absolute;
+  z-index: 20;
+  width: 260px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  font-size: 12.5px;
+  color: var(--text-primary);
+}
+.node-popover::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 16px;
+  width: 10px; height: 10px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--accent);
+  border-left: 1px solid var(--accent);
+  transform: rotate(45deg);
+}
+.node-popover .np-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.node-popover .np-quote {
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  border-left: 2px solid var(--border-strong);
+  padding-left: 8px;
+  margin: 6px 0 8px;
+}
+.node-popover textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 7px 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  resize: vertical;
+}
+.node-popover textarea:focus { outline: none; border-color: var(--accent); }
+.node-popover .np-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+.node-popover .np-actions button {
+  padding: 5px 11px;
+  border-radius: 4px;
+  border: 0;
+  font-size: 12px;
+  cursor: pointer;
+}
+.node-popover .np-actions .np-cancel { background: var(--bg-tertiary); color: var(--text-primary); }
+.node-popover .np-actions .np-add { background: var(--accent); color: #0a0f1e; font-weight: 600; }
+.node-popover .np-hint {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  text-align: right;
+  font-family: 'SF Mono', Menlo, monospace;
+}
+
+/* Discovery nudge — a subtle "click any node to comment" hint on hover of the viewport */
+.mermaid-viewport:hover .node-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+.node-hint {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.18s, transform 0.18s;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+.node-hint::before {
+  content: "";
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 6px;
+  vertical-align: middle;
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* ═════════════════════════════════════════════════════
+   TWEAKS PANEL
+   ═════════════════════════════════════════════════════ */
+
+.tweaks-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 280px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 12.5px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 40;
+}
+.tweaks-panel h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.tweaks-panel .tw-row { margin-bottom: 12px; }
+.tweaks-panel label { display: block; color: var(--text-secondary); font-size: 11px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+.tweaks-panel .seg {
+  display: flex;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.tweaks-panel .seg button {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  padding: 5px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.tweaks-panel .seg button.on { background: var(--accent); color: #0a0f1e; font-weight: 600; }
+.tweaks-panel .tw-check { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); cursor: pointer; padding: 4px 0; }
+.tweaks-panel .tw-check input { accent-color: var(--accent); }
+.tweaks-hint { font-size: 10.5px; color: var(--text-dim); line-height: 1.4; margin-top: 6px; }
